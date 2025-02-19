@@ -1,0 +1,18 @@
+{{#each skills}}
+  <h2>{{name}}</h2>
+  {{#if jobs.length}}
+    <ul>
+      {{#each jobs}}
+        <li>
+          <h3>{{name}}</h3>
+          <p>Location: {{location}}</p>
+          <p>Level: {{level}}</p>
+          <p>Description: {{{description}}}</p> <!-- Note the use of triple braces to render HTML -->
+          <p>Salary: {{salary}}</p>
+        </li>
+      {{/each}}
+    </ul>
+  {{else}}
+    <p>No jobs available for this skill.</p>
+  {{/if}}
+{{/each}}
