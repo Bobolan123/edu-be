@@ -15,16 +15,16 @@ import { LocalStrategy } from './strategies/local.strategy';
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_SECRET'),
+        secret: configService.get<string>('JWT_ACCESS_SECRET') || 'sdf',
         signOptions: {
-          expiresIn: configService.get<string | number>('EXPIRES_IN'),
+          expiresIn: configService.get<string | number>('JWT_ACCESS_EXPIRATION'),
         },
       }),
       inject: [ConfigService],
     }),
     ConfigModule,
   ],
-  providers: [AuthService, JwtStrategy, LocalStrategy],
+  providers: [AuthService, JwtStrategy,LocalStrategy],
   controllers: [AuthController],
   exports: [AuthService],
 })

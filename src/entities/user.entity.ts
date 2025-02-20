@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany, ManyToMany, JoinTable } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany, ManyToMany, JoinTable, ManyToOne } from 'typeorm';
 import { Course } from './course.entity';
 import { Enrollment } from './enrollment.entity';
 import { Payment } from './payment.entity';
@@ -22,9 +22,6 @@ export class User {
   @Column()
   password: string;
 
-  @Column()
-  role: string;
-
   @Column({ default: () => 'CURRENT_TIMESTAMP' })
   date_joined: Date;
 
@@ -45,6 +42,9 @@ export class User {
 
   @Column({ type: 'boolean', nullable: true })
   isActive: boolean;
+
+  @ManyToOne(() => Role, (role) => role.users)
+  role: Role;
 
   @OneToMany(() => Course, (course) => course.instructor)
   courses: Course[];
@@ -67,9 +67,5 @@ export class User {
 
   @OneToMany(() => QuizSubmission, (quizSubmission) => quizSubmission.id)
   quiz_submissions: QuizSubmission[];
-
-  @ManyToMany(() => Role, (role) => role.users, { eager: true })
-  @JoinTable()
-  roles: Role[];
 
 }

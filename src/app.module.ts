@@ -13,11 +13,12 @@ import { CourseModule } from './modules/course/course.module';
 import { EnrollmentModule } from './modules/enrollment/enrollment.module';
 import { QuizzesModule } from './modules/quiz/quiz.module';
 import { Payment } from './entities/payment.entity';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { RolesGuard } from './auth/guards/roles.guard';
 import { LocalStrategy } from './auth/strategies/local.strategy';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { AuthModule } from './auth/auth.module';
+import { TransformResInterceptor } from './core/transformRes.interceptor';
 
 @Module({
   imports: [
@@ -47,6 +48,10 @@ import { AuthModule } from './auth/auth.module';
   controllers: [AppController],
   providers: [
     AppService,
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: TransformResInterceptor,
+    },
     // {
     //   provide: APP_GUARD,
     //   useClass: JwtAuthGuard,

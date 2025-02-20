@@ -45,7 +45,7 @@ export class UserService {
     if (existingUser) {
       throw new BadRequestException(`The email ${existingUser.email} exists`);
     }
-
+  
     const user = this.userRepository.create({
       ...createUserDto,
       password: await this.hashPassword(createUserDto.password),
@@ -67,7 +67,7 @@ export class UserService {
     // });
 
     // return { id: savedUser.id, email: savedUser.email };
-    return savedUser
+    return savedUser;
   }
 
   async verifyOtp(data: AuthVerifiedOtp) {

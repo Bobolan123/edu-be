@@ -1,12 +1,12 @@
-import { Controller, Post, Request, UseGuards, Get } from '@nestjs/common';
+import { Controller, Post, Request, UseGuards, Get, Body } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { LocalAuthGuard } from './guards/local-auth.guard';
-import { Roles } from './roles.decorator';
-import { Role } from 'src/common/constants';
 import { Public } from './Public';
+import { ResponseMessage } from 'src/decorator/responseMessage.decorator';
+import { CreateUserDto } from 'src/modules/user/dto/create-user.dto';
 
-@Controller('/auth')
+@Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
@@ -16,9 +16,18 @@ export class AuthController {
     return await this.authService.login(req.user);
   }
 
+  @Public()
+  @ResponseMessage('User Register')
+  @Post('register')
+  async register(@Body() createUserDto: CreateUserDto) {
+    return this.authService.register(createUserDto);
+  }
+
   @UseGuards(JwtAuthGuard)
-  @Get('/get-me')
-  getMe(@Request() req) {
+  @ResponseMessage('User information')
+  @Get('/profile')
+  profile(@Request() req) {
     return req.user;
   }
+
 }
