@@ -7,6 +7,7 @@ import { UserService } from 'src/modules/user/user.service';
 import { Public } from './Public';
 import { ResponseMessage } from 'src/decorator/responseMessage.decorator';
 import { CreateUserDto } from 'src/modules/user/dto/create-user.dto';
+import { AuthVerifiedOtp } from './dto/auth.dto';
 
 @Injectable()
 export class AuthService {
@@ -48,8 +49,8 @@ export class AuthService {
       id: user.id,
       name: user.name,
       email: user.email,
-      role: user.role.name,
-      permissions: user.role.permissions,
+      role: user.role?.name,
+      permissions: user.role?.permissions,
     };
     const access_token = this.jwtService.sign(payload);
     const refresh_token = this.jwtService.sign(payload, {
@@ -67,5 +68,34 @@ export class AuthService {
       throw new BadRequestException(`The ${user.email} exists`);
     }
     return res;
+  }
+ 
+  async verifyOtp(data: AuthVerifiedOtp) {
+    const res = await this.userService.verifyOtp(data);
+    return res; 
+  }
+
+  async resendOtp(data: AuthVerifiedOtp) {
+    const res = await this.userService.resendOtp(data.email);
+    return res;
+  }
+
+  async refreshToken(refresh_token: string, response?: Response) {
+    try {
+      const decoded_token = this.jwtService.verify(refresh_token, {
+        secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
+      });
+      const user = await this.userService.findOneByToken(decoded_token?.id);
+      if (user) {
+        const res = this.login(user);
+        return res;
+      } else {
+        throw new BadRequestException(
+          'Refresh token are not valid. Login please',
+        );
+      }
+    } catch (error) {
+      console.log(error);
+    }
   }
 }

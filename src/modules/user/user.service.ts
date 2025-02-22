@@ -1,3 +1,4 @@
+import { permission } from 'process';
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -45,13 +46,13 @@ export class UserService {
     if (existingUser) {
       throw new BadRequestException(`The email ${existingUser.email} exists`);
     }
-  
+
     const user = this.userRepository.create({
       ...createUserDto,
       password: await this.hashPassword(createUserDto.password),
       otp: this.generateOTP(),
       isActive: false,
-      otpExpired: dayjs().add(10, 'minutes').toDate(),
+      otpExpired: dayjs().add(10, 'minutes').toISOString(), // Consistent format
     });
 
     const savedUser = await this.userRepository.save(user);
@@ -75,17 +76,21 @@ export class UserService {
       where: { id: data.id, otp: data.otp },
     });
 
-    if (!user || user.otp !== data.otp) {
+    if (!user || user.otp != data.otp) {
       throw new BadRequestException('The OTP is not valid or expired');
     }
 
-    if (dayjs().isAfter(user.otpExpired)) {
+    const currentTime = dayjs();
+    const otpExpiryTime = dayjs(user.otpExpired);
+
+    if (currentTime.isAfter(otpExpiryTime)) {
       throw new BadRequestException('The OTP is expired');
     }
 
-    user.isActive = true;
-    user.otp = null; // Clear OTP after activation
-    user.otpExpired = null; // Clear expiration
+    // Activate user
+    user.isActive = true; 
+    user.otp = null;
+    user.otpExpired = null;
     await this.userRepository.save(user);
 
     return { success: true, message: 'Account activated successfully' };
@@ -99,7 +104,7 @@ export class UserService {
     }
 
     user.otp = this.generateOTP();
-    user.otpExpired = dayjs().add(10, 'minutes').toDate();
+    user.otpExpired = dayjs().add(10, 'minutes').toISOString(); // Consistent format
     await this.userRepository.save(user);
 
     await this.mailerService.sendMail({
@@ -107,8 +112,10 @@ export class UserService {
       subject: 'Resend OTP',
       template: './otpVerified',
       context: {
+        subject: 'OTP for your Email',
         name: user.name,
         otp: user.otp,
+        message: 'Welcome to our Mindful Maze',
       },
     });
 
@@ -117,13 +124,13 @@ export class UserService {
 
   async forgotPassword(email: string) {
     const user = await this.userRepository.findOne({ where: { email } });
-
+ 
     if (!user) {
       throw new BadRequestException('User does not exist');
-    }
+    } 
 
     user.otp = this.generateOTP();
-    user.otpExpired = dayjs().add(10, 'minutes').toDate();
+    user.otpExpired = dayjs().add(10, 'minutes').toISOString();
     await this.userRepository.save(user);
 
     await this.mailerService.sendMail({
@@ -179,6 +186,29 @@ export class UserService {
 
     (await user).password = updateUserDto.newPassword;
     return await this.userRepository.save(user);
+  }
+
+  async findOneByToken(id: number): Promise<User> {
+    const user = await this.userRepository.findOne({
+      where: { id },
+      relations: ['role'],
+    });
+    return user;
+  }
+
+  async getRolePermission(userId: number) {
+    try {
+      const permissions = await this.userRepository
+        .createQueryBuilder('user')
+        .leftJoin('user.role', 'role')
+        .leftJoin('role.permission', 'permission')
+        .select(['permission.action AS action', 'permission.module  AS module'])
+        .where('user.id = :userId', { userId })
+        .getRawMany(); // Use getRawMany to fetch raw data for the APIs
+      return permissions;
+    } catch (error) {
+      console.log(error);
+    }
   }
 
   async findAll(): Promise<User[]> {

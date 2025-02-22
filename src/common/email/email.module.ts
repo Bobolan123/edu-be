@@ -6,11 +6,6 @@ import { HandlebarsAdapter } from '@nest-modules/mailer/dist/adapters/handlebars
 
 @Module({
   imports: [
-    // Global ConfigModule for environment variables
-    ConfigModule.forRoot({
-      isGlobal: true,
-    }),
-
     // Mailer Module Configuration
     MailerModule.forRootAsync({
       imports: [ConfigModule],
@@ -18,22 +13,22 @@ import { HandlebarsAdapter } from '@nest-modules/mailer/dist/adapters/handlebars
       useFactory: async (configService: ConfigService) => ({
         transport: {
           host: configService.get('MAIL_HOST'),
-          port: configService.get('MAIL_PORT') || 587,
+          port: +configService.get('MAIL_PORT') || 465,
           secure: configService.get('MAIL_SECURE') === 'true', 
           auth: {
             user: configService.get('MAIL_USER'),
             pass: configService.get('MAIL_PASSWORD'),
           },
-        },
-        defaults: {
+        }, 
+        defaults: { 
           from: `"No Reply" <${configService.get('MAIL_FROM')}>`, 
         },
         template: {
-          dir: join(__dirname, 'templates', 'email'),
+          dir: join(__dirname, 'templates'),
           adapter: new HandlebarsAdapter(),
-          options: {
+          options: { 
             strict: true,
-          },
+          }, 
         },
       }),
     }),

@@ -34,6 +34,7 @@ import { TransformResInterceptor } from './core/transformRes.interceptor';
     Payment,
     EmailModule,
     AuthModule,
+    EmailModule,
     //Public sources
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'public'),

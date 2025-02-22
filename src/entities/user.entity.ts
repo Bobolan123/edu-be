@@ -37,8 +37,8 @@ export class User {
   @Column({ type: 'int', nullable: true })
   otp: number;
 
-  @Column({ type: 'date', nullable: true })
-  otpExpired: Date;
+  @Column({ nullable: true })
+  otpExpired: string;
 
   @Column({ type: 'boolean', nullable: true })
   isActive: boolean;
