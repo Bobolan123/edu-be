@@ -1,39 +1,51 @@
-import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  CanActivate,
+  ExecutionContext,
+  ForbiddenException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { Role } from 'src/common/constants';
-import { Roles } from '../roles.decorator';
-import { PERMISSIONS_KEY } from 'src/decorator/requirePermission.decorator';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { User } from 'src/entities/user.entity';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
-  constructor(private reflector: Reflector) {}
+  constructor(
+    private reflector: Reflector,
+    @InjectRepository(User) private userRepository: Repository<User>,
+  ) {}
 
-  canActivate(context: ExecutionContext): boolean {
-    const requiredPermissions = this.reflector.get<string[]>(PERMISSIONS_KEY, context.getHandler());
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    const requiredPermissions = this.reflector.get<string[]>(
+      'permissions',
+      context.getHandler(),
+    ); //Utilize requiredPermission decorator for controller
 
-    const roles = this.reflector.get(Roles, context.getHandler());
-    if (!roles) {
-      return true;
-    }
+    if (!requiredPermissions) return true;
+
     const request = context.switchToHttp().getRequest();
-    const user = request.user;
+    const userId = request.user?.id;
+    if (!userId) throw new UnauthorizedException('User not authenticated');
+
+    // Fetch user with role and permissions
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      relations: ['role', 'role.permissions'],
+    });
 
     if (!user) throw new ForbiddenException('User not found');
 
-    const userPermissions = user.roles.flatMap(role => role.permissions.map(p => p.action));
+    const userPermissions = user.role.permissions.map((perm) => perm.action);
 
-    const hasPermission = requiredPermissions.every(permission =>
+    // Check if user has at least one required permission
+    const hasPermission = requiredPermissions.some((permission) =>
       userPermissions.includes(permission),
     );
 
     if (!hasPermission) throw new ForbiddenException('Access denied');
 
-    return this.matchRoles(roles, user.type);
-
-    return true
-  }
-
-  matchRoles(roles: Role[], userRole: Role): boolean {
-    return roles.includes(userRole);
+    return true;
   }
 }

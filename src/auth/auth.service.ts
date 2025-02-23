@@ -45,12 +45,11 @@ export class AuthService {
       throw new BadRequestException('Email is not verified');
     }
 
+
     const payload = {
       id: user.id,
       name: user.name,
       email: user.email,
-      role: user.role?.name,
-      permissions: user.role?.permissions,
     };
     const access_token = this.jwtService.sign(payload);
     const refresh_token = this.jwtService.sign(payload, {

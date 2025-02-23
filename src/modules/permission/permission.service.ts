@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Permission } from 'src/entities/permission.entity';
 import { Repository } from 'typeorm';
+import { CreatePermissionDto } from './dto/permission.dto';
 
 @Injectable()
 export class PermissionService {
@@ -20,8 +21,12 @@ export class PermissionService {
     return permission;
   }
 
-  async create(action: string): Promise<Permission> {
-    const permission = this.permissionRepository.create({ action });
+  async create(data: CreatePermissionDto): Promise<Permission> {
+    const exestingPermission = await this.permissionRepository.findOne({ where: { action: data.action }});
+    if (exestingPermission) {
+      throw new NotFoundException('Permission action existed');
+    }
+    const permission = this.permissionRepository.create(data);
     return this.permissionRepository.save(permission);
   }
 

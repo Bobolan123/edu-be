@@ -19,6 +19,7 @@ import { LocalStrategy } from './auth/strategies/local.strategy';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { AuthModule } from './auth/auth.module';
 import { TransformResInterceptor } from './core/transformRes.interceptor';
+import { PermissionModule } from './modules/permission/permission.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { TransformResInterceptor } from './core/transformRes.interceptor';
     DatabaseModule,
     UserModule,
     RoleModule,
+    PermissionModule,
     CourseModule,
     EnrollmentModule,
     QuizzesModule,

@@ -10,7 +10,7 @@ export class Permission {
   @Column({ unique: true })
   action: string; // e.g., 'CREATE_USER', 'DELETE_POST'
 
-  @Column({ unique: true })
+  @Column()
   module: string; // e.g., 'User', 'Auth'
 
   @IsString()
