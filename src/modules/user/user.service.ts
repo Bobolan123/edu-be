@@ -52,22 +52,22 @@ export class UserService {
       password: await this.hashPassword(createUserDto.password),
       otp: this.generateOTP(),
       isActive: false,
-      otpExpired: dayjs().add(10, 'minutes').toISOString(), // Consistent format
+      otpExpired: dayjs().add(10, 'minutes').toISOString(),
     });
 
     const savedUser = await this.userRepository.save(user);
 
-    // await this.mailerService.sendMail({
-    //   to: savedUser.email,
-    //   subject: 'Welcome to the platform',
-    //   template: './otpVerified',
-    //   context: {
-    //     name: savedUser.name,
-    //     otp: savedUser.otp,
-    //   },
-    // });
-
-    // return { id: savedUser.id, email: savedUser.email };
+    await this.mailerService.sendMail({
+      to: user.email,
+      subject: 'Resend OTP',
+      template: './otpVerified',
+      context: {
+        subject: 'OTP for your Email',
+        name: user.name,
+        otp: user.otp,
+        message: 'Welcome to our Mindful Maze',
+      },
+    });
     return savedUser;
   }
 
@@ -88,7 +88,7 @@ export class UserService {
     }
 
     // Activate user
-    user.isActive = true; 
+    user.isActive = true;
     user.otp = null;
     user.otpExpired = null;
     await this.userRepository.save(user);
@@ -122,33 +122,9 @@ export class UserService {
     return { id: user.id, email: user.email };
   }
 
-  async forgotPassword(email: string) {
-    const user = await this.userRepository.findOne({ where: { email } });
- 
-    if (!user) {
-      throw new BadRequestException('User does not exist');
-    } 
-
-    user.otp = this.generateOTP();
-    user.otpExpired = dayjs().add(10, 'minutes').toISOString();
-    await this.userRepository.save(user);
-
-    await this.mailerService.sendMail({
-      to: user.email,
-      subject: 'OTP for Password Reset',
-      template: './otpVerified',
-      context: {
-        name: user.name,
-        otp: user.otp,
-      },
-    });
-
-    return { id: user.id, email: user.email };
-  }
-
-  async changePassword(data: AuthChangePassword) {
+  async forgetPassword(data: AuthChangePassword) {
     if (data.password !== data.confirmPassword) {
-      throw new BadRequestException('Passwords do not match');
+      throw new BadRequestException('Password and confirm password do not match');
     }
 
     const user = await this.userRepository.findOne({
@@ -167,24 +143,21 @@ export class UserService {
     user.otp = null; // Clear OTP after password reset
     user.otpExpired = null; // Clear expiration
     await this.userRepository.save(user);
-
     return { id: user.id, email: user.email };
   }
+
   async updatePassword(id: number, updateUserDto: IUpdatePassword) {
-    const user = await this.userRepository.findOne({ where: { id } });
-    if (user!) {
+    const user = await this.userRepository.findOneBy({ id });
+    if (!user) {
       throw new BadRequestException('User does not exist');
     }
 
-    const isMatch = await bcrypt.compare(
-      updateUserDto.password,
-      (await user).password,
-    );
+    const isMatch = await bcrypt.compare(updateUserDto.password, user.password);
     if (!isMatch) {
       throw new BadRequestException('Incorrect password');
     }
 
-    (await user).password = updateUserDto.newPassword;
+    user.password = updateUserDto.newPassword;
     return await this.userRepository.save(user);
   }
 
@@ -216,7 +189,7 @@ export class UserService {
   }
 
   async findOne(id: number): Promise<User> {
-    return this.userRepository.findOne({ where: { id },relations:['role'] });
+    return this.userRepository.findOne({ where: { id }, relations: ['role'] });
   }
 
   async update(id: number, updateUserDto: UpdateUserDto): Promise<User> {

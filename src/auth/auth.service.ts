@@ -7,7 +7,7 @@ import { UserService } from 'src/modules/user/user.service';
 import { Public } from './Public';
 import { ResponseMessage } from 'src/decorator/responseMessage.decorator';
 import { CreateUserDto } from 'src/modules/user/dto/create-user.dto';
-import { AuthVerifiedOtp } from './dto/auth.dto';
+import { AuthChangePassword, AuthVerifiedOtp } from './dto/auth.dto';
 
 @Injectable()
 export class AuthService {
@@ -33,7 +33,7 @@ export class AuthService {
     const check = await this.comparePassword(password, user.password);
 
     if (!user || !check) {
-      return false;
+      throw new BadRequestException("Invalid credentials")
     }
 
     return user;
@@ -79,7 +79,7 @@ export class AuthService {
     return res;
   }
 
-  async refreshToken(refresh_token: string, response?: Response) {
+  async refreshToken(refresh_token: string) {
     try {
       const decoded_token = this.jwtService.verify(refresh_token, {
         secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
@@ -97,4 +97,14 @@ export class AuthService {
       console.log(error);
     }
   }
+
+  async forgetPassword(data:AuthChangePassword) {
+    try {
+      const user = this.userService.forgetPassword(data)
+      return user
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
 }

@@ -1,4 +1,4 @@
-import { Controller, Post, Request, UseGuards, Get, Body, Res } from '@nestjs/common';
+import { Controller, Post, Request, UseGuards, Get, Body, Res, Put, Patch } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { LocalAuthGuard } from './guards/local-auth.guard';
@@ -6,7 +6,7 @@ import { Public } from './Public';
 import { ResponseMessage } from 'src/decorator/responseMessage.decorator';
 import { CreateUserDto } from 'src/modules/user/dto/create-user.dto';
 import { Request as ReqExpress} from 'express';
-import { AuthVerifiedOtp } from './dto/auth.dto';
+import { AuthChangePassword, AuthVerifiedOtp } from './dto/auth.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -52,9 +52,14 @@ export class AuthController {
 
   @UseGuards(JwtAuthGuard)
   @ResponseMessage('User information')
-  @Get('/profile')
+  @Get('profile')
   profile(@Request() req) {
     return req.user;
-  }
+  } 
 
+  @ResponseMessage('Forget password')
+  @Patch('forgetPassword')
+  forgetPassword(@Body() data:AuthChangePassword) {
+    return this.authService.forgetPassword(data)
+  }
 }

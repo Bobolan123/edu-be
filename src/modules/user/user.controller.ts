@@ -18,6 +18,7 @@ import { RolesGuard } from 'src/auth/guards/roles.guard';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 
 export interface IUpdatePassword {
+  id:number,
   password:string
   newPassword:string
 }
@@ -51,14 +52,15 @@ export class UserController {
     return this.userService.update(+id, updateUserDto);
   }
 
+  @UseGuards(JwtAuthGuard)
   @ResponseMessage('Update user password')
-  @Patch(':id')
-  updatePassword(@Param('id') id: string, @Body() updateUserDto: IUpdatePassword) {
-    return this.userService.updatePassword(+id, updateUserDto);
+  @Patch('password/:id')
+  updatePassword(@Param('id') id: string, @Body() updatePassword: IUpdatePassword) {
+    return this.userService.updatePassword(+id, updatePassword);
   }
 
   @ResponseMessage('Delete user')
-  @Delete(':id')
+  @Delete(':id') 
   remove(@Param('id') id: string) {
     return this.userService.remove(+id);
   }
