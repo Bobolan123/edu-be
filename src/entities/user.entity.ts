@@ -1,4 +1,12 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany, ManyToMany, JoinTable, ManyToOne } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  OneToMany,
+  ManyToMany,
+  JoinTable,
+  ManyToOne,
+} from 'typeorm';
 import { Course } from './course.entity';
 import { Enrollment } from './enrollment.entity';
 import { Payment } from './payment.entity';
@@ -13,13 +21,16 @@ export class User {
   @PrimaryGeneratedColumn()
   id: number;
 
+  @Column({ nullable: true, unique: true })
+  googleId: string;
+
   @Column()
   name: string;
 
   @Column({ unique: true })
   email: string;
 
-  @Column()
+  @Column({ nullable: true })  
   password: string;
 
   @Column({ default: () => 'CURRENT_TIMESTAMP' })
@@ -43,7 +54,7 @@ export class User {
   @Column({ type: 'boolean', nullable: true })
   isActive: boolean;
 
-  @ManyToOne(() => Role, (role) => role.users)
+  @ManyToOne(() => Role, (role) => role.users,{nullable:true})
   role: Role;
 
   @OneToMany(() => Course, (course) => course.instructor)
@@ -64,8 +75,6 @@ export class User {
   @OneToMany(() => Review, (review) => review.user)
   reviews: Review[];
 
-
   @OneToMany(() => QuizSubmission, (quizSubmission) => quizSubmission.id)
   quiz_submissions: QuizSubmission[];
-
 }

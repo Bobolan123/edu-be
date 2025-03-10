@@ -1,5 +1,5 @@
 import { ConfigService } from '@nestjs/config';
-import { BadRequestException, Body, Injectable, Post } from '@nestjs/common';
+import { BadRequestException, Body, HttpException, HttpStatus, Injectable, Post } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { User } from 'src/entities/user.entity';
@@ -8,13 +8,14 @@ import { Public } from './Public';
 import { ResponseMessage } from 'src/decorator/responseMessage.decorator';
 import { CreateUserDto } from 'src/modules/user/dto/create-user.dto';
 import { AuthChangePassword, AuthVerifiedOtp } from './dto/auth.dto';
+import { Response } from 'express';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly jwtService: JwtService,
     private readonly userService: UserService,
-    private readonly configService: ConfigService
+    private readonly configService: ConfigService,
   ) {}
 
   async hashPassword(password: string): Promise<string> {
@@ -30,21 +31,20 @@ export class AuthService {
 
   async validateUser(email: string, password: string): Promise<any> {
     const user = await this.userService.findByEmail(email);
-    const check = await this.comparePassword(password, user.password);
+    const check = user && (await this.comparePassword(password, user.password));
 
     if (!user || !check) {
-      throw new BadRequestException("Invalid credentials")
+      throw new BadRequestException('Invalid credentials');
     }
 
     return user;
   }
 
-  async login(user: User) {
+  async login(user: User, response: Response) {
     const isActiveGmail = await this.userService.isActiveGmail(user.email);
     if (isActiveGmail !== true) {
-      throw new BadRequestException('Email is not verified');
+      throw new HttpException('Email is not verified', HttpStatus.FORBIDDEN);
     }
-
 
     const payload = {
       id: user.id,
@@ -56,9 +56,23 @@ export class AuthService {
       expiresIn: this.configService.get<string>('JWT_REFRESH_EXPIRATION'),
       secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
     });
+    response.clearCookie('refresh_token');
+    //set refresh token in cookie
+    response.cookie('refresh_token', refresh_token, {
+      maxAge: this.configService.get<number>('JWT_REFRESH_EXPIRATION_COOKIE'),
+      httpOnly: true,
+    });
+
+    response.cookie('access_token', access_token, {
+      maxAge: this.configService.get<number>('JWT_ACCESS_EXPIRATION_COOKIE'),
+    });
     return {
-      access_token,refresh_token
-    }
+      email: user.email,
+      name: user.name,
+      id: user.id,
+      role: user.role?.name,
+      access_token,
+    };
   }
 
   async register(user: CreateUserDto) {
@@ -68,10 +82,10 @@ export class AuthService {
     }
     return res;
   }
- 
+
   async verifyOtp(data: AuthVerifiedOtp) {
     const res = await this.userService.verifyOtp(data);
-    return res; 
+    return res;
   }
 
   async resendOtp(data: AuthVerifiedOtp) {
@@ -79,14 +93,14 @@ export class AuthService {
     return res;
   }
 
-  async refreshToken(refresh_token: string) {
+  async refreshToken(refresh_token: string, response:Response) {
     try {
       const decoded_token = this.jwtService.verify(refresh_token, {
         secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
       });
       const user = await this.userService.findOneByToken(decoded_token?.id);
       if (user) {
-        const res = this.login(user);
+        const res = this.login(user, response);
         return res;
       } else {
         throw new BadRequestException(
@@ -98,13 +112,12 @@ export class AuthService {
     }
   }
 
-  async forgetPassword(data:AuthChangePassword) {
+  async forgetPassword(data: AuthChangePassword) {
     try {
-      const user = this.userService.forgetPassword(data)
-      return user
+      const user = this.userService.changePassword(data);
+      return user;
     } catch (error) {
       console.log(error);
     }
   }
-
 }

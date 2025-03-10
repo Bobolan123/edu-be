@@ -1,5 +1,5 @@
 import { permission } from 'process';
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, HttpException, Injectable } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from '../../entities/user.entity';
@@ -39,36 +39,67 @@ export class UserService {
   }
 
   async create(createUserDto: CreateUserDto) {
+    const { email, password, googleId } = createUserDto;
+
+    // Check if the user already exists
     const existingUser = await this.userRepository.findOne({
-      where: { email: createUserDto.email },
+      where: { email },
     });
 
-    if (existingUser) {
-      throw new BadRequestException(`The email ${existingUser.email} exists`);
+    if (existingUser && !existingUser.isActive) {
+      throw new HttpException('Email is not verified', 403);
+ 
+    } else if (existingUser) {
+      throw new BadRequestException(
+        `The email ${existingUser.email} already exists`,
+      );
     }
 
+    // Determine if the user is signing up via OAuth
+    const isOAuthUser = googleId;
+
+    // Create new user object
     const user = this.userRepository.create({
       ...createUserDto,
-      password: await this.hashPassword(createUserDto.password),
-      otp: this.generateOTP(),
-      isActive: false,
-      otpExpired: dayjs().add(10, 'minutes').toISOString(),
+      password: isOAuthUser ? null : await this.hashPassword(password),
+      otp: isOAuthUser ? null : this.generateOTP(),
+      isActive: isOAuthUser ? true : false,
+      otpExpired: isOAuthUser ? null : dayjs().add(10, 'minutes').toISOString(),
     });
 
+    // Save the user to the database
     const savedUser = await this.userRepository.save(user);
 
-    await this.mailerService.sendMail({
-      to: user.email,
-      subject: 'Resend OTP',
-      template: './otpVerified',
-      context: {
+    // Send OTP email only for non-OAuth users
+    if (!isOAuthUser) {
+      await this.sendEmail(user.email, 'Resend OTP', './otpVerified', {
         subject: 'OTP for your Email',
         name: user.name,
         otp: user.otp,
         message: 'Welcome to our Mindful Maze',
-      },
-    });
+      });
+    }
+
     return savedUser;
+  }
+
+  private async sendEmail(
+    to: string,
+    subject: string,
+    template: string,
+    context: any,
+  ) {
+    try {
+      await this.mailerService.sendMail({
+        to,
+        subject,
+        template,
+        context,
+      });
+    } catch (error) {
+      console.error(`Error sending email to ${to}:`, error);
+      throw new BadRequestException('Failed to send email');
+    }
   }
 
   async verifyOtp(data: AuthVerifiedOtp) {
@@ -107,24 +138,20 @@ export class UserService {
     user.otpExpired = dayjs().add(10, 'minutes').toISOString(); // Consistent format
     await this.userRepository.save(user);
 
-    await this.mailerService.sendMail({
-      to: user.email,
-      subject: 'Resend OTP',
-      template: './otpVerified',
-      context: {
-        subject: 'OTP for your Email',
-        name: user.name,
-        otp: user.otp,
-        message: 'Welcome to our Mindful Maze',
-      },
+    await this.sendEmail(user.email, 'Resend OTP', './otpVerified', {
+      subject: 'OTP for your Email',
+      name: user.name,
+      otp: user.otp,
+      message: 'Welcome to our Mindful Maze',
     });
-
     return { id: user.id, email: user.email };
   }
 
-  async forgetPassword(data: AuthChangePassword) {
+  async changePassword(data: AuthChangePassword) {
     if (data.password !== data.confirmPassword) {
-      throw new BadRequestException('Password and confirm password do not match');
+      throw new BadRequestException(
+        'Password and confirm password do not match',
+      );
     }
 
     const user = await this.userRepository.findOne({
@@ -139,6 +166,11 @@ export class UserService {
       throw new BadRequestException('The OTP is expired');
     }
 
+    if (data.otp && user.otp && +data.otp !== +user.otp) {
+      throw new BadRequestException('OTP is invalid');
+    }
+    
+    
     user.password = await this.hashPassword(data.password);
     user.otp = null; // Clear OTP after password reset
     user.otpExpired = null; // Clear expiration

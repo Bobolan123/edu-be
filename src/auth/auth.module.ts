@@ -7,6 +7,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { AuthController } from './auth.controller';
 import { UserModule } from 'src/modules/user/user.module';
 import { LocalStrategy } from './strategies/local.strategy';
+import { GoogleStrategy } from './strategies/google.strategy';
 
 @Module({
   imports: [
@@ -24,7 +25,7 @@ import { LocalStrategy } from './strategies/local.strategy';
     }),
     ConfigModule,
   ],
-  providers: [AuthService, JwtStrategy,LocalStrategy],
+  providers: [AuthService, JwtStrategy,LocalStrategy, GoogleStrategy],
   controllers: [AuthController],
   exports: [AuthService],
 })

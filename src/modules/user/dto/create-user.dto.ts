@@ -2,14 +2,12 @@ import {
   IsBoolean,
   IsDate,
   IsEmail,
-  IsEnum,
   IsInt,
   IsNotEmpty,
   IsOptional,
   IsString,
-  Length,
-  Matches,
   MinLength,
+  Matches,
 } from 'class-validator';
 import { Role } from 'src/entities/role.entity';
 
@@ -17,6 +15,10 @@ const passwordRegEx =
   /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,20}$/;
 
 export class CreateUserDto {
+  @IsOptional()
+  @IsString()
+  googleId?: string;
+
   @IsNotEmpty()
   @IsString()
   @MinLength(2, { message: 'Name must have at least 2 characters.' })
@@ -26,12 +28,12 @@ export class CreateUserDto {
   @IsEmail({}, { message: 'Please provide a valid Email.' })
   email: string;
 
-  @IsNotEmpty()
+  @IsOptional() 
   @Matches(passwordRegEx, {
     message: `Password must be between 8-20 characters, include at least one uppercase letter, 
     one lowercase letter, one number, and one special character.`,
   })
-  password: string;
+  password?: string;
 
   @IsOptional()
   @IsString()
@@ -57,6 +59,6 @@ export class CreateUserDto {
   @IsBoolean()
   isActive?: boolean;
 
-  @IsNotEmpty()
-  role: Role;
+  @IsOptional() 
+  role?: Role;
 }
