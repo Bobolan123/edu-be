@@ -1,43 +1,58 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany } from 'typeorm';
+import { 
+  Entity, 
+  PrimaryGeneratedColumn, 
+  Column, 
+  ManyToOne, 
+  OneToMany, 
+  ManyToMany, 
+  JoinTable, 
+  CreateDateColumn, 
+  UpdateDateColumn 
+} from 'typeorm';
+
 import { User } from './user.entity';
-import { Lesson } from './lesson.entity';
 import { Enrollment } from './enrollment.entity';
 import { Quiz } from './quiz.entity';
 import { Review } from './review.entity';
 import { Certification } from './certification.entity';
 import { Payment } from './payment.entity';
+import { Category } from './category.entity';
+import { Section } from './section.entity';
 
 @Entity()
 export class Course {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column()
+  @Column({ type: 'varchar', length: 255 })
   title: string;
 
-  @Column('text')
+  @Column({ type: 'text' })
   description: string;
 
-  @ManyToOne(() => User, (user) => user.courses)
+  @ManyToOne(() => User, (user) => user.courses, { eager: true, onDelete: 'CASCADE' })
   instructor: User;
 
-  @Column()
-  category: string;
+  @Column({ type: 'int', default: 0 }) // Total course duration in minutes
+  duration: number;
 
-  @Column()
-  duration: string;
-
-  @Column({ default: () => 'CURRENT_TIMESTAMP' })
+  @CreateDateColumn()
   date_created: Date;
 
-  @Column({ nullable: true })
+  @UpdateDateColumn()
+  last_updated: Date;
+
+  @Column({ type: 'varchar', length: 500, nullable: true }) 
   thumbnail: string;
 
-  @Column({ default: 0 })
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 }) 
   price: number;
 
-  @OneToMany(() => Lesson, (lesson) => lesson.course)
-  lessons: Lesson[];
+  @Column({ type: 'float', default: 0 }) 
+  average_rating: number;
+
+  @OneToMany(() => Section, (section) => section.course, { cascade: true })
+  sections: Section[];
 
   @OneToMany(() => Enrollment, (enrollment) => enrollment.course)
   enrollments: Enrollment[];
@@ -53,4 +68,8 @@ export class Course {
 
   @OneToMany(() => Payment, (payment) => payment.course)
   payments: Payment[];
+
+  @ManyToMany(() => Category, (category) => category.courses, { cascade: true })
+  @JoinTable() 
+  categories: Category[];
 }

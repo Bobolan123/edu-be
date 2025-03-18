@@ -2,9 +2,9 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Lesson } from 'src/entities/lesson.entity';
-import { Course } from 'src/entities/course.entity';
 import { CreateLessonDto } from './dto/create-lesson.dto';
 import { UpdateLessonDto } from './dto/update-lesson.dto';
+import { Section } from 'src/entities/section.entity';
 
 @Injectable()
 export class LessonService {
@@ -12,16 +12,18 @@ export class LessonService {
     @InjectRepository(Lesson)
     private lessonRepository: Repository<Lesson>,
 
-    @InjectRepository(Course)
-    private courseRepository: Repository<Course>,
+    @InjectRepository(Section)
+    private sectionRepository: Repository<Section>,
   ) {}
 
+  // ✅ Get all lessons with section details
   async findAll(): Promise<Lesson[]> {
-    return this.lessonRepository.find({ relations: ['course'] });
+    return this.lessonRepository.find({ relations: ['section'] });
   }
 
+  // ✅ Get a single lesson by ID with section details
   async findOne(id: number): Promise<Lesson> {
-    const lesson = await this.lessonRepository.findOne({ where: { id }, relations: ['course'] });
+    const lesson = await this.lessonRepository.findOne({ where: { id }, relations: ['section'] });
     if (!lesson) {
       throw new NotFoundException(`Lesson with ID ${id} not found`);
     }
@@ -29,32 +31,46 @@ export class LessonService {
   }
 
   async create(createLessonDto: CreateLessonDto): Promise<Lesson> {
-    const { courseId, title, content, order, resources } = createLessonDto;
-
-    const course = await this.courseRepository.findOne({ where: { id: courseId } });
-    if (!course) {
-      throw new NotFoundException(`Course with ID ${courseId} not found`);
+    const { sectionId, title, description, videoUrl, order, duration, resources } = createLessonDto;
+  
+    const section = await this.sectionRepository.findOne({ where: { id: sectionId } });
+    if (!section) {
+      throw new NotFoundException(`Section with ID ${sectionId} not found`);
     }
-
-    const lesson = this.lessonRepository.create({
-      course,
-      title,
-      content,
-      order,
-      resources,
-    });
-
+  
+    const lesson = new Lesson(); 
+    lesson.section = section;
+    lesson.title = title;
+    lesson.description = description;
+    lesson.video_url = videoUrl;
+    lesson.order = order;
+    lesson.duration = duration;
+    lesson.resources = resources;
+  
     return this.lessonRepository.save(lesson);
   }
+  
 
+  // ✅ Update an existing lesson
   async update(id: number, updateLessonDto: UpdateLessonDto): Promise<Lesson> {
     const lesson = await this.findOne(id);
 
+    // Prevent updating sectionId directly (ensure relational integrity)
+    if (updateLessonDto.sectionId) {
+      const section = await this.sectionRepository.findOne({ where: { id: updateLessonDto.sectionId } });
+      if (!section) {
+        throw new NotFoundException(`Section with ID ${updateLessonDto.sectionId} not found`);
+      }
+      lesson.section = section;
+    }
+
+    // Update other fields
     Object.assign(lesson, updateLessonDto);
 
     return this.lessonRepository.save(lesson);
   }
 
+  // ✅ Delete a lesson by ID
   async remove(id: number): Promise<void> {
     const lesson = await this.findOne(id);
     await this.lessonRepository.remove(lesson);

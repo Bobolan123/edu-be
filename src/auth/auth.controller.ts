@@ -83,6 +83,11 @@ export class AuthController {
     // Redirects user to Google authentication
   }
 
+  @Post("google-login")
+  async googleLogin(@Body() userData: { email: string; name: string; googleId: string }) {
+      return this.authService.googleLogin(userData);
+  }
+   
   @Get('google/callback')
   @UseGuards(AuthGuard('google'))
   async googleAuthRedirect(@Req() req, @Res() res) {

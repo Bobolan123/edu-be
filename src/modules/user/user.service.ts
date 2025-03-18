@@ -54,7 +54,6 @@ export class UserService {
         `The email ${existingUser.email} already exists`,
       );
     }
-
     // Determine if the user is signing up via OAuth
     const isOAuthUser = googleId;
 
@@ -146,7 +145,7 @@ export class UserService {
     });
     return { id: user.id, email: user.email };
   }
-
+ 
   async changePassword(data: AuthChangePassword) {
     if (data.password !== data.confirmPassword) {
       throw new BadRequestException(

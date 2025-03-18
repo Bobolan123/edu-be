@@ -5,6 +5,7 @@ import {
   IsNumber,
   Min,
   IsUrl,
+  IsInt,
 } from 'class-validator';
 
 export class CreateCourseDto {
@@ -18,7 +19,7 @@ export class CreateCourseDto {
 
   @IsOptional()
   @IsUrl()
-  thumbnailUrl: string;
+  thumbnail?: string; // Changed to match the entity field
 
   @IsNotEmpty()
   @IsNumber()
@@ -26,6 +27,7 @@ export class CreateCourseDto {
   price: number;
 
   @IsOptional()
-  @IsString()
-  duration: string; // e.g., "5 hours"
+  @IsInt()
+  @Min(1)
+  duration?: number; // Should be in minutes (e.g., 300 for 5 hours)
 }

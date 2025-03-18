@@ -120,4 +120,18 @@ export class AuthService {
       console.log(error);
     }
   }
+
+  async googleLogin(userData: { email: string; name: string; googleId: string }) {
+    let user = await this.userService.findByEmail(userData.email);
+    if (!user) {
+        // If the user doesn't exist, create a new one
+        user = await this.userService.create({
+            email: userData.email,
+            name: userData.name,
+            googleId: userData.googleId,
+        });
+    }
+
+    return user
+}
 }

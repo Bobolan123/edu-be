@@ -1,23 +1,29 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
-import { Course } from './course.entity';
+import { Section } from './section.entity';
 
 @Entity()
 export class Lesson {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @ManyToOne(() => Course, (course) => course.lessons)
-  course: Course;
-
   @Column()
   title: string;
 
   @Column('text')
-  content: string;
+  description: string;
+
+  @Column()
+  video_url: string;
 
   @Column()
   order: number;
 
-  @Column({ nullable: true })
-  resources: string;
+  @Column()
+  duration: number;
+
+  @Column({ nullable: true }) // ✅ Ensure `resources` is optional
+  resources?: string;
+
+  @ManyToOne(() => Section, (section) => section.lessons, { eager: true }) // ✅ Ensure `section` relation is defined
+  section: Section;
 }
