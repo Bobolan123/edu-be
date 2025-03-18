@@ -1,14 +1,16 @@
-import { Controller, Get, Post, Param, Body, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, ParseIntPipe, Query } from '@nestjs/common';
 import { PaymentService } from './payment.service';
 import { Payment } from 'src/entities/payment.entity';
+import { PageOptionsDto } from 'src/common/dtos/page-option.dto';
+import { ResponsePaginate } from 'src/common/dtos/response-paginate.dto';
 
 @Controller('payments')
 export class PaymentController {
   constructor(private readonly paymentService: PaymentService) {}
 
   @Get()
-  findAll(): Promise<Payment[]> {
-    return this.paymentService.findAll();
+  findAll(@Query() pageOptionsDto: PageOptionsDto): Promise<ResponsePaginate<Payment>> {
+    return this.paymentService.findAll(pageOptionsDto);
   }
 
   @Get(':id')
@@ -22,13 +24,19 @@ export class PaymentController {
   }
 
   @Get('user/:userId')
-  findByUser(@Param('userId', ParseIntPipe) userId: number): Promise<Payment[]> {
-    return this.paymentService.findByUser(userId);
+  findByUser(
+    @Param('userId', ParseIntPipe) userId: number,
+    @Query() pageOptionsDto: PageOptionsDto,
+  ): Promise<ResponsePaginate<Payment>> {
+    return this.paymentService.findByUser(userId, pageOptionsDto);
   }
 
   @Get('course/:courseId')
-  findByCourse(@Param('courseId', ParseIntPipe) courseId: number): Promise<Payment[]> {
-    return this.paymentService.findByCourse(courseId);
+  findByCourse(
+    @Param('courseId', ParseIntPipe) courseId: number,
+    @Query() pageOptionsDto: PageOptionsDto,
+  ): Promise<ResponsePaginate<Payment>> {
+    return this.paymentService.findByCourse(courseId, pageOptionsDto);
   }
 
   @Post('process')

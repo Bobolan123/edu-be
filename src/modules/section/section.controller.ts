@@ -1,14 +1,16 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, ParseIntPipe, Query } from '@nestjs/common';
 import { SectionService } from './section.service';
 import { Section } from 'src/entities/section.entity';
+import { PageOptionsDto } from 'src/common/dtos/page-option.dto';
+import { ResponsePaginate } from 'src/common/dtos/response-paginate.dto';
 
 @Controller('sections')
 export class SectionController {
   constructor(private readonly sectionService: SectionService) {}
 
   @Get()
-  findAll(): Promise<Section[]> {
-    return this.sectionService.findAll();
+  findAll(@Query() pageOptionsDto: PageOptionsDto): Promise<ResponsePaginate<Section>> {
+    return this.sectionService.findAll(pageOptionsDto);
   }
 
   @Get(':id')
@@ -35,7 +37,10 @@ export class SectionController {
   }
 
   @Get('course/:courseId')
-  findByCourse(@Param('courseId', ParseIntPipe) courseId: number): Promise<Section[]> {
-    return this.sectionService.findByCourse(courseId);
+  findByCourse(
+    @Param('courseId', ParseIntPipe) courseId: number,
+    @Query() pageOptionsDto: PageOptionsDto,
+  ): Promise<ResponsePaginate<Section>> {
+    return this.sectionService.findByCourse(courseId, pageOptionsDto);
   }
 } 

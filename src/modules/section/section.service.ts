@@ -2,6 +2,9 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Section } from 'src/entities/section.entity';
+import { PageOptionsDto } from 'src/common/dtos/page-option.dto';
+import { PageMetaDto } from 'src/common/dtos/page-meta.dto';
+import { ResponsePaginate } from 'src/common/dtos/response-paginate.dto';
 
 @Injectable()
 export class SectionService {
@@ -10,10 +13,31 @@ export class SectionService {
     private sectionRepository: Repository<Section>,
   ) {}
 
-  async findAll(): Promise<Section[]> {
-    return this.sectionRepository.find({
-      relations: ['course', 'lessons'],
+  async findAll(pageOptionsDto: PageOptionsDto): Promise<ResponsePaginate<Section>> {
+    const queryBuilder = this.sectionRepository
+      .createQueryBuilder('section')
+      .leftJoinAndSelect('section.course', 'course')
+      .leftJoinAndSelect('section.lessons', 'lessons');
+
+    if (pageOptionsDto.search) {
+      queryBuilder.where('section.title LIKE :search OR course.title LIKE :search', {
+        search: `%${pageOptionsDto.search}%`,
+      });
+    }
+
+    queryBuilder
+      .orderBy(`section.${pageOptionsDto.orderBy}`, pageOptionsDto.order)
+      .skip(pageOptionsDto.skip)
+      .take(pageOptionsDto.take);
+
+    const [items, itemCount] = await queryBuilder.getManyAndCount();
+
+    const pageMetaDto = new PageMetaDto({
+      itemCount,
+      pageOptionsDto,
     });
+
+    return new ResponsePaginate(items, pageMetaDto, 'Sections retrieved successfully');
   }
 
   async findOne(id: number): Promise<Section> {
@@ -37,11 +61,31 @@ export class SectionService {
     await this.sectionRepository.delete(id);
   }
 
-  async findByCourse(courseId: number): Promise<Section[]> {
-    return this.sectionRepository.find({
-      where: { course: { id: courseId } },
-      relations: ['course', 'lessons'],
-      order: { order: 'ASC' },
+  async findByCourse(courseId: number, pageOptionsDto: PageOptionsDto): Promise<ResponsePaginate<Section>> {
+    const queryBuilder = this.sectionRepository
+      .createQueryBuilder('section')
+      .leftJoinAndSelect('section.course', 'course')
+      .leftJoinAndSelect('section.lessons', 'lessons')
+      .where('course.id = :courseId', { courseId });
+
+    if (pageOptionsDto.search) {
+      queryBuilder.andWhere('section.title LIKE :search', {
+        search: `%${pageOptionsDto.search}%`,
+      });
+    }
+
+    queryBuilder
+      .orderBy(`section.${pageOptionsDto.orderBy}`, pageOptionsDto.order)
+      .skip(pageOptionsDto.skip)
+      .take(pageOptionsDto.take);
+
+    const [items, itemCount] = await queryBuilder.getManyAndCount();
+
+    const pageMetaDto = new PageMetaDto({
+      itemCount,
+      pageOptionsDto,
     });
+
+    return new ResponsePaginate(items, pageMetaDto, 'Course sections retrieved successfully');
   }
 } 

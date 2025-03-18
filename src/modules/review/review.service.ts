@@ -2,6 +2,9 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Review } from 'src/entities/review.entity';
+import { PageOptionsDto } from 'src/common/dtos/page-option.dto';
+import { PageMetaDto } from 'src/common/dtos/page-meta.dto';
+import { ResponsePaginate } from 'src/common/dtos/response-paginate.dto';
 
 @Injectable()
 export class ReviewService {
@@ -10,12 +13,33 @@ export class ReviewService {
     private reviewRepository: Repository<Review>,
   ) {}
 
-  async findAll(): Promise<Review[]> {
-    return this.reviewRepository.find({
-      relations: ['user', 'course'],
-    });
-  }
+  async findAll(pageOptionsDto: PageOptionsDto): Promise<ResponsePaginate<Review>> {
+    const queryBuilder = this.reviewRepository
+      .createQueryBuilder('review')
+      .leftJoinAndSelect('review.user', 'user')
+      .leftJoinAndSelect('review.course', 'course');
 
+    if (pageOptionsDto.search) {
+      queryBuilder.where('review.content LIKE :search OR course.title LIKE :search', {
+        search: `%${pageOptionsDto.search}%`,
+      });
+    }
+
+    queryBuilder
+      .orderBy(`review.${pageOptionsDto.orderBy}`, pageOptionsDto.order)
+      .skip(pageOptionsDto.skip)
+      .take(pageOptionsDto.take);
+
+    const [items, itemCount] = await queryBuilder.getManyAndCount();
+
+    const pageMetaDto = new PageMetaDto({
+      itemCount,
+      pageOptionsDto,
+    });
+
+    return new ResponsePaginate(items, pageMetaDto, 'Reviews retrieved successfully');
+  }
+ 
   async findOne(id: number): Promise<Review> {
     return this.reviewRepository.findOne({
       where: { id },
@@ -40,17 +64,59 @@ export class ReviewService {
     await this.reviewRepository.delete(id);
   }
 
-  async findByCourse(courseId: number): Promise<Review[]> {
-    return this.reviewRepository.find({
-      where: { course: { id: courseId } },
-      relations: ['user', 'course'],
+  async findByCourse(courseId: number, pageOptionsDto: PageOptionsDto): Promise<ResponsePaginate<Review>> {
+    const queryBuilder = this.reviewRepository
+      .createQueryBuilder('review')
+      .leftJoinAndSelect('review.user', 'user')
+      .leftJoinAndSelect('review.course', 'course')
+      .where('course.id = :courseId', { courseId });
+
+    if (pageOptionsDto.search) {
+      queryBuilder.andWhere('review.content LIKE :search', {
+        search: `%${pageOptionsDto.search}%`,
+      });
+    }
+
+    queryBuilder
+      .orderBy(`review.${pageOptionsDto.orderBy}`, pageOptionsDto.order)
+      .skip(pageOptionsDto.skip)
+      .take(pageOptionsDto.take);
+
+    const [items, itemCount] = await queryBuilder.getManyAndCount();
+
+    const pageMetaDto = new PageMetaDto({
+      itemCount,
+      pageOptionsDto,
     });
+
+    return new ResponsePaginate(items, pageMetaDto, 'Course reviews retrieved successfully');
   }
 
-  async findByUser(userId: number): Promise<Review[]> {
-    return this.reviewRepository.find({
-      where: { user: { id: userId } },
-      relations: ['user', 'course'],
+  async findByUser(userId: number, pageOptionsDto: PageOptionsDto): Promise<ResponsePaginate<Review>> {
+    const queryBuilder = this.reviewRepository
+      .createQueryBuilder('review')
+      .leftJoinAndSelect('review.user', 'user')
+      .leftJoinAndSelect('review.course', 'course')
+      .where('user.id = :userId', { userId });
+
+    if (pageOptionsDto.search) {
+      queryBuilder.andWhere('review.content LIKE :search OR course.title LIKE :search', {
+        search: `%${pageOptionsDto.search}%`,
+      });
+    }
+
+    queryBuilder
+      .orderBy(`review.${pageOptionsDto.orderBy}`, pageOptionsDto.order)
+      .skip(pageOptionsDto.skip)
+      .take(pageOptionsDto.take);
+
+    const [items, itemCount] = await queryBuilder.getManyAndCount();
+
+    const pageMetaDto = new PageMetaDto({
+      itemCount,
+      pageOptionsDto,
     });
+
+    return new ResponsePaginate(items, pageMetaDto, 'User reviews retrieved successfully');
   }
 } 

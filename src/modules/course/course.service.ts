@@ -27,6 +27,7 @@ export class CourseService {
 
   async findAll(): Promise<Course[]> {
     return await this.courseRepository.find({
+      relations: ['category', 'sections', 'reviews'],
       order: { id: 'ASC' },
     });
   }

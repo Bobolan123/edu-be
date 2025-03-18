@@ -11,7 +11,7 @@ export class ResponsePaginate<T> {
 
     constructor(data: T[], meta: PageMetaDto, message: string) {
         this.data = data;
-        this.meta = meta;
+        this.meta = meta; 
         this.message = message;
     }
 }

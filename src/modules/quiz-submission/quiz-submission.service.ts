@@ -2,6 +2,9 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { QuizSubmission } from 'src/entities/quiz_submission.entity';
+import { PageOptionsDto } from 'src/common/dtos/page-option.dto';
+import { PageMetaDto } from 'src/common/dtos/page-meta.dto';
+import { ResponsePaginate } from 'src/common/dtos/response-paginate.dto';
 
 @Injectable()
 export class QuizSubmissionService {
@@ -10,10 +13,31 @@ export class QuizSubmissionService {
     private quizSubmissionRepository: Repository<QuizSubmission>,
   ) {}
 
-  async findAll(): Promise<QuizSubmission[]> {
-    return this.quizSubmissionRepository.find({
-      relations: ['user', 'quiz'],
+  async findAll(pageOptionsDto: PageOptionsDto): Promise<ResponsePaginate<QuizSubmission>> {
+    const queryBuilder = this.quizSubmissionRepository
+      .createQueryBuilder('quizSubmission')
+      .leftJoinAndSelect('quizSubmission.user', 'user')
+      .leftJoinAndSelect('quizSubmission.quiz', 'quiz');
+
+    if (pageOptionsDto.search) {
+      queryBuilder.where('user.name LIKE :search OR quiz.title LIKE :search', {
+        search: `%${pageOptionsDto.search}%`,
+      });
+    }
+
+    queryBuilder
+      .orderBy(`quizSubmission.${pageOptionsDto.orderBy}`, pageOptionsDto.order)
+      .skip(pageOptionsDto.skip)
+      .take(pageOptionsDto.take);
+
+    const [items, itemCount] = await queryBuilder.getManyAndCount();
+
+    const pageMetaDto = new PageMetaDto({
+      itemCount,
+      pageOptionsDto,
     });
+
+    return new ResponsePaginate(items, pageMetaDto, 'Quiz submissions retrieved successfully');
   }
 
   async findOne(id: number): Promise<QuizSubmission> {
@@ -28,18 +52,60 @@ export class QuizSubmissionService {
     return this.quizSubmissionRepository.save(newSubmission);
   }
 
-  async findByUser(userId: number): Promise<QuizSubmission[]> {
-    return this.quizSubmissionRepository.find({
-      where: { user: { id: userId } },
-      relations: ['user', 'quiz'],
+  async findByUser(userId: number, pageOptionsDto: PageOptionsDto): Promise<ResponsePaginate<QuizSubmission>> {
+    const queryBuilder = this.quizSubmissionRepository
+      .createQueryBuilder('quizSubmission')
+      .leftJoinAndSelect('quizSubmission.user', 'user')
+      .leftJoinAndSelect('quizSubmission.quiz', 'quiz')
+      .where('user.id = :userId', { userId });
+
+    if (pageOptionsDto.search) {
+      queryBuilder.andWhere('quiz.title LIKE :search', {
+        search: `%${pageOptionsDto.search}%`,
+      });
+    }
+
+    queryBuilder
+      .orderBy(`quizSubmission.${pageOptionsDto.orderBy}`, pageOptionsDto.order)
+      .skip(pageOptionsDto.skip)
+      .take(pageOptionsDto.take);
+
+    const [items, itemCount] = await queryBuilder.getManyAndCount();
+
+    const pageMetaDto = new PageMetaDto({
+      itemCount,
+      pageOptionsDto,
     });
+
+    return new ResponsePaginate(items, pageMetaDto, 'User quiz submissions retrieved successfully');
   }
 
-  async findByQuiz(quizId: number): Promise<QuizSubmission[]> {
-    return this.quizSubmissionRepository.find({
-      where: { quiz: { id: quizId } },
-      relations: ['user', 'quiz'],
+  async findByQuiz(quizId: number, pageOptionsDto: PageOptionsDto): Promise<ResponsePaginate<QuizSubmission>> {
+    const queryBuilder = this.quizSubmissionRepository
+      .createQueryBuilder('quizSubmission')
+      .leftJoinAndSelect('quizSubmission.user', 'user')
+      .leftJoinAndSelect('quizSubmission.quiz', 'quiz')
+      .where('quiz.id = :quizId', { quizId });
+
+    if (pageOptionsDto.search) {
+      queryBuilder.andWhere('user.name LIKE :search', {
+        search: `%${pageOptionsDto.search}%`,
+      });
+    }
+
+    queryBuilder
+      .orderBy(`quizSubmission.${pageOptionsDto.orderBy}`, pageOptionsDto.order)
+      .skip(pageOptionsDto.skip)
+      .take(pageOptionsDto.take);
+
+    const [items, itemCount] = await queryBuilder.getManyAndCount();
+
+    const pageMetaDto = new PageMetaDto({
+      itemCount,
+      pageOptionsDto,
     });
+
+    return new ResponsePaginate(items, pageMetaDto, 'Quiz submissions for quiz retrieved successfully');
   }
 
   async findByUserAndQuiz(userId: number, quizId: number): Promise<QuizSubmission[]> {

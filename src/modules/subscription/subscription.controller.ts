@@ -1,14 +1,16 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, ParseIntPipe, Query } from '@nestjs/common';
 import { SubscriptionService } from './subscription.service';
 import { Subscription } from 'src/entities/subscription.entity';
+import { PageOptionsDto } from 'src/common/dtos/page-option.dto';
+import { ResponsePaginate } from 'src/common/dtos/response-paginate.dto';
 
 @Controller('subscriptions')
 export class SubscriptionController {
   constructor(private readonly subscriptionService: SubscriptionService) {}
 
   @Get()
-  findAll(): Promise<Subscription[]> {
-    return this.subscriptionService.findAll();
+  findAll(@Query() pageOptionsDto: PageOptionsDto): Promise<ResponsePaginate<Subscription>> {
+    return this.subscriptionService.findAll(pageOptionsDto);
   }
 
   @Get(':id')
@@ -35,8 +37,11 @@ export class SubscriptionController {
   }
 
   @Get('user/:userId')
-  findByUser(@Param('userId', ParseIntPipe) userId: number): Promise<Subscription[]> {
-    return this.subscriptionService.findByUser(userId);
+  findByUser(
+    @Param('userId', ParseIntPipe) userId: number,
+    @Query() pageOptionsDto: PageOptionsDto,
+  ): Promise<ResponsePaginate<Subscription>> {
+    return this.subscriptionService.findByUser(userId, pageOptionsDto);
   }
 
   @Get('user/:userId/active')

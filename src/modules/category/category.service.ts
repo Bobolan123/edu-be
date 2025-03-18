@@ -2,6 +2,9 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Category } from 'src/entities/category.entity';
+import { PageOptionsDto } from 'src/common/dtos/page-option.dto';
+import { PageMetaDto } from 'src/common/dtos/page-meta.dto';
+import { ResponsePaginate } from 'src/common/dtos/response-paginate.dto';
 
 @Injectable()
 export class CategoryService {
@@ -10,8 +13,26 @@ export class CategoryService {
     private categoryRepository: Repository<Category>,
   ) {}
 
-  async findAll(): Promise<Category[]> {
-    return this.categoryRepository.find();
+  async findAll(pageOptionsDto: PageOptionsDto): Promise<ResponsePaginate<Category>> {
+    const queryBuilder = this.categoryRepository.createQueryBuilder('category');
+
+    if (pageOptionsDto.search) {
+      queryBuilder.where('category.name LIKE :search', { search: `%${pageOptionsDto.search}%` });
+    }
+
+    queryBuilder
+      .orderBy(`category.${pageOptionsDto.orderBy}`, pageOptionsDto.order)
+      .skip(pageOptionsDto.skip)
+      .take(pageOptionsDto.take);
+
+    const [items, itemCount] = await queryBuilder.getManyAndCount();
+
+    const pageMetaDto = new PageMetaDto({
+      itemCount,
+      pageOptionsDto,
+    });
+
+    return new ResponsePaginate(items, pageMetaDto, 'Categories retrieved successfully');
   }
 
   async findOne(id: number): Promise<Category> {

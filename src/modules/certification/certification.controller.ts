@@ -1,14 +1,16 @@
-import { Controller, Get, Post, Param, Body, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Param, Body, ParseIntPipe, Query } from '@nestjs/common';
 import { CertificationService } from './certification.service';
 import { Certification } from 'src/entities/certification.entity';
+import { PageOptionsDto } from 'src/common/dtos/page-option.dto';
+import { ResponsePaginate } from 'src/common/dtos/response-paginate.dto';
 
 @Controller('certifications')
 export class CertificationController {
   constructor(private readonly certificationService: CertificationService) {}
 
   @Get()
-  findAll(): Promise<Certification[]> {
-    return this.certificationService.findAll();
+  findAll(@Query() pageOptionsDto: PageOptionsDto): Promise<ResponsePaginate<Certification>> {
+    return this.certificationService.findAll(pageOptionsDto);
   }
 
   @Get(':id')
@@ -22,13 +24,19 @@ export class CertificationController {
   }
 
   @Get('user/:userId')
-  findByUser(@Param('userId', ParseIntPipe) userId: number): Promise<Certification[]> {
-    return this.certificationService.findByUser(userId);
+  findByUser(
+    @Param('userId', ParseIntPipe) userId: number,
+    @Query() pageOptionsDto: PageOptionsDto,
+  ): Promise<ResponsePaginate<Certification>> {
+    return this.certificationService.findByUser(userId, pageOptionsDto);
   }
 
   @Get('course/:courseId')
-  findByCourse(@Param('courseId', ParseIntPipe) courseId: number): Promise<Certification[]> {
-    return this.certificationService.findByCourse(courseId);
+  findByCourse(
+    @Param('courseId', ParseIntPipe) courseId: number,
+    @Query() pageOptionsDto: PageOptionsDto,
+  ): Promise<ResponsePaginate<Certification>> {
+    return this.certificationService.findByCourse(courseId, pageOptionsDto);
   }
 
   @Get('verify/:id')

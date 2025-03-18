@@ -21,7 +21,10 @@ export class EnrollmentService {
   ) {}
 
   async findAll(): Promise<Enrollment[]> {
-    return this.enrollmentRepository.find({ relations: ['course', 'user'] });
+    return this.enrollmentRepository.find({
+      relations: ['course', 'user'],
+      order: { id: 'ASC' }
+    });
   }
 
   async findOne(id: number): Promise<Enrollment> {

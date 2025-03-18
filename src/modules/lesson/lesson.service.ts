@@ -18,7 +18,10 @@ export class LessonService {
 
   // ✅ Get all lessons with section details
   async findAll(): Promise<Lesson[]> {
-    return this.lessonRepository.find({ relations: ['section'] });
+    return this.lessonRepository.find({ 
+      relations: ['section'],
+      order: { id: 'ASC' }
+    });
   }
 
   // ✅ Get a single lesson by ID with section details

@@ -2,6 +2,9 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Subscription } from 'src/entities/subscription.entity';
+import { PageOptionsDto } from 'src/common/dtos/page-option.dto';
+import { PageMetaDto } from 'src/common/dtos/page-meta.dto';
+import { ResponsePaginate } from 'src/common/dtos/response-paginate.dto';
 
 @Injectable()
 export class SubscriptionService {
@@ -10,10 +13,30 @@ export class SubscriptionService {
     private subscriptionRepository: Repository<Subscription>,
   ) {}
 
-  async findAll(): Promise<Subscription[]> {
-    return this.subscriptionRepository.find({
-      relations: ['user'],
+  async findAll(pageOptionsDto: PageOptionsDto): Promise<ResponsePaginate<Subscription>> {
+    const queryBuilder = this.subscriptionRepository
+      .createQueryBuilder('subscription')
+      .leftJoinAndSelect('subscription.user', 'user');
+
+    if (pageOptionsDto.search) {
+      queryBuilder.where('user.name LIKE :search', {
+        search: `%${pageOptionsDto.search}%`,
+      });
+    }
+
+    queryBuilder
+      .orderBy(`subscription.${pageOptionsDto.orderBy}`, pageOptionsDto.order)
+      .skip(pageOptionsDto.skip)
+      .take(pageOptionsDto.take);
+
+    const [items, itemCount] = await queryBuilder.getManyAndCount();
+
+    const pageMetaDto = new PageMetaDto({
+      itemCount,
+      pageOptionsDto,
     });
+
+    return new ResponsePaginate(items, pageMetaDto, 'Subscriptions retrieved successfully');
   }
 
   async findOne(id: number): Promise<Subscription> {
@@ -40,17 +63,38 @@ export class SubscriptionService {
     await this.subscriptionRepository.delete(id);
   }
 
-  async findByUser(userId: number): Promise<Subscription[]> {
-    return this.subscriptionRepository.find({
-      where: { user: { id: userId } },
-      relations: ['user'],
+  async findByUser(userId: number, pageOptionsDto: PageOptionsDto): Promise<ResponsePaginate<Subscription>> {
+    const queryBuilder = this.subscriptionRepository
+      .createQueryBuilder('subscription')
+      .leftJoinAndSelect('subscription.user', 'user')
+      .where('user.id = :userId', { userId });
+
+    if (pageOptionsDto.search) {
+      queryBuilder.andWhere('subscription.type LIKE :search', {
+        search: `%${pageOptionsDto.search}%`,
+      });
+    }
+
+    queryBuilder
+      .orderBy(`subscription.${pageOptionsDto.orderBy}`, pageOptionsDto.order)
+      .skip(pageOptionsDto.skip)
+      .take(pageOptionsDto.take);
+
+    const [items, itemCount] = await queryBuilder.getManyAndCount();
+
+    const pageMetaDto = new PageMetaDto({
+      itemCount,
+      pageOptionsDto,
     });
+
+    return new ResponsePaginate(items, pageMetaDto, 'User subscriptions retrieved successfully');
   }
 
   async findActiveSubscription(userId: number): Promise<Subscription> {
     return this.subscriptionRepository.findOne({
       where: {
         user: { id: userId },
+        status: 'active',
       },
       relations: ['user'],
     });

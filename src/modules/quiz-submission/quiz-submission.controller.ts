@@ -1,14 +1,16 @@
-import { Controller, Get, Post, Body, Param, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, ParseIntPipe, Query } from '@nestjs/common';
 import { QuizSubmissionService } from './quiz-submission.service';
 import { QuizSubmission } from 'src/entities/quiz_submission.entity';
+import { PageOptionsDto } from 'src/common/dtos/page-option.dto';
+import { ResponsePaginate } from 'src/common/dtos/response-paginate.dto';
 
 @Controller('quiz-submissions')
 export class QuizSubmissionController {
   constructor(private readonly quizSubmissionService: QuizSubmissionService) {}
 
   @Get()
-  findAll(): Promise<QuizSubmission[]> {
-    return this.quizSubmissionService.findAll();
+  findAll(@Query() pageOptionsDto: PageOptionsDto): Promise<ResponsePaginate<QuizSubmission>> {
+    return this.quizSubmissionService.findAll(pageOptionsDto);
   }
 
   @Get(':id')
@@ -22,13 +24,19 @@ export class QuizSubmissionController {
   }
 
   @Get('user/:userId')
-  findByUser(@Param('userId', ParseIntPipe) userId: number): Promise<QuizSubmission[]> {
-    return this.quizSubmissionService.findByUser(userId);
+  findByUser(
+    @Param('userId', ParseIntPipe) userId: number,
+    @Query() pageOptionsDto: PageOptionsDto,
+  ): Promise<ResponsePaginate<QuizSubmission>> {
+    return this.quizSubmissionService.findByUser(userId, pageOptionsDto);
   }
 
   @Get('quiz/:quizId')
-  findByQuiz(@Param('quizId', ParseIntPipe) quizId: number): Promise<QuizSubmission[]> {
-    return this.quizSubmissionService.findByQuiz(quizId);
+  findByQuiz(
+    @Param('quizId', ParseIntPipe) quizId: number,
+    @Query() pageOptionsDto: PageOptionsDto,
+  ): Promise<ResponsePaginate<QuizSubmission>> {
+    return this.quizSubmissionService.findByQuiz(quizId, pageOptionsDto);
   }
 
   @Get('user/:userId/quiz/:quizId')

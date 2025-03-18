@@ -1,14 +1,16 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, ParseIntPipe, Query } from '@nestjs/common';
 import { QuestionService } from './question.service';
 import { Question } from 'src/entities/question.entity';
+import { PageOptionsDto } from 'src/common/dtos/page-option.dto';
+import { ResponsePaginate } from 'src/common/dtos/response-paginate.dto';
 
 @Controller('questions')
 export class QuestionController {
   constructor(private readonly questionService: QuestionService) {}
 
   @Get()
-  findAll(): Promise<Question[]> {
-    return this.questionService.findAll();
+  findAll(@Query() pageOptionsDto: PageOptionsDto): Promise<ResponsePaginate<Question>> {
+    return this.questionService.findAll(pageOptionsDto);
   }
 
   @Get(':id')
@@ -35,7 +37,10 @@ export class QuestionController {
   }
 
   @Get('quiz/:quizId')
-  findByQuiz(@Param('quizId', ParseIntPipe) quizId: number): Promise<Question[]> {
-    return this.questionService.findByQuiz(quizId);
+  findByQuiz(
+    @Param('quizId', ParseIntPipe) quizId: number,
+    @Query() pageOptionsDto: PageOptionsDto,
+  ): Promise<ResponsePaginate<Question>> {
+    return this.questionService.findByQuiz(quizId, pageOptionsDto);
   }
 } 

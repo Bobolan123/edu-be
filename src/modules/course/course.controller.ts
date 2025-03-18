@@ -23,7 +23,7 @@ export class CourseController {
     return this.courseService.create(createCourseDto);
   }
 
-  @Get('')
+  @Get()
   @ResponseMessage('Fetch all Courses')
   findAll() {
     return this.courseService.findAll();
