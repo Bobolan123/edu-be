@@ -1,46 +1,52 @@
-import { Controller, Get, Post, Body, Param, ParseIntPipe, Query } from '@nestjs/common';
+import { Controller, Post, Get, Body, Query, Param, UseGuards, Req } from '@nestjs/common';
 import { PaymentService } from './payment.service';
-import { Payment } from 'src/entities/payment.entity';
-import { PageOptionsDto } from 'src/common/dtos/page-option.dto';
-import { ResponsePaginate } from 'src/common/dtos/response-paginate.dto';
+import { CreatePaymentDto } from './dto/create-payment.dto';
+import { PageOptionsDto } from '../../common/dto/page-options.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { Payment, PaymentMethod } from '../../entities/payment.entity';
+import { Request } from 'express';
+import { User } from '../../entities/user.entity';
+
+interface RequestWithUser extends Request {
+  user: User;
+}
 
 @Controller('payments')
+@UseGuards(JwtAuthGuard)
 export class PaymentController {
   constructor(private readonly paymentService: PaymentService) {}
 
+  @Post()
+  async createPayment(
+    @Body() createPaymentDto: CreatePaymentDto,
+    @Req() req: RequestWithUser,
+  ): Promise<Payment & { paymentUrl: string }> {
+    return this.paymentService.createPayment(createPaymentDto, req.user.id.toString());
+  }
+
   @Get()
-  findAll(@Query() pageOptionsDto: PageOptionsDto): Promise<ResponsePaginate<Payment>> {
+  async findAll(@Query() pageOptionsDto: PageOptionsDto) {
     return this.paymentService.findAll(pageOptionsDto);
   }
 
+  @Get('user')
+  async findByUser(
+    @Query() pageOptionsDto: PageOptionsDto,
+    @Req() req: RequestWithUser,
+  ) {
+    return this.paymentService.findByUser(req.user.id.toString(), pageOptionsDto);
+  }
+
   @Get(':id')
-  findOne(@Param('id', ParseIntPipe) id: number): Promise<Payment> {
+  async findOne(@Param('id') id: string) {
     return this.paymentService.findOne(id);
   }
 
-  @Post()
-  create(@Body() payment: Partial<Payment>): Promise<Payment> {
-    return this.paymentService.create(payment);
-  }
-
-  @Get('user/:userId')
-  findByUser(
-    @Param('userId', ParseIntPipe) userId: number,
-    @Query() pageOptionsDto: PageOptionsDto,
-  ): Promise<ResponsePaginate<Payment>> {
-    return this.paymentService.findByUser(userId, pageOptionsDto);
-  }
-
-  @Get('course/:courseId')
-  findByCourse(
-    @Param('courseId', ParseIntPipe) courseId: number,
-    @Query() pageOptionsDto: PageOptionsDto,
-  ): Promise<ResponsePaginate<Payment>> {
-    return this.paymentService.findByCourse(courseId, pageOptionsDto);
-  }
-
-  @Post('process')
-  processPayment(@Body() payment: Partial<Payment>): Promise<Payment> {
-    return this.paymentService.processPayment(payment);
+  @Post('callback/:method')
+  async handlePaymentCallback(
+    @Param('method') method: PaymentMethod,
+    @Body() params: any,
+  ) {
+    return this.paymentService.handlePaymentCallback(method, params);
   }
 } 

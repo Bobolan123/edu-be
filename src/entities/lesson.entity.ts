@@ -12,8 +12,11 @@ export class Lesson {
   @Column('text')
   description: string;
 
-  @Column()
+  @Column({ nullable: true })
   video_url: string;
+
+  @Column({ nullable: true })
+  stream_recording_url: string;
 
   @Column()
   order: number;

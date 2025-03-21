@@ -4,12 +4,14 @@ import { Repository } from 'typeorm';
 import { Course } from '../../entities/course.entity';
 import { CreateCourseDto } from './dto/create-course.dto';
 import { UpdateCourseDto } from './dto/update-course.dto';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
 
 @Injectable()
 export class CourseService {
   constructor(
     @InjectRepository(Course)
     private readonly courseRepository: Repository<Course>,
+    private cloudinaryService: CloudinaryService,
   ) {}
 
   async create(createCourseDto: CreateCourseDto) {
@@ -62,6 +64,17 @@ export class CourseService {
     }
 
     await this.courseRepository.delete(id);
+  }
+
+  async uploadThumbnail(id: number, file: Express.Multer.File): Promise<Course> {
+    const course = await this.findOne(id);
+    if (!course) {
+      throw new BadRequestException('Course not found');
+    }
+
+    const thumbnailUrl = await this.cloudinaryService.uploadImage(file, 'course-thumbnails');
+    course.thumbnail_url = thumbnailUrl;
+    return this.courseRepository.save(course);
   }
 }
 

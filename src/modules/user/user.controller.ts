@@ -8,6 +8,7 @@ import {
   Delete,
   UseInterceptors,
   UseGuards,
+  UploadedFile,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -16,6 +17,7 @@ import { ResponseMessage } from 'src/decorator/responseMessage.decorator';
 import { Permissions } from 'src/decorator/requirePermission.decorator';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 export interface IUpdatePassword {
   id:number,
@@ -63,5 +65,16 @@ export class UserController {
   @Delete(':id') 
   remove(@Param('id') id: string) {
     return this.userService.remove(+id);
+  }
+
+  @Post(':id/avatar')
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(FileInterceptor('avatar'))
+  @ResponseMessage('Upload user avatar')
+  async uploadAvatar(
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    return this.userService.uploadAvatar(+id, file);
   }
 }

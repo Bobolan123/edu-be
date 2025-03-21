@@ -72,4 +72,7 @@ export class Course {
   @ManyToMany(() => Category, (category) => category.courses, { cascade: true })
   @JoinTable() 
   categories: Category[];
+
+  @Column({ nullable: true })
+  thumbnail_url: string;
 }

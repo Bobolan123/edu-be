@@ -7,11 +7,13 @@ import {
   Param,
   Delete,
   UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
 import { CourseService } from './course.service';
 import { CreateCourseDto } from './dto/create-course.dto';
 import { ResponseMessage } from 'src/decorator/responseMessage.decorator';
 import { UpdateCourseDto } from './dto/update-course.dto';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @Controller('course')
 export class CourseController {
@@ -45,5 +47,15 @@ export class CourseController {
   @ResponseMessage('Delete a Course')
   remove(@Param('id') id: string) {
     return this.courseService.remove(+id);
+  }
+
+  @Post(':id/thumbnail')
+  @UseInterceptors(FileInterceptor('thumbnail'))
+  @ResponseMessage('Upload course thumbnail')
+  async uploadThumbnail(
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    return this.courseService.uploadThumbnail(+id, file);
   }
 }

@@ -5,6 +5,7 @@ import { Lesson } from 'src/entities/lesson.entity';
 import { CreateLessonDto } from './dto/create-lesson.dto';
 import { UpdateLessonDto } from './dto/update-lesson.dto';
 import { Section } from 'src/entities/section.entity';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
 
 @Injectable()
 export class LessonService {
@@ -14,6 +15,8 @@ export class LessonService {
 
     @InjectRepository(Section)
     private sectionRepository: Repository<Section>,
+
+    private cloudinaryService: CloudinaryService,
   ) {}
 
   // ✅ Get all lessons with section details
@@ -77,5 +80,27 @@ export class LessonService {
   async remove(id: number): Promise<void> {
     const lesson = await this.findOne(id);
     await this.lessonRepository.remove(lesson);
+  }
+
+  async uploadVideo(id: number, file: Express.Multer.File): Promise<Lesson> {
+    const lesson = await this.findOne(id);
+    if (!lesson) {
+      throw new NotFoundException(`Lesson with ID ${id} not found`);
+    }
+
+    const videoUrl = await this.cloudinaryService.uploadVideo(file, 'lesson-videos');
+    lesson.video_url = videoUrl;
+    return this.lessonRepository.save(lesson);
+  }
+
+  async saveStreamRecording(id: number, streamUrl: string): Promise<Lesson> {
+    const lesson = await this.findOne(id);
+    if (!lesson) {
+      throw new NotFoundException(`Lesson with ID ${id} not found`);
+    }
+
+    const recordingUrl = await this.cloudinaryService.uploadStream(streamUrl, 'stream-recordings');
+    lesson.stream_recording_url = recordingUrl;
+    return this.lessonRepository.save(lesson);
   }
 }

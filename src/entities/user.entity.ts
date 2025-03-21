@@ -54,6 +54,9 @@ export class User {
   @Column({ type: 'boolean', nullable: true })
   isActive: boolean;
 
+  @Column({ nullable: true })
+  avatar_url: string;
+
   @ManyToOne(() => Role, (role) => role.users,{nullable:true})
   role: Role;
 

@@ -1,8 +1,9 @@
-import { Controller, Get, Post, Param, Body, Put, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Param, Body, Put, Delete, UseInterceptors, UploadedFile } from '@nestjs/common';
 import { LessonService } from './lesson.service';
 import { Lesson } from 'src/entities/lesson.entity';
 import { CreateLessonDto } from './dto/create-lesson.dto';
 import { UpdateLessonDto } from './dto/update-lesson.dto';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @Controller('lessons')
 export class LessonController {
@@ -34,5 +35,22 @@ export class LessonController {
   @Delete(':id')
   async remove(@Param('id') id: string): Promise<void> {
     return this.lessonService.remove(+id);
+  }
+
+  @Post(':id/video')
+  @UseInterceptors(FileInterceptor('video'))
+  async uploadVideo(
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
+  ): Promise<Lesson> {
+    return this.lessonService.uploadVideo(+id, file);
+  }
+
+  @Post(':id/stream-recording')
+  async saveStreamRecording(
+    @Param('id') id: string,
+    @Body('streamUrl') streamUrl: string,
+  ): Promise<Lesson> {
+    return this.lessonService.saveStreamRecording(+id, streamUrl);
   }
 }

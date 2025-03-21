@@ -10,6 +10,7 @@ import { AuthChangePassword, AuthVerifiedOtp } from 'src/auth/dto/auth.dto';
 import * as dayjs from 'dayjs';
 import { MailerService } from '@nest-modules/mailer';
 import { IUpdatePassword } from './user.controller';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
 
 @Injectable()
 export class UserService {
@@ -17,6 +18,7 @@ export class UserService {
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     private mailerService: MailerService,
+    private cloudinaryService: CloudinaryService,
   ) {}
 
   generateOTP() {
@@ -244,5 +246,16 @@ export class UserService {
     }
 
     return this.userRepository.delete(id);
+  }
+
+  async uploadAvatar(id: number, file: Express.Multer.File): Promise<User> {
+    const user = await this.findOne(id);
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    const avatarUrl = await this.cloudinaryService.uploadImage(file, 'avatars');
+    user.avatar_url = avatarUrl;
+    return this.userRepository.save(user);
   }
 }

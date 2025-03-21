@@ -39,7 +39,7 @@ export class ReviewService {
 
     return new ResponsePaginate(items, pageMetaDto, 'Reviews retrieved successfully');
   }
- 
+
   async findOne(id: number): Promise<Review> {
     return this.reviewRepository.findOne({
       where: { id },
