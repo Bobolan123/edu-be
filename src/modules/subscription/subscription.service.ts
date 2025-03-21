@@ -36,7 +36,7 @@ export class SubscriptionService {
       pageOptionsDto,
     });
 
-    return new ResponsePaginate(items, pageMetaDto, 'Subscriptions retrieved successfully');
+    return { data: items, meta: pageMetaDto };
   }
 
   async findOne(id: number): Promise<Subscription> {
@@ -87,7 +87,7 @@ export class SubscriptionService {
       pageOptionsDto,
     });
 
-    return new ResponsePaginate(items, pageMetaDto, 'User subscriptions retrieved successfully');
+    return { data: items, meta: pageMetaDto };
   }
 
   async findActiveSubscription(userId: number): Promise<Subscription> {

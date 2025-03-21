@@ -7,11 +7,9 @@ export class ResponsePaginate<T> {
 
     readonly meta: PageMetaDto;
 
-    readonly message: string;
 
-    constructor(data: T[], meta: PageMetaDto, message: string) {
+    constructor(data: T[], meta: PageMetaDto) {
         this.data = data;
         this.meta = meta; 
-        this.message = message;
     }
 }

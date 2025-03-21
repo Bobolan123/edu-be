@@ -36,7 +36,7 @@ export class QuestionService {
       pageOptionsDto,
     });
 
-    return new ResponsePaginate(items, pageMetaDto, 'Questions retrieved successfully');
+    return { data: items, meta: pageMetaDto };
   }
 
   async findOne(id: number): Promise<Question> {
@@ -84,6 +84,6 @@ export class QuestionService {
       pageOptionsDto,
     });
 
-    return new ResponsePaginate(items, pageMetaDto, 'Quiz questions retrieved successfully');
+    return { data: items, meta: pageMetaDto };
   }
 } 

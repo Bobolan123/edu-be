@@ -37,7 +37,7 @@ export class SectionService {
       pageOptionsDto,
     });
 
-    return new ResponsePaginate(items, pageMetaDto, 'Sections retrieved successfully');
+    return { data: items, meta: pageMetaDto };
   }
 
   async findOne(id: number): Promise<Section> {
@@ -61,31 +61,10 @@ export class SectionService {
     await this.sectionRepository.delete(id);
   }
 
-  async findByCourse(courseId: number, pageOptionsDto: PageOptionsDto): Promise<ResponsePaginate<Section>> {
-    const queryBuilder = this.sectionRepository
-      .createQueryBuilder('section')
-      .leftJoinAndSelect('section.course', 'course')
-      .leftJoinAndSelect('section.lessons', 'lessons')
-      .where('course.id = :courseId', { courseId });
-
-    if (pageOptionsDto.search) {
-      queryBuilder.andWhere('section.title LIKE :search', {
-        search: `%${pageOptionsDto.search}%`,
-      });
-    }
-
-    queryBuilder
-      .orderBy(`section.${pageOptionsDto.orderBy}`, pageOptionsDto.order)
-      .skip(pageOptionsDto.skip)
-      .take(pageOptionsDto.take);
-
-    const [items, itemCount] = await queryBuilder.getManyAndCount();
-
-    const pageMetaDto = new PageMetaDto({
-      itemCount,
-      pageOptionsDto,
+  async findByCourse(courseId: number): Promise<Section[]> {
+    return  await this.sectionRepository.find({
+      where: { course: { id: courseId } },
+      relations: ['lessons'],
     });
-
-    return new ResponsePaginate(items, pageMetaDto, 'Course sections retrieved successfully');
   }
 } 

@@ -10,9 +10,9 @@ import { Certification } from 'src/entities/certification.entity';
 import { Payment } from 'src/entities/payment.entity';
 import { Category } from 'src/entities/category.entity';
 import { Section } from 'src/entities/section.entity';
-
+import { CloudinaryModule } from '../cloudinary/cloudinary.module';
 @Module({
-  imports: [TypeOrmModule.forFeature([Course, Section, Lesson, Quiz, Review, Certification, Payment, Category])],
+  imports: [TypeOrmModule.forFeature([Course, Section, Lesson, Quiz, Review, Certification, Payment, Category]), CloudinaryModule],
   exports: [CourseService],
   controllers: [CourseController],  
   providers: [CourseService],

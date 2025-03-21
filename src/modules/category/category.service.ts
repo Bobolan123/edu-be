@@ -32,7 +32,7 @@ export class CategoryService {
       pageOptionsDto,
     });
 
-    return new ResponsePaginate(items, pageMetaDto, 'Categories retrieved successfully');
+    return {data: items, meta: pageMetaDto};
   }
 
   async findOne(id: number): Promise<Category> {

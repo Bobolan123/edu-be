@@ -12,7 +12,7 @@ export class CategoryController {
   findAll(@Query() pageOptionsDto: PageOptionsDto): Promise<ResponsePaginate<Category>> {
     return this.categoryService.findAll(pageOptionsDto);
   }
-
+  
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number): Promise<Category> {
     return this.categoryService.findOne(id);

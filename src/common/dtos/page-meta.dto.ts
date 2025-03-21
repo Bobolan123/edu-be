@@ -22,21 +22,3 @@ export class PageMetaDto {
         this.hasNextPage = this.page < this.pageCount;
     }
 }
-
-export class ExtendedPageMetaDto extends PageMetaDto {
-    readonly expiredGPTL: number;
-    readonly nearlyExpiredGPTL: number;
-
-    constructor(pageOptionsDto: PageMetaDtoParameters, expiredGPTL: number, nearlyExpiredGPTL: number) {
-        super({
-            itemCount: pageOptionsDto.itemCount,
-            pageOptionsDto: {
-                ...pageOptionsDto.pageOptionsDto,
-                skip: pageOptionsDto.pageOptionsDto.skip,
-                take: pageOptionsDto.pageOptionsDto.take,
-            },
-        });
-        this.expiredGPTL = expiredGPTL;
-        this.nearlyExpiredGPTL = nearlyExpiredGPTL;
-    }
-}

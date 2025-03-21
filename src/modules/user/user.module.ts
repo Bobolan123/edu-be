@@ -6,9 +6,9 @@ import { User } from '../../entities/user.entity';
 import { Role } from 'src/entities/role.entity';
 import { RoleService } from '../role/role.service';
 import { Subscription } from 'src/entities/subscription.entity';
-
+import { CloudinaryModule } from '../cloudinary/cloudinary.module';
 @Module({
-  imports: [TypeOrmModule.forFeature([User, Role, Subscription])],
+  imports: [TypeOrmModule.forFeature([User, Role, Subscription]), CloudinaryModule],
   exports: [UserService],
   controllers: [UserController],  
   providers: [UserService],

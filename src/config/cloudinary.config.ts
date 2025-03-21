@@ -8,4 +8,4 @@ export const CloudinaryConfig = {
 
 cloudinary.config(CloudinaryConfig);
 
-export default cloudinary; 
+export default cloudinary;  

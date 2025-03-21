@@ -39,8 +39,7 @@ export class SectionController {
   @Get('course/:courseId')
   findByCourse(
     @Param('courseId', ParseIntPipe) courseId: number,
-    @Query() pageOptionsDto: PageOptionsDto,
-  ): Promise<ResponsePaginate<Section>> {
-    return this.sectionService.findByCourse(courseId, pageOptionsDto);
+  ): Promise<Section[]> {
+    return this.sectionService.findByCourse(courseId);
   }
 } 

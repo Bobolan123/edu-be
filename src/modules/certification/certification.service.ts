@@ -37,7 +37,7 @@ export class CertificationService {
       pageOptionsDto,
     });
 
-    return new ResponsePaginate(items, pageMetaDto, 'Certifications retrieved successfully');
+    return { data: items, meta: pageMetaDto };
   }
 
   async findOne(id: number): Promise<Certification> {
@@ -77,7 +77,7 @@ export class CertificationService {
       pageOptionsDto,
     });
 
-    return new ResponsePaginate(items, pageMetaDto, 'User certifications retrieved successfully');
+    return { data: items, meta: pageMetaDto };
   }
 
   async findByCourse(courseId: number, pageOptionsDto: PageOptionsDto): Promise<ResponsePaginate<Certification>> {
@@ -105,7 +105,7 @@ export class CertificationService {
       pageOptionsDto,
     });
 
-    return new ResponsePaginate(items, pageMetaDto, 'Course certifications retrieved successfully');
+    return { data: items, meta: pageMetaDto };
   }
 
   async verify(id: number): Promise<Certification> {
