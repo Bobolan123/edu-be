@@ -16,7 +16,6 @@ import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { RolesGuard } from './auth/guards/roles.guard';
 import { LocalStrategy } from './auth/strategies/local.strategy';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
-import { AuthModule } from './modules/auth/auth.module';
 import { TransformResInterceptor } from './core/transformRes.interceptor';
 import { PermissionModule } from './modules/permission/permission.module';
 import { CloudinaryModule } from './modules/cloudinary/cloudinary.module';
@@ -26,6 +25,7 @@ import { QuestionModule } from './modules/question/question.module';
 import { QuizSubmissionModule } from './modules/quiz-submission/quiz-submission.module';
 import { PaymentModule } from './modules/payment/payment.module';
 import { SubscriptionModule } from './modules/subscription/subscription.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [

@@ -17,7 +17,6 @@ export class CloudinaryService {
             resolve(result);
           }
         );
-
         const buffer = Readable.from(file.buffer);
         buffer.pipe(uploadStream);
       });

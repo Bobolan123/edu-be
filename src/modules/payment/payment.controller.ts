@@ -1,11 +1,11 @@
 import { Controller, Post, Get, Body, Query, Param, UseGuards, Req } from '@nestjs/common';
 import { PaymentService } from './payment.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { Payment, PaymentMethod } from '../../entities/payment.entity';
 import { Request } from 'express';
 import { User } from '../../entities/user.entity';
 import { PageOptionsDto } from 'src/common/dtos';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 
 interface RequestWithUser extends Request {
   user: User;

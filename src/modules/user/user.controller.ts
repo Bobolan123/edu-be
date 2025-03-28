@@ -24,7 +24,7 @@ export interface IUpdatePassword {
   password:string
   newPassword:string
 }
-@Controller('user')
+@Controller('users')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
@@ -67,14 +67,14 @@ export class UserController {
     return this.userService.remove(+id);
   }
 
-  @Post(':id/avatar')
-  @UseGuards(JwtAuthGuard)
-  @UseInterceptors(FileInterceptor('avatar'))
-  @ResponseMessage('Upload user avatar')
-  async uploadAvatar(
-    @Param('id') id: string,
-    @UploadedFile() file: Express.Multer.File,
-  ) {
-    return this.userService.uploadAvatar(+id, file);
-  }
+    @Post(':id/avatar')
+    @UseGuards(JwtAuthGuard)
+    @UseInterceptors(FileInterceptor('avatar'))
+    @ResponseMessage('Upload user avatar')
+    async uploadAvatar(
+      @Param('id') id: string,
+      @UploadedFile() file: Express.Multer.File,
+    ) {
+      return this.userService.uploadAvatar(+id, file);
+    }
 }
