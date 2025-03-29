@@ -34,7 +34,7 @@ export class CloudinaryService {
           {
             folder,
             resource_type: 'video',
-            chunk_size: 6000000, // Adjust chunk size for large videos
+            chunk_size: 6000000, 
           },
           (error, result) => {
             if (error) return reject(error);
@@ -45,7 +45,6 @@ export class CloudinaryService {
         const buffer = Readable.from(file.buffer);
         buffer.pipe(uploadStream);
       });
-
       return result['secure_url'];
     } catch (error) {
       throw new BadRequestException('Failed to upload video');

@@ -15,11 +15,11 @@ import { ResponseMessage } from 'src/decorator/responseMessage.decorator';
 import { UpdateCourseDto } from './dto/update-course.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 
-@Controller('course')
+@Controller('courses')
 export class CourseController {
   constructor(private readonly courseService: CourseService) {}
 
-  @Post('create')
+  @Post()
   @ResponseMessage('Create a new Course')
   create(@Body() createCourseDto: CreateCourseDto) {
     return this.courseService.create(createCourseDto);

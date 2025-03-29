@@ -15,7 +15,7 @@ export enum PaymentMethod {
   CREDIT_CARD = 'CREDIT_CARD',
 }
 
-@Entity()
+@Entity() 
 export class Payment {
   @PrimaryGeneratedColumn('uuid')
   id: string;
