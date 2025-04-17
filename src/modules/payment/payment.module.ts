@@ -6,16 +6,10 @@ import { PaymentService } from './payment.service';
 import { VNPayService } from './services/vnpay.service';
 import { PaypalService } from './services/paypal.service';
 import { StripeService } from './services/stripe.service';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ConfigService } from '@nestjs/config';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([Payment]),
-    ConfigModule.forRoot({
-      // Load environment variables for payment
-      envFilePath: '.env',
-    }),
-  ],
+  imports: [TypeOrmModule.forFeature([Payment])],
   controllers: [PaymentController],
   providers: [
     PaymentService,
@@ -28,8 +22,12 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
         vnpay: {
           tmnCode: configService.get('VNPAY_TMN_CODE'),
           hashSecret: configService.get('VNPAY_HASH_SECRET'),
-          url: configService.get('VNPAY_URL') || 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html',
-          returnUrl: configService.get('VNPAY_RETURN_URL') || 'http://localhost:3000/payment/vnpay-return',
+          url:
+            configService.get('VNPAY_URL') ||
+            'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html',
+          returnUrl:
+            configService.get('VNPAY_RETURN_URL') ||
+            'http://localhost:3000/payment/vnpay-return',
         },
         paypal: {
           clientId: configService.get('PAYPAL_CLIENT_ID'),
@@ -42,8 +40,8 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
         },
       }),
       inject: [ConfigService],
-    }
+    },
   ],
   exports: [PaymentService, VNPayService, PaypalService, StripeService],
 })
-export class PaymentModule {} 
+export class PaymentModule {}

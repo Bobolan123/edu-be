@@ -11,7 +11,11 @@ import {
 } from '@nestjs/common';
 import { PaymentService } from './payment.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
-import { Payment, PaymentMethod, PaymentStatus } from '../../entities/payment.entity';
+import {
+  Payment,
+  PaymentMethod,
+  PaymentStatus,
+} from '../../entities/payment.entity';
 import { Request } from 'express';
 import { User } from '../../entities/user.entity';
 import { PageOptionsDto } from 'src/common/dtos';
@@ -41,18 +45,43 @@ export class PaymentController {
 
   @Public()
   @Get('vnpay-return')
-async handleVnpayReturn(@Query() query: any, @Res() res: Response) {
-  const result = await this.paymentService.handlePaymentCallback(PaymentMethod.VNPAY, query);
+  async handleVnpayReturn(@Query() query: any, @Res() res: Response) {
+    const result = await this.paymentService.handlePaymentCallback(
+      PaymentMethod.VNPAY,
+      query,
+    );
 
-  if (result.status === PaymentStatus.COMPLETED) {
+    if (result.status === PaymentStatus.COMPLETED) {
+      return res.redirect(
+        `${process.env.FRONTEND_URL}/payment/success?orderId=${result.id}`,
+      );
+    } else {
+      return res.redirect(`${process.env.FRONTEND_URL}/payment/failed`);
+    }
+  }
 
-    return res.redirect(`${process.env.FRONTEND_URL}/payment/success?orderId=${result.id}`);
-  } else {
+  @Public()
+  @Get('paypal-return')
+  async handlePaypalReturn(@Query() query: any, @Res() res: Response) {
+    const result = await this.paymentService.handlePaymentCallback(
+      PaymentMethod.PAYPAL, 
+      query,
+    );
+    if (result.status === PaymentStatus.COMPLETED) {
+      return res.redirect(
+        `${process.env.FRONTEND_URL}/payment/success?orderId=${result.id}`,
+      );
+    } else {
+      return res.redirect(`${process.env.FRONTEND_URL}/payment/failed`);
+    }
+  }
+
+  @Public()
+  @Get('paypal-cancel')
+  async handlePaypalCancel(@Query() query: any, @Res() res: Response) {
     return res.redirect(`${process.env.FRONTEND_URL}/payment/failed`);
   }
-}
 
-  
   @Get()
   async findAll(@Query() pageOptionsDto: PageOptionsDto) {
     return this.paymentService.findAll(pageOptionsDto);
