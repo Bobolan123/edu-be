@@ -36,7 +36,7 @@ export class SubscriptionService {
       pageOptionsDto,
     });
 
-    return { data: items, meta: pageMetaDto };
+    return { result: items, meta: pageMetaDto };
   }
 
   async findOne(id: number): Promise<Subscription> {
@@ -87,7 +87,7 @@ export class SubscriptionService {
       pageOptionsDto,
     });
 
-    return { data: items, meta: pageMetaDto };
+    return { result: items, meta: pageMetaDto };
   }
 
   async findActiveSubscription(userId: number): Promise<Subscription> {

@@ -8,12 +8,15 @@ import {
   Delete,
   UseInterceptors,
   UploadedFile,
+  Query,
 } from '@nestjs/common';
 import { CourseService } from './course.service';
 import { CreateCourseDto } from './dto/create-course.dto';
 import { ResponseMessage } from 'src/decorator/responseMessage.decorator';
 import { UpdateCourseDto } from './dto/update-course.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { PageOptionsDto } from 'src/common/dtos';
+import { Category } from 'src/entities/category.entity';
 
 @Controller('courses')
 export class CourseController {
@@ -27,14 +30,22 @@ export class CourseController {
 
   @Get()
   @ResponseMessage('Fetch all Courses')
-  findAll() {
-    return this.courseService.findAll();
+  findAll(@Query() pageOptionsDto: PageOptionsDto ) {
+    return this.courseService.findAll(pageOptionsDto);
   }
+
+  @Get('by-category')
+  @ResponseMessage('Fetch Courses by Category IDs')
+  findCoursesByCategory(@Query('ids') ids: string) {
+    const categoryIds = ids.split(',').map(Number); 
+    return this.courseService.findCoursesByCategory(categoryIds);
+  }
+  
 
   @Get(':id')
   @ResponseMessage('Fetch a single Course')
   findOne(@Param('id') id: string) {
-    return this.courseService.findOne(+id);
+    return this.courseService.findOne(+id); 
   }
 
   @Patch(':id')

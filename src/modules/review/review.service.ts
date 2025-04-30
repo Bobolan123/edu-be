@@ -37,7 +37,7 @@ export class ReviewService {
       pageOptionsDto,
     });
 
-    return { data: items, meta: pageMetaDto };
+    return { result: items, meta: pageMetaDto };
   }
 
   async findOne(id: number): Promise<Review> {
@@ -89,7 +89,7 @@ export class ReviewService {
       pageOptionsDto,
     });
 
-    return { data: items, meta: pageMetaDto };
+    return { result: items, meta: pageMetaDto };
   }
 
   async findByUser(userId: number, pageOptionsDto: PageOptionsDto): Promise<ResponsePaginate<Review>> {
@@ -117,6 +117,6 @@ export class ReviewService {
       pageOptionsDto,
     });
 
-    return { data: items, meta: pageMetaDto };
+    return { result: items, meta: pageMetaDto };
   }
 } 

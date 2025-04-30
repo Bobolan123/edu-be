@@ -37,7 +37,7 @@ export class QuizSubmissionService {
       pageOptionsDto,
     });
 
-    return { data: items, meta: pageMetaDto };
+    return { result: items, meta: pageMetaDto };
   }
 
   async findOne(id: number): Promise<QuizSubmission> {
@@ -77,7 +77,7 @@ export class QuizSubmissionService {
       pageOptionsDto,
     });
 
-    return { data: items, meta: pageMetaDto };
+    return { result: items, meta: pageMetaDto };
   }
 
   async findByQuiz(quizId: number, pageOptionsDto: PageOptionsDto): Promise<ResponsePaginate<QuizSubmission>> {
@@ -105,7 +105,7 @@ export class QuizSubmissionService {
       pageOptionsDto,
     });
 
-    return { data: items, meta: pageMetaDto };
+    return { result: items, meta: pageMetaDto };
   }
 
   async findByUserAndQuiz(userId: number, quizId: number): Promise<QuizSubmission[]> {

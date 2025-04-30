@@ -37,7 +37,7 @@ export class SectionService {
       pageOptionsDto,
     });
 
-    return { data: items, meta: pageMetaDto };
+    return { result: items, meta: pageMetaDto };
   }
 
   async findOne(id: number): Promise<Section> {

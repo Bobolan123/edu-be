@@ -3,10 +3,13 @@ import {
   IsNotEmpty,
   IsOptional,
   IsNumber,
-  Min,
   IsUrl,
   IsInt,
+  Min,
+  IsArray,
+  ArrayNotEmpty,
 } from 'class-validator';
+import { Category } from 'src/entities/category.entity';
 
 export class CreateCourseDto {
   @IsNotEmpty()
@@ -19,7 +22,11 @@ export class CreateCourseDto {
 
   @IsOptional()
   @IsUrl()
-  thumbnail?: string; // Changed to match the entity field
+  thumbnail?: string;
+
+  @IsOptional()
+  @IsUrl()
+  thumbnail_url?: string;
 
   @IsNotEmpty()
   @IsNumber()
@@ -29,5 +36,14 @@ export class CreateCourseDto {
   @IsOptional()
   @IsInt()
   @Min(1)
-  duration?: number; // Should be in minutes (e.g., 300 for 5 hours)
+  duration?: number;
+
+  @IsNotEmpty()
+  @IsInt()
+  instructorId: number;
+
+  @IsOptional()
+  @IsArray()
+  @IsInt({ each: true })
+  categoryIds?: number[];
 }

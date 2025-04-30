@@ -26,6 +26,7 @@ import { QuizSubmissionModule } from './modules/quiz-submission/quiz-submission.
 import { PaymentModule } from './modules/payment/payment.module';
 import { SubscriptionModule } from './modules/subscription/subscription.module';
 import { AuthModule } from './auth/auth.module';
+import { CategoryModule } from './modules/category/category.module';
 
 @Module({
   imports: [
@@ -58,6 +59,7 @@ import { AuthModule } from './auth/auth.module';
     QuizSubmissionModule,
     PaymentModule,
     SubscriptionModule,
+    CategoryModule
   ],
   controllers: [AppController],
   providers: [

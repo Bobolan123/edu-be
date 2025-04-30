@@ -19,9 +19,9 @@ export class CategoryService {
     if (pageOptionsDto.search) {
       queryBuilder.where('category.name LIKE :search', { search: `%${pageOptionsDto.search}%` });
     }
-
+    
     queryBuilder
-      .orderBy(`category.${pageOptionsDto.orderBy}`, pageOptionsDto.order)
+      .orderBy(`category.${pageOptionsDto?.orderBy || "id"}`, pageOptionsDto?.order )
       .skip(pageOptionsDto.skip)
       .take(pageOptionsDto.take);
 
@@ -32,7 +32,7 @@ export class CategoryService {
       pageOptionsDto,
     });
 
-    return {data: items, meta: pageMetaDto};
+    return {result: items, meta: pageMetaDto};
   }
 
   async findOne(id: number): Promise<Category> {
