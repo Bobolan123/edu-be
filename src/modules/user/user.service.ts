@@ -222,7 +222,7 @@ export class UserService {
   }
 
   async findOne(id: number): Promise<User> {
-    return this.userRepository.findOne({ where: { id }, relations: ['role'] });
+    return this.userRepository.findOne({ where: { id }, relations: ['role','courses'] });
   }
 
   async update(id: number, updateUserDto: UpdateUserDto): Promise<User> {

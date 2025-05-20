@@ -66,41 +66,57 @@ export class CourseService {
     return await this.courseRepository.save(course);
   }
 
-  async findAll(
-    pageOptionsDto: PageOptionsDto,
-  ): Promise<ResponsePaginate<Course>> {
+  async findAll(pageOptionsDto: PageOptionsDto): Promise<ResponsePaginate<Course>> {
+    const {
+      search,
+      order,
+      orderBy,
+      minRating,
+      categoryIds,
+    } = pageOptionsDto;
+  
     const queryBuilder = this.courseRepository
       .createQueryBuilder('course')
-      .leftJoinAndSelect('course.categories', 'categories')
-      .leftJoinAndSelect('course.quizzes', 'quizzes')
-      .leftJoinAndSelect('course.reviews', 'reviews');
-
-    // Search filter
-    if (pageOptionsDto.search) {
+      .leftJoinAndSelect('course.categories', 'categories');
+  
+    // Search
+    if (search) {
       queryBuilder.where('course.title LIKE :search', {
-        search: `%${pageOptionsDto.search}%`,
+        search: `%${search}%`,
       });
     }
-
-    const validOrderByFields = ['title', 'createdAt', 'updatedAt'];
-    const orderBy = validOrderByFields.includes(pageOptionsDto.orderBy)
-      ? pageOptionsDto.orderBy
-      : 'title';
-
+  
+    // Filter by rating
+    if (minRating) {
+      queryBuilder.andWhere('course.average_rating >= :minRating', { minRating });
+    }
+  
+    // Filter by categories
+    if (categoryIds?.length > 0) {
+      queryBuilder.andWhere('categories.id IN (:...categoryIds)', {
+        categoryIds,
+      });
+    }
+  
+    // Sorting
+    const validOrderByFields = ['title', 'date_created', 'last_updated'];
+    const sortField = validOrderByFields.includes(orderBy) ? orderBy : 'title';
+  
     queryBuilder
-      .orderBy(`course.${orderBy}`, pageOptionsDto.order || 'ASC')
+      .orderBy(`course.${sortField}`, order || 'ASC')
       .skip(pageOptionsDto.skip)
       .take(pageOptionsDto.take);
-
+  
     const [items, itemCount] = await queryBuilder.getManyAndCount();
-
+  
     const pageMetaDto = new PageMetaDto({
       itemCount,
       pageOptionsDto,
     });
-
+  
     return { result: items, meta: pageMetaDto };
   }
+  
 
   async findCoursesByCategory(categoryIds: number[]): Promise<Course[]> {
     return await this.courseRepository
@@ -116,20 +132,10 @@ export class CourseService {
       relations: [
         'instructor',
         'categories',
-        'sections',
-        'sections.lessons',
-        'quizzes',
         'reviews',
         'reviews.user',
       ],
-      order: {
-        sections: {
-          order: 'ASC',
-          lessons: {
-            id: 'ASC', 
-          }
-        }
-      }
+      
     });
   
     if (!course) {

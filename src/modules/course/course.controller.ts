@@ -31,6 +31,7 @@ export class CourseController {
   @Get()
   @ResponseMessage('Fetch all Courses')
   findAll(@Query() pageOptionsDto: PageOptionsDto ) {
+    console.log(pageOptionsDto)
     return this.courseService.findAll(pageOptionsDto);
   }
 

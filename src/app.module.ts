@@ -11,7 +11,6 @@ import { UserModule } from './modules/user/user.module';
 import { RoleModule } from './modules/role/role.module';
 import { CourseModule } from './modules/course/course.module';
 import { EnrollmentModule } from './modules/enrollment/enrollment.module';
-import { QuizzesModule } from './modules/quiz/quiz.module';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { RolesGuard } from './auth/guards/roles.guard';
 import { LocalStrategy } from './auth/strategies/local.strategy';
@@ -19,14 +18,11 @@ import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { TransformResInterceptor } from './core/transformRes.interceptor';
 import { PermissionModule } from './modules/permission/permission.module';
 import { CloudinaryModule } from './modules/cloudinary/cloudinary.module';
-import { LessonModule } from './modules/lesson/lesson.module';
-import { SectionModule } from './modules/section/section.module';
-import { QuestionModule } from './modules/question/question.module';
-import { QuizSubmissionModule } from './modules/quiz-submission/quiz-submission.module';
 import { PaymentModule } from './modules/payment/payment.module';
 import { SubscriptionModule } from './modules/subscription/subscription.module';
 import { AuthModule } from './auth/auth.module';
 import { CategoryModule } from './modules/category/category.module';
+import { ReviewModule } from './modules/review/review.module';
 
 @Module({
   imports: [
@@ -39,7 +35,6 @@ import { CategoryModule } from './modules/category/category.module';
     PermissionModule,
     CourseModule,
     EnrollmentModule,
-    QuizzesModule,
     EmailModule,
     AuthModule,
     //Public sources
@@ -53,13 +48,10 @@ import { CategoryModule } from './modules/category/category.module';
       },
     ]),
     CloudinaryModule,
-    LessonModule,
-    SectionModule,
-    QuestionModule,
-    QuizSubmissionModule,
     PaymentModule,
     SubscriptionModule,
-    CategoryModule
+    CategoryModule,
+    ReviewModule
   ],
   controllers: [AppController],
   providers: [

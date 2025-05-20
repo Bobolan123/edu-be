@@ -13,6 +13,9 @@ export abstract class PageOptionsDto {
 
   orderBy?: string = 'id';
 
+  minRating?: number;
+  categoryIds?: number[];
+
   @Type(() => Number)
   @IsInt()
   @Min(1)

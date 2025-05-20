@@ -63,7 +63,7 @@ export class AuthController {
     const refresh_token = req.cookies['refresh_token'];
     return this.authService.refreshToken(refresh_token,res);
   }
-
+ 
   @UseGuards(JwtAuthGuard)
   @ResponseMessage('User information')
   @Get('profile')

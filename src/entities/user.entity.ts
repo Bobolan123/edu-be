@@ -13,7 +13,6 @@ import { Payment } from './payment.entity';
 import { Subscription } from './subscription.entity';
 import { Certification } from './certification.entity';
 import { Review } from './review.entity';
-import { QuizSubmission } from './quiz_submission.entity';
 import { Role } from './role.entity';
 
 @Entity()
@@ -78,6 +77,5 @@ export class User {
   @OneToMany(() => Review, (review) => review.user)
   reviews: Review[];
 
-  @OneToMany(() => QuizSubmission, (quizSubmission) => quizSubmission.id)
-  quiz_submissions: QuizSubmission[];
+
 }
