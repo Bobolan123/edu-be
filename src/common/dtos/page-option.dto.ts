@@ -1,5 +1,5 @@
-import { Type } from 'class-transformer';
-import { IsEnum, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
+import { IsArray, IsEnum, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 
 import { Order } from '../constants';
 
@@ -14,6 +14,12 @@ export abstract class PageOptionsDto {
   orderBy?: string = 'id';
 
   minRating?: number;
+
+  @Transform(({ value }) =>
+    value ? (Array.isArray(value) ? value.map(Number) : [Number(value)]) : []
+  )
+  @IsArray()
+  @IsOptional()
   categoryIds?: number[];
 
   @Type(() => Number)

@@ -4,7 +4,7 @@ import { Role } from 'src/entities/role.entity';
 import { ResponseMessage } from 'src/decorator/responseMessage.decorator';
 import { UpdateRolePermissionsDto } from './dto/updateRolePermission.dto';
 
-@Controller('role')
+@Controller('roles')
 export class RoleController {
   constructor(private readonly roleService: RoleService) {}
 

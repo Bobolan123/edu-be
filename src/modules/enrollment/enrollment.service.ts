@@ -43,14 +43,14 @@ export class EnrollmentService {
       throw new NotFoundException(`Course with ID ${courseId} not found`);
     }
 
-    const user = await this.userRepository.findOne({ where: { id: userId } });
-    if (!user) {
+    const student = await this.userRepository.findOne({ where: { id: userId } });
+    if (!student) {
       throw new NotFoundException(`User with ID ${userId} not found`);
     }
 
     const enrollment = this.enrollmentRepository.create({
       course,
-      user,
+      student,
       progress,
     });
 

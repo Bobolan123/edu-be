@@ -64,7 +64,7 @@ export class Course {
   @OneToMany(() => Payment, (payment) => payment.course)
   payments: Payment[];
 
-  @ManyToMany(() => Category, (category) => category.courses, { cascade: true })
+  @ManyToMany(() => Category, (category) => category.courses, { cascade: true, onDelete: 'CASCADE' })
   @JoinTable()
   categories: Category[];
 

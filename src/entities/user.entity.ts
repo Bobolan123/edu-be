@@ -58,11 +58,11 @@ export class User {
 
   @ManyToOne(() => Role, (role) => role.users,{nullable:true})
   role: Role;
-
+  
   @OneToMany(() => Course, (course) => course.instructor)
   courses: Course[];
 
-  @OneToMany(() => Enrollment, (enrollment) => enrollment.user)
+  @OneToMany(() => Enrollment, (enrollment) => enrollment.student)
   enrollments: Enrollment[];
 
   @OneToMany(() => Payment, (payment) => payment.user)

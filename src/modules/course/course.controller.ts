@@ -9,6 +9,8 @@ import {
   UseInterceptors,
   UploadedFile,
   Query,
+  UsePipes,
+  ValidationPipe,
 } from '@nestjs/common';
 import { CourseService } from './course.service';
 import { CreateCourseDto } from './dto/create-course.dto';
@@ -30,8 +32,9 @@ export class CourseController {
 
   @Get()
   @ResponseMessage('Fetch all Courses')
+  @UsePipes(new ValidationPipe({ transform: true }))
   findAll(@Query() pageOptionsDto: PageOptionsDto ) {
-    console.log(pageOptionsDto)
+    console.log(pageOptionsDto);
     return this.courseService.findAll(pageOptionsDto);
   }
 
