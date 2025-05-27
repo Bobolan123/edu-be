@@ -1,16 +1,30 @@
 version: '3.8'
+
 services:
   postgres:
-    image: postgres:latest 
+    image: postgres:latest
     container_name: postgres_container
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: root
-      POSTGRES_DB: edu 
+      POSTGRES_DB: edu
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb_container
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: mongodb
+      MONGO_INITDB_ROOT_PASSWORD: root
+      MONGO_INITDB_DATABASE: edu
+    volumes:
+      - mongodb_data:/data/db
+      
 volumes:
   postgres_data:
+  mongodb_data:

@@ -34,7 +34,7 @@ export class Course {
   })
   instructor: User;
 
-  @Column({ type: 'int', default: 0 }) // Total course duration in minutes
+  @Column({ type: 'int', default: 0 })
   duration: number;
 
   @CreateDateColumn()
@@ -64,7 +64,10 @@ export class Course {
   @OneToMany(() => Payment, (payment) => payment.course)
   payments: Payment[];
 
-  @ManyToMany(() => Category, (category) => category.courses, { cascade: true, onDelete: 'CASCADE' })
+  @ManyToMany(() => Category, (category) => category.courses, {
+    cascade: true,
+    onDelete: 'CASCADE',
+  })
   @JoinTable()
   categories: Category[];
 

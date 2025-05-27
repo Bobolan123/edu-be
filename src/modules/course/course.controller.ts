@@ -11,6 +11,7 @@ import {
   Query,
   UsePipes,
   ValidationPipe,
+  Put,
 } from '@nestjs/common';
 import { CourseService } from './course.service';
 import { CreateCourseDto } from './dto/create-course.dto';
@@ -19,6 +20,7 @@ import { UpdateCourseDto } from './dto/update-course.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { PageOptionsDto } from 'src/common/dtos';
 import { Category } from 'src/entities/category.entity';
+import { UpsertCourseContentDto } from './dto/course-content.dto';
 
 @Controller('courses')
 export class CourseController {
@@ -33,23 +35,26 @@ export class CourseController {
   @Get()
   @ResponseMessage('Fetch all Courses')
   @UsePipes(new ValidationPipe({ transform: true }))
-  findAll(@Query() pageOptionsDto: PageOptionsDto ) {
-    console.log(pageOptionsDto);
+  findAll(@Query() pageOptionsDto: PageOptionsDto) {
     return this.courseService.findAll(pageOptionsDto);
   }
 
   @Get('by-category')
   @ResponseMessage('Fetch Courses by Category IDs')
   findCoursesByCategory(@Query('ids') ids: string) {
-    const categoryIds = ids.split(',').map(Number); 
+    const categoryIds = ids
+      .split(',')
+      .map((id) => id.trim())
+      .filter((id) => /^\d+$/.test(id))
+      .map(Number);
+
     return this.courseService.findCoursesByCategory(categoryIds);
   }
-  
 
   @Get(':id')
   @ResponseMessage('Fetch a single Course')
   findOne(@Param('id') id: string) {
-    return this.courseService.findOne(+id); 
+    return this.courseService.findOne(+id);
   }
 
   @Patch(':id')
@@ -72,5 +77,18 @@ export class CourseController {
     @UploadedFile() file: Express.Multer.File,
   ) {
     return this.courseService.uploadThumbnail(+id, file);
+  }
+
+  @Put('content/:courseId')
+  async updateContent(
+    @Param('courseId') courseId: number,
+    @Body() contentDto: UpsertCourseContentDto,
+  ) {
+    return this.courseService.upsertCourseContent(courseId, contentDto);
+  }
+
+  @Get('content/:courseId')
+  async getCourseContent(@Param('courseId') courseId: number) {
+    return this.courseService.getCourseContent(courseId);
   }
 }

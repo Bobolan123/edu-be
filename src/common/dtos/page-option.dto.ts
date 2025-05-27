@@ -10,10 +10,10 @@ export abstract class PageOptionsDto {
   @IsEnum(Order)
   @IsOptional()
   order?: Order = Order.DESC;
-
   orderBy?: string = 'id';
-
   minRating?: number;
+  instructorId?: number;
+
 
   @Transform(({ value }) =>
     value ? (Array.isArray(value) ? value.map(Number) : [Number(value)]) : []
