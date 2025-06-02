@@ -12,6 +12,7 @@ import {
   UsePipes,
   ValidationPipe,
   Put,
+  UseGuards,
 } from '@nestjs/common';
 import { CourseService } from './course.service';
 import { CreateCourseDto } from './dto/create-course.dto';
@@ -21,6 +22,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { PageOptionsDto } from 'src/common/dtos';
 import { Category } from 'src/entities/category.entity';
 import { UpsertCourseContentDto } from './dto/course-content.dto';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 
 @Controller('courses')
 export class CourseController {
@@ -84,11 +86,37 @@ export class CourseController {
     @Param('courseId') courseId: number,
     @Body() contentDto: UpsertCourseContentDto,
   ) {
-    return this.courseService.upsertCourseContent(courseId, contentDto);
+    const res = await this.courseService.upsertCourseContent(courseId, contentDto);
+    return res 
   }
 
   @Get('content/:courseId')
   async getCourseContent(@Param('courseId') courseId: number) {
     return this.courseService.getCourseContent(courseId);
+  }
+
+  @Post(':id/thumbnail')
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(FileInterceptor('thumbnail'))
+  @ResponseMessage('Upload course thumbnail')
+  async uploadAvatar(
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    return this.courseService.uploadThumbnail(+id, file);
+  }
+
+  @Post(':id/lecture')
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(FileInterceptor('lecture'))
+  @ResponseMessage('Upload course lecture')
+  async uploadLecture(
+    @Param('id') id: string,
+    @Param('sectionId') sectionIndex: string,
+    @Param('lectureId') lectureIndex: string,
+
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    return this.courseService.uploadLecture(+id, +sectionIndex,+lectureIndex, file);
   }
 }

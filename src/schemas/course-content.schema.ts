@@ -26,6 +26,12 @@ export const SectionSchema = SchemaFactory.createForClass(Section);
 export class CourseContent {
   @Prop({ required: true, unique: true })
   courseId: number;
+  @Prop({ required: true })
+  totalLength: number;
+  @Prop({ required: true })
+  totalLectures: number;
+  @Prop({ type: [String], required: true })
+  whatYoullLearn: string[];
   @Prop({ type: [SectionSchema], default: [] }) sections: Section[];
 }
 

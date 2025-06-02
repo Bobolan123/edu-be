@@ -22,11 +22,11 @@ export class CreateCourseDto {
 
   @IsOptional()
   @IsUrl()
-  thumbnail?: string;
+  thumbnail_url?: string;
 
   @IsOptional()
   @IsUrl()
-  thumbnail_url?: string;
+  preview_url?: string;
 
   @IsNotEmpty()
   @IsNumber()

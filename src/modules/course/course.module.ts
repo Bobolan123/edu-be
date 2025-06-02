@@ -13,7 +13,8 @@ import { MongooseModule } from '@nestjs/mongoose';
 import {
   CourseContent,
   CourseContentSchema,
-} from './course-content/course-content.schema';
+} from 'src/schemas/course-content.schema';
+
 @Module({
   imports: [
     TypeOrmModule.forFeature([

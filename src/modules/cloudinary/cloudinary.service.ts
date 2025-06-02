@@ -27,29 +27,31 @@ export class CloudinaryService {
     }
   }
 
-  async uploadVideo(file: Express.Multer.File, folder: string): Promise<string> {
+  async uploadVideo(file: Express.Multer.File, folder: string): Promise<{ url: string; duration: number }> {
     try {
-      const result = await new Promise((resolve, reject) => {
+      const result = await new Promise<any>((resolve, reject) => {
         const uploadStream = cloudinary.uploader.upload_stream(
           {
             folder,
             resource_type: 'video',
-            chunk_size: 6000000, 
           },
           (error, result) => {
             if (error) return reject(error);
             resolve(result);
           }
         );
-
-        const buffer = Readable.from(file.buffer);
-        buffer.pipe(uploadStream);
+        Readable.from(file.buffer).pipe(uploadStream);
       });
-      return result['secure_url'];
+  
+      return {
+        url: result.secure_url,
+        duration: result.duration, 
+      };
     } catch (error) {
       throw new BadRequestException('Failed to upload video');
     }
   }
+  
 
   async uploadStream(streamUrl: string, folder: string): Promise<string> {
     try {
@@ -72,4 +74,13 @@ export class CloudinaryService {
       throw new BadRequestException('Failed to delete file');
     }
   }
+
+  extractPublicId(url: string): string {
+    const parts = url.split('/');
+    const fileName = parts[parts.length - 1];
+    return fileName.split('.')[0]; // Remove .jpg or .mp4
+  }
+  
+
+  
 } 

@@ -25,6 +25,9 @@ export class Course {
   @Column({ type: 'varchar', length: 255 })
   title: string;
 
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  preview_url: string;
+
   @Column({ type: 'text' })
   description: string;
 
@@ -43,7 +46,7 @@ export class Course {
   @UpdateDateColumn()
   last_updated: Date;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  @Column({ type: 'int', default: 0 })
   price: number;
 
   @Column({ type: 'float', default: 0 })
