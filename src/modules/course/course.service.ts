@@ -224,21 +224,13 @@ export class CourseService {
     lectureIndex: number,
     file: Express.Multer.File,
   ) {
-    const course = await this.findOne(courseId);
+    const course = await this.courseRepository.findOne({
+      where: { id: courseId },
+    });
     if (!course) {
       throw new BadRequestException('Course not found');
     }
 
-    // Upload video to Cloudinary
-    const { url, duration } = await this.cloudinaryService.uploadVideo(
-      file,
-      'course-lectures',
-    );
-
-    // Format duration (e.g., 75.5s → "1:15")
-    const formattedDuration = this.formatDuration(duration);
-
-    // Update lecture in MongoDB
     const courseContent = await this.courseContentModel.findOne({ courseId });
     if (!courseContent)
       throw new BadRequestException('Course content not found');
@@ -249,11 +241,17 @@ export class CourseService {
     const lecture = section.lectures[lectureIndex];
     if (!lecture) throw new BadRequestException('Lecture not found');
 
+    // Upload video to Cloudinary
+    const { url, duration } = await this.cloudinaryService.uploadVideo(
+      file,
+      'course-lectures',
+    );
+
     lecture.videoUrl = url;
-    lecture.totalDuration = formattedDuration;
+    lecture.totalDuration = Math.ceil(duration);
 
     await courseContent.save();
-    return { url, formattedDuration };
+    return { url, duration };
   }
 
   // ====================== MongoDB (Course Content) ======================
@@ -272,11 +270,5 @@ export class CourseService {
       { $set: { ...content } },
       { upsert: true, new: true },
     );
-  }
-
-  private formatDuration(seconds: number): string {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`; // e.g., 1:05
   }
 }

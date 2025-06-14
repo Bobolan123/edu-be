@@ -112,11 +112,12 @@ export class CourseController {
   @ResponseMessage('Upload course lecture')
   async uploadLecture(
     @Param('id') id: string,
-    @Param('sectionId') sectionIndex: string,
-    @Param('lectureId') lectureIndex: string,
-
+    @Query('sectionId') sectionId: string,
+    @Query('lectureId') lectureId: string,
     @UploadedFile() file: Express.Multer.File,
   ) {
-    return this.courseService.uploadLecture(+id, +sectionIndex,+lectureIndex, file);
+    
+    return this.courseService.uploadLecture(+id, +sectionId, +lectureId, file);
   }
+  
 }

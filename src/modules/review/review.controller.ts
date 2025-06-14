@@ -17,6 +17,11 @@ import { PageOptionsDto } from 'src/common/dtos/page-option.dto';
 export class ReviewController {
   constructor(private readonly reviewService: ReviewService) {}
 
+  @Get('distribution')
+  async getReviewDistribution(@Query('id') courseId: string) {
+    return this.reviewService.getRatingDistribution(+courseId);
+  }
+
   @Get()
   async getAll(@Query() pageOptionsDto: PageOptionsDto) {
     return this.reviewService.findAll(pageOptionsDto);
@@ -86,4 +91,8 @@ export class ReviewController {
     await this.reviewService['recalculateCourseAverage'](courseId);
     return { message: 'Course average rating recalculated successfully' };
   }
+
+  
+
+  
 }

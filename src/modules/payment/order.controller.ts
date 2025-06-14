@@ -9,49 +9,48 @@ import {
   Req,
   Res,
 } from '@nestjs/common';
-import { PaymentService } from './payment.service';
-import { CreatePaymentDto } from './dto/create-payment.dto';
+import { CreateOrderDto } from './dto/create-order.dto';
 import {
-  Payment,
   PaymentMethod,
-  PaymentStatus,
-} from '../../entities/payment.entity';
-import { Request } from 'express';
+  Order,
+  OrderStatus,
+} from '../../entities/order.entity';
+import { Request, Response } from 'express';
 import { User } from '../../entities/user.entity';
 import { PageOptionsDto } from 'src/common/dtos';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
-import { Response } from 'express';
 import { Public } from 'src/auth/Public';
+import { OrderService } from './order.service';
 
 interface RequestWithUser extends Request {
   user: User;
 }
 
-@Controller('payments')
+@Controller('orders')
 @UseGuards(JwtAuthGuard)
-export class PaymentController {
-  constructor(private readonly paymentService: PaymentService) {}
+export class OrderController {
+  constructor(private readonly orderService: OrderService) {}
 
   @Post()
-  async createPayment(
-    @Body() createPaymentDto: CreatePaymentDto,
+  async createOrder(
+    @Body() createOrderDto: CreateOrderDto,
     @Req() req: RequestWithUser,
-  ): Promise<Payment & { paymentUrl: string }> {
-    return this.paymentService.createPayment(
-      createPaymentDto,
-      req.user.id.toString(),
+  ): Promise<Order & { paymentUrl: string }> {
+    return this.orderService.createOrder(
+      createOrderDto,
+      +req.user.id.toString(),
     );
   }
 
   @Public()
   @Get('vnpay-return')
   async handleVnpayReturn(@Query() query: any, @Res() res: Response) {
-    const result = await this.paymentService.handlePaymentCallback(
+    const result = await this.orderService.handlePaymentCallback(
       PaymentMethod.VNPAY,
       query,
     );
 
-    if (result.status === PaymentStatus.COMPLETED) {
+    if (result.status === OrderStatus.COMPLETED) {
       return res.redirect(
         `${process.env.FRONTEND_URL}/payment/success?orderId=${result.id}`,
       );
@@ -63,11 +62,12 @@ export class PaymentController {
   @Public()
   @Get('paypal-return')
   async handlePaypalReturn(@Query() query: any, @Res() res: Response) {
-    const result = await this.paymentService.handlePaymentCallback(
-      PaymentMethod.PAYPAL, 
+    const result = await this.orderService.handlePaymentCallback(
+      PaymentMethod.PAYPAL,
       query,
     );
-    if (result.status === PaymentStatus.COMPLETED) {
+
+    if (result.status === OrderStatus.COMPLETED) {
       return res.redirect(
         `${process.env.FRONTEND_URL}/payment/success?orderId=${result.id}`,
       );
@@ -78,13 +78,13 @@ export class PaymentController {
 
   @Public()
   @Get('paypal-cancel')
-  async handlePaypalCancel(@Query() query: any, @Res() res: Response) {
+  async handlePaypalCancel(@Res() res: Response) {
     return res.redirect(`${process.env.FRONTEND_URL}/payment/failed`);
   }
 
   @Get()
   async findAll(@Query() pageOptionsDto: PageOptionsDto) {
-    return this.paymentService.findAll(pageOptionsDto);
+    return this.orderService.findAll(pageOptionsDto);
   }
 
   @Get('user')
@@ -92,7 +92,7 @@ export class PaymentController {
     @Query() pageOptionsDto: PageOptionsDto,
     @Req() req: RequestWithUser,
   ) {
-    return this.paymentService.findByUser(
+    return this.orderService.findByUser(
       req.user.id.toString(),
       pageOptionsDto,
     );
@@ -100,7 +100,7 @@ export class PaymentController {
 
   @Get(':id')
   async findOne(@Param('id') id: string) {
-    return this.paymentService.findOne(id);
+    return this.orderService.findOne(id);
   }
 
   @Post('callback/:method')
@@ -108,6 +108,6 @@ export class PaymentController {
     @Param('method') method: PaymentMethod,
     @Body() params: any,
   ) {
-    return this.paymentService.handlePaymentCallback(method, params);
+    return this.orderService.handlePaymentCallback(method, params);
   }
 }

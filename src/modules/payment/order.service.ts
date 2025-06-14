@@ -6,101 +6,100 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import {
-  Payment,
+  Order,
+  OrderStatus,
   PaymentMethod,
-  PaymentStatus,
-} from '../../entities/payment.entity';
+} from '../../entities/order.entity';
 import { VNPayService } from './services/vnpay.service';
 import { PaypalService } from './services/paypal.service';
 import { StripeService } from './services/stripe.service';
-import { CreatePaymentDto } from './dto/create-payment.dto';
+import { CreateOrderDto } from './dto/create-order.dto';
 import { PageMetaDto, PageOptionsDto } from 'src/common/dtos';
 
 @Injectable()
-export class PaymentService {
+export class OrderService {
   constructor(
-    @InjectRepository(Payment)
-    private paymentRepository: Repository<Payment>,
+    @InjectRepository(Order)
+    private orderRepository: Repository<Order>,
     private vnpayService: VNPayService,
     private paypalService: PaypalService,
     private stripeService: StripeService,
   ) {}
 
-  async createPayment(
-    createPaymentDto: CreatePaymentDto,
-    userId: string,
-  ): Promise<Payment & { paymentUrl: string }> {
-    const payment = await this.paymentRepository.save(
-      this.paymentRepository.create({
-        amount: createPaymentDto.amount,
-        paymentMethod: createPaymentDto.paymentMethod,
-        status: PaymentStatus.PENDING,
-        userId,
-        courseId: createPaymentDto.courseId,
+  async createOrder(
+    createOrderDto: CreateOrderDto,
+    userId: number,
+  ): Promise<Order & { paymentUrl: string }> {
+    const order = await this.orderRepository.save(
+      this.orderRepository.create({
+        totalPrice: createOrderDto.totalPrice,
+        paymentMethod: createOrderDto.paymentMethod,
+        status: OrderStatus.PENDING,
+        user: { id: +userId },
       }),
     );
 
     let paymentUrl: string;
-    switch (createPaymentDto.paymentMethod) {
+    switch (createOrderDto.paymentMethod) {
       case PaymentMethod.VNPAY:
         paymentUrl = await this.vnpayService.createPaymentUrl(
-          payment.id,
-          payment.amount,
+          order.id,
+          order.totalPrice,
         );
         break;
       case PaymentMethod.PAYPAL:
         paymentUrl = await this.paypalService.createPaymentUrl(
-          payment.id,
-          payment.amount,
+          order.id,
+          order.totalPrice,
         );
         break;
       case PaymentMethod.CREDIT_CARD:
         paymentUrl = await this.stripeService.createPaymentUrl(
-          payment.id,
-          payment.amount,
+          order.id,
+          order.totalPrice,
         );
         break;
       default:
         throw new BadRequestException('Invalid payment method');
     }
 
-    return { ...payment, paymentUrl };
+    return { ...order, paymentUrl };
   }
 
   async handlePaymentCallback(
     paymentMethod: PaymentMethod,
     params: any,
-  ): Promise<Payment> {
-    let payment: Payment;
+  ): Promise<Order> {
+    let order: Order;
     let isValid = false;
     let transactionId: string;
-    let status = PaymentStatus.FAILED;
+    let status = OrderStatus.FAILED;
 
     switch (paymentMethod) {
       case PaymentMethod.VNPAY:
         isValid = await this.vnpayService.verifyReturnUrl(params);
         if (isValid) {
-          payment = await this.findOne(params.vnp_TxnRef);
+          order = await this.findOne(params.vnp_TxnRef);
           transactionId = params.vnp_TransactionNo;
-          status = PaymentStatus.COMPLETED;
+          status = OrderStatus.COMPLETED;
         }
         break;
 
       case PaymentMethod.PAYPAL:
         isValid = await this.paypalService.verifyPayment(params);
         if (isValid) {
-          payment = await this.findOne(params.orderId);
+          order = await this.findOne(params.orderId);
           transactionId = params.token;
-          status = PaymentStatus.COMPLETED;
+          status = OrderStatus.COMPLETED;
         }
         break;
 
       case PaymentMethod.CREDIT_CARD:
         isValid = await this.stripeService.verifyPayment(params);
         if (isValid) {
-          payment = await this.findOne(params.metadata.orderId);
+          order = await this.findOne(params.metadata.orderId);
           transactionId = params.id;
-          status = PaymentStatus.COMPLETED;
+          status = OrderStatus.COMPLETED;
         }
         break;
 
@@ -112,32 +111,31 @@ export class PaymentService {
       throw new BadRequestException('Invalid payment signature');
     }
 
-    if (!payment) {
-      throw new NotFoundException('Payment not found');
+    if (!order) {
+      throw new NotFoundException('Order not found');
     }
 
-    payment.status = status;
-    payment.transactionId = transactionId;
-    payment.paymentGatewayResponse = JSON.stringify(params);
+    order.status = status;
+    order.transactionId = transactionId;
+    order.paymentGatewayResponse = JSON.stringify(params);
 
-    return this.paymentRepository.save(payment);
+    return this.orderRepository.save(order);
   }
 
   async findAll(
     pageOptionsDto: PageOptionsDto,
-  ): Promise<{ items: Payment[]; meta: PageMetaDto }> {
-    const queryBuilder = this.paymentRepository
-      .createQueryBuilder('payment')
-      .leftJoinAndSelect('payment.user', 'user')
-      .leftJoinAndSelect('payment.course', 'course');
+  ): Promise<{ items: Order[]; meta: PageMetaDto }> {
+    const queryBuilder = this.orderRepository
+      .createQueryBuilder('order')
+      .leftJoinAndSelect('order.user', 'user');
 
     queryBuilder
-      .orderBy('payment.createdAt', pageOptionsDto.order)
+      .orderBy('order.createdAt', pageOptionsDto.order)
       .skip(pageOptionsDto.skip)
       .take(pageOptionsDto.take);
 
     if (pageOptionsDto.search) {
-      queryBuilder.andWhere('payment.id = :search', {
+      queryBuilder.andWhere('order.id = :search', {
         search: pageOptionsDto.search,
       });
     }
@@ -155,20 +153,19 @@ export class PaymentService {
   async findByUser(
     userId: string,
     pageOptionsDto: PageOptionsDto,
-  ): Promise<{ items: Payment[]; meta: PageMetaDto }> {
-    const queryBuilder = this.paymentRepository
-      .createQueryBuilder('payment')
-      .leftJoinAndSelect('payment.user', 'user')
-      .leftJoinAndSelect('payment.course', 'course')
-      .where('payment.userId = :userId', { userId });
+  ): Promise<{ items: Order[]; meta: PageMetaDto }> {
+    const queryBuilder = this.orderRepository
+      .createQueryBuilder('order')
+      .leftJoinAndSelect('order.user', 'user')
+      .where('order.userId = :userId', { userId });
 
     queryBuilder
-      .orderBy('payment.createdAt', pageOptionsDto.order)
+      .orderBy('order.createdAt', pageOptionsDto.order)
       .skip(pageOptionsDto.skip)
       .take(pageOptionsDto.take);
 
     if (pageOptionsDto.search) {
-      queryBuilder.andWhere('payment.id = :search', {
+      queryBuilder.andWhere('order.id = :search', {
         search: pageOptionsDto.search,
       });
     }
@@ -183,14 +180,14 @@ export class PaymentService {
     return { items, meta };
   }
 
-  async findOne(id: string): Promise<Payment> {
-    const payment = await this.paymentRepository.findOne({
+  async findOne(id: string): Promise<Order> {
+    const order = await this.orderRepository.findOne({
       where: { id },
-      relations: ['user', 'course'],
+      relations: ['user'],
     });
-    if (!payment) {
-      throw new NotFoundException('Payment not found');
+    if (!order) {
+      throw new NotFoundException('Order not found');
     }
-    return payment;
+    return order;
   }
 }

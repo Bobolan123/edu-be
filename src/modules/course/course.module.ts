@@ -5,7 +5,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Course } from 'src/entities/course.entity';
 import { Review } from 'src/entities/review.entity';
 import { Certification } from 'src/entities/certification.entity';
-import { Payment } from 'src/entities/payment.entity';
+import { Order } from 'src/entities/order.entity';
 import { Category } from 'src/entities/category.entity';
 import { CloudinaryModule } from '../cloudinary/cloudinary.module';
 import { User } from 'src/entities/user.entity';
@@ -21,7 +21,7 @@ import {
       Course,
       Review,
       Certification,
-      Payment,
+      Order,
       Category,
       User,
     ]),

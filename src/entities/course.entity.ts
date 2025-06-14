@@ -14,7 +14,7 @@ import { User } from './user.entity';
 import { Enrollment } from './enrollment.entity';
 import { Review } from './review.entity';
 import { Certification } from './certification.entity';
-import { Payment } from './payment.entity';
+import { Order } from './order.entity';
 import { Category } from './category.entity';
 
 @Entity()
@@ -26,7 +26,13 @@ export class Course {
   title: string;
 
   @Column({ type: 'varchar', length: 255, nullable: true })
+  language: string;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
   preview_url: string;
+
+  @Column({ type: 'boolean', nullable: true })
+  active: string;
 
   @Column({ type: 'text' })
   description: string;
@@ -63,9 +69,6 @@ export class Course {
 
   @OneToMany(() => Certification, (certification) => certification.course)
   certifications: Certification[];
-
-  @OneToMany(() => Payment, (payment) => payment.course)
-  payments: Payment[];
 
   @ManyToMany(() => Category, (category) => category.courses, {
     cascade: true,

@@ -7,7 +7,7 @@ export type CourseContentDocument = CourseContent & Document;
 export class Lecture {
   @Prop({ required: true }) title: string;
   @Prop({ required: false })
-  totalDuration?: string;
+  totalDuration?: number; #seconds
   @Prop({ required: true }) videoUrl: string;
 }
 

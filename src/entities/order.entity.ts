@@ -1,12 +1,19 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, UpdateDateColumn, JoinColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  CreateDateColumn,
+  UpdateDateColumn,
+  JoinColumn,
+} from 'typeorm';
 import { User } from './user.entity';
-import { Course } from './course.entity';
+import { Cart } from './cart.entity';
 
-export enum PaymentStatus {
+export enum OrderStatus {
   PENDING = 'PENDING',
   COMPLETED = 'COMPLETED',
   FAILED = 'FAILED',
-  REFUNDED = 'REFUNDED',
 }
 
 export enum PaymentMethod {
@@ -15,20 +22,20 @@ export enum PaymentMethod {
   CREDIT_CARD = 'CREDIT_CARD',
 }
 
-@Entity() 
-export class Payment {
+@Entity()
+export class Order {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
   @Column('decimal', { precision: 10, scale: 2 })
-  amount: number;
+  totalPrice: number;
 
   @Column({
     type: 'enum',
-    enum: PaymentStatus,
-    default: PaymentStatus.PENDING,
+    enum: OrderStatus,
+    default: OrderStatus.PENDING,
   })
-  status: PaymentStatus;
+  status: OrderStatus;
 
   @Column({
     type: 'enum',
@@ -43,19 +50,8 @@ export class Payment {
   @Column({ type: 'text', nullable: true })
   paymentGatewayResponse: string;
 
-  @ManyToOne(() => User, user => user.payments)
-  @JoinColumn({ name: 'userId' })
+  @ManyToOne(() => User, (user) => user.orders, { onDelete: 'CASCADE' })
   user: User;
-
-  @Column({ nullable: true })
-  userId: string;
-
-  @ManyToOne(() => Course, course => course.payments)
-  @JoinColumn({ name: 'courseId' })
-  course: Course;
-
-  @Column({ nullable: true })
-  courseId: string;
 
   @CreateDateColumn()
   createdAt: Date;

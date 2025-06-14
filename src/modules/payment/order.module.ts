@@ -1,18 +1,18 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Payment } from '../../entities/payment.entity';
-import { PaymentController } from './payment.controller';
-import { PaymentService } from './payment.service';
+import { Order } from '../../entities/order.entity';
 import { VNPayService } from './services/vnpay.service';
 import { PaypalService } from './services/paypal.service';
 import { StripeService } from './services/stripe.service';
 import { ConfigService } from '@nestjs/config';
+import { OrderService } from './order.service';
+import { OrderController } from './order.controller';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Payment])],
-  controllers: [PaymentController],
+  imports: [TypeOrmModule.forFeature([Order])],
+  controllers: [OrderController],
   providers: [
-    PaymentService,
+    OrderService,
     VNPayService,
     PaypalService,
     StripeService,
@@ -42,6 +42,6 @@ import { ConfigService } from '@nestjs/config';
       inject: [ConfigService],
     },
   ],
-  exports: [PaymentService, VNPayService, PaypalService, StripeService],
+  exports: [OrderService, VNPayService, PaypalService, StripeService],
 })
 export class PaymentModule {}
