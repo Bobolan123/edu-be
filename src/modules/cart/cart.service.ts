@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Cart } from 'src/entities/cart.entity';
@@ -18,7 +18,7 @@ export class CartService {
   async getOrCreateCart(userId: number): Promise<Cart> {
     let cart = await this.cartRepo.findOne({
       where: { user: { id: userId }, isCheckedOut: false },
-      relations: ['items', 'items.course'],
+      relations: ['cartItems', 'cartItems.course'],
     });
 
     if (!cart) {
@@ -42,15 +42,18 @@ export class CartService {
       where: { cart: { id: cart.id }, course: { id: courseId } },
     });
 
-    if (!existingItem) {
-      const item = this.cartItemRepo.create({
-        cart,
-        course,
-        price: course.price,
-      });
-      await this.cartItemRepo.save(item);
+    if (existingItem) {
+      throw new BadRequestException('Course is already in the cart');
     }
 
+    const newItem = this.cartItemRepo.create({
+      cart,
+      course,
+      price: course.price,
+    });
+    await this.cartItemRepo.save(newItem);
+
+    // Return the updated cart state
     return this.getOrCreateCart(userId);
   }
 

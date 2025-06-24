@@ -2,6 +2,10 @@ import { IsNotEmpty, IsNumber, IsEnum, Min, IsOptional, IsString } from 'class-v
 import { PaymentMethod } from '../../../entities/order.entity';
 
 export class CreateOrderDto {
+  @IsString()
+  @IsNotEmpty()
+  cartId: number;
+
   @IsNotEmpty()
   @IsNumber()
   @Min(0)

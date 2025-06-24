@@ -7,9 +7,12 @@ import { StripeService } from './services/stripe.service';
 import { ConfigService } from '@nestjs/config';
 import { OrderService } from './order.service';
 import { OrderController } from './order.controller';
+import { Cart } from 'src/entities/cart.entity';
+import { EnrollmentService } from '../enrollment/enrollment.service';
+import { EnrollmentModule } from '../enrollment/enrollment.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Order])],
+  imports: [TypeOrmModule.forFeature([Order, Cart]), EnrollmentModule],
   controllers: [OrderController],
   providers: [
     OrderService,

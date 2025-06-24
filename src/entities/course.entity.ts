@@ -14,7 +14,6 @@ import { User } from './user.entity';
 import { Enrollment } from './enrollment.entity';
 import { Review } from './review.entity';
 import { Certification } from './certification.entity';
-import { Order } from './order.entity';
 import { Category } from './category.entity';
 
 @Entity()
@@ -27,7 +26,7 @@ export class Course {
 
   @Column({ type: 'varchar', length: 255, nullable: true })
   language: string;
-
+ 
   @Column({ type: 'varchar', length: 255, nullable: true })
   preview_url: string;
 
