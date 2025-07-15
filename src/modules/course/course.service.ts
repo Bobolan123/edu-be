@@ -33,7 +33,6 @@ export class CourseService {
     private readonly courseContentModel: Model<CourseContentDocument>,
   ) {}
 
-  // ====================== PostgreSQL ======================
   async create(createCourseDto: CreateCourseDto) {
     const { title, instructorId, categoryIds, ...rest } = createCourseDto;
 
@@ -218,43 +217,40 @@ export class CourseService {
     return this.courseRepository.save(course);
   }
 
-  async uploadLecture(
-    courseId: number,
-    sectionIndex: number,
-    lectureIndex: number,
-    file: Express.Multer.File,
-  ) {
-    const course = await this.courseRepository.findOne({
-      where: { id: courseId },
-    });
-    if (!course) {
-      throw new BadRequestException('Course not found');
-    }
-
-    const courseContent = await this.courseContentModel.findOne({ courseId });
-    if (!courseContent)
-      throw new BadRequestException('Course content not found');
-
-    const section = courseContent.sections[sectionIndex];
-    if (!section) throw new BadRequestException('Section not found');
-
-    const lecture = section.lectures[lectureIndex];
-    if (!lecture) throw new BadRequestException('Lecture not found');
-
-    // Upload video to Cloudinary
+  async uploadLecture(file: Express.Multer.File) {
     const { url, duration } = await this.cloudinaryService.uploadVideo(
       file,
       'course-lectures',
     );
 
-    lecture.videoUrl = url;
-    lecture.totalDuration = Math.ceil(duration);
-
-    await courseContent.save();
-    return { url, duration };
+    return url;
   }
 
-  // ====================== MongoDB (Course Content) ======================
+  // upload new video lecture when it uploaded
+  // async uploadLecture(
+  //   courseId: number,
+  //   sectionIndex: number,
+  //   lectureIndex: number,
+  //   file: Express.Multer.File,
+  // ) {
+  //   const course = await this.courseRepository.findOne({
+  //     where: { id: courseId },
+  //   });
+  //   if (!course) {
+  //     throw new BadRequestException('Course not found');
+  //   }
+
+  //   const courseContent = await this.courseContentModel.findOne({ courseId });
+  //   if (!courseContent)
+  //     throw new BadRequestException('Course content not found');
+
+  //   const section = courseContent.sections[sectionIndex];
+  //   if (!section) throw new BadRequestException('Section not found');
+
+  //   const lecture = section.lectures[lectureIndex];
+  //   if (!lecture) throw new BadRequestException('Lecture not found');
+
+  //   // Upload video to Cloudinary
 
   async getCourseContent(courseId: number) {
     const content = await this.courseContentModel.findOne({ courseId }).lean();

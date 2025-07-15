@@ -106,18 +106,15 @@ export class CourseController {
     return this.courseService.uploadThumbnail(+id, file);
   }
 
-  @Post(':id/lecture')
+  @Post('lecture')
   @UseGuards(JwtAuthGuard)
   @UseInterceptors(FileInterceptor('lecture'))
   @ResponseMessage('Upload course lecture')
   async uploadLecture(
-    @Param('id') id: string,
-    @Query('sectionId') sectionId: string,
-    @Query('lectureId') lectureId: string,
     @UploadedFile() file: Express.Multer.File,
   ) {
-    
-    return this.courseService.uploadLecture(+id, +sectionId, +lectureId, file);
+    return this.courseService.uploadLecture(file);
   }
   
 }
+

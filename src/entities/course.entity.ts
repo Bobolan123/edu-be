@@ -31,7 +31,7 @@ export class Course {
   preview_url: string;
 
   @Column({ type: 'boolean', nullable: true })
-  active: string;
+  active: boolean;
 
   @Column({ type: 'text' })
   description: string;
@@ -48,7 +48,7 @@ export class Course {
   @CreateDateColumn()
   date_created: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn() 
   last_updated: Date;
 
   @Column({ type: 'int', default: 0 })

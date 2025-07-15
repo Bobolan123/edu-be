@@ -8,9 +8,8 @@ export class Enrollment {
   id: number;
 
   @ManyToOne(() => User, (user) => user.enrollments, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'student_id' })
   student: User;
-
+  
 
   @ManyToOne(() => Course, (course) => course.enrollments, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'course_id' })
@@ -18,7 +17,7 @@ export class Enrollment {
 
   @Column({ default: () => 'CURRENT_TIMESTAMP' })
   date_enrolled: Date;
-
+   
   @Column({ default: 0 })
   progress: number;
 }
