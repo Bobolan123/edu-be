@@ -6,9 +6,9 @@ export type CourseContentDocument = CourseContent & Document;
 @Schema()
 export class Lecture {
   @Prop({ required: true }) title: string;
-  @Prop({ required: false })
-  totalDuration?: number; #seconds
   @Prop({ required: true }) videoUrl: string;
+  @Prop({ required: false }) description: string;
+  @Prop({ required: true, default: false }) isFinished: boolean;
 }
 
 export const LectureSchema = SchemaFactory.createForClass(Lecture);

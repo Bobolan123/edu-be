@@ -1,8 +1,7 @@
 export class CreateLectureDto {
     title: string;
-    duration: string;
     videoUrl: string;
-
+    isFinished: boolean;
   }
   
   export class CreateSectionDto {

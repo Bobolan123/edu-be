@@ -42,7 +42,7 @@ export class Course {
   })
   instructor: User;
 
-  @Column({ type: 'int', default: 0 })
+  @Column({ type: 'float', default: 0 })
   duration: number;
 
   @CreateDateColumn()

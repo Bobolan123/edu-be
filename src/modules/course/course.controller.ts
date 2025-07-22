@@ -81,7 +81,7 @@ export class CourseController {
     return this.courseService.uploadThumbnail(+id, file);
   }
 
-  @Put('content/:courseId')
+  @Patch('content/:courseId')
   async updateContent(
     @Param('courseId') courseId: number,
     @Body() contentDto: UpsertCourseContentDto,
@@ -112,8 +112,9 @@ export class CourseController {
   @ResponseMessage('Upload course lecture')
   async uploadLecture(
     @UploadedFile() file: Express.Multer.File,
+    @Body() body: { courseId: number, sectionIndex: number, lectureIndex: number },
   ) {
-    return this.courseService.uploadLecture(file);
+    return this.courseService.uploadLecture(body.courseId, body.sectionIndex, body.lectureIndex, file);
   }
   
 }

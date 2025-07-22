@@ -13,6 +13,7 @@ export abstract class PageOptionsDto {
   orderBy?: string = 'id';
   minRating?: number;
   instructorId?: number;
+  userId?: number;
 
 
   @Transform(({ value }) =>

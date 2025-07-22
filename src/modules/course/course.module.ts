@@ -14,6 +14,7 @@ import {
   CourseContent,
   CourseContentSchema,
 } from 'src/schemas/course-content.schema';
+import { Enrollment } from 'src/entities/enrollment.entity';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import {
       Order,
       Category,
       User,
+      Enrollment,
     ]),
     CloudinaryModule,
     MongooseModule.forFeature([

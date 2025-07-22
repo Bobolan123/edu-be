@@ -6,6 +6,7 @@ import { Model } from 'mongoose';
 import { Course } from '../../entities/course.entity';
 import { User } from 'src/entities/user.entity';
 import { Category } from 'src/entities/category.entity';
+import { Enrollment } from 'src/entities/enrollment.entity';
 import { CreateCourseDto } from './dto/create-course.dto';
 import { UpdateCourseDto } from './dto/update-course.dto';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
@@ -26,6 +27,9 @@ export class CourseService {
 
     @InjectRepository(Category)
     private readonly categoryRepository: Repository<Category>,
+
+    @InjectRepository(Enrollment)
+    private readonly enrollmentRepository: Repository<Enrollment>,
 
     private cloudinaryService: CloudinaryService,
 
@@ -73,7 +77,7 @@ export class CourseService {
   async findAll(
     pageOptionsDto: PageOptionsDto,
   ): Promise<ResponsePaginate<Course>> {
-    const { search, order, orderBy, minRating, categoryIds, instructorId } =
+    const { search, order, orderBy, minRating, categoryIds, instructorId, userId } =
       pageOptionsDto;
 
     const queryBuilder = this.courseRepository
@@ -114,9 +118,27 @@ export class CourseService {
       .take(pageOptionsDto.take);
 
     const [items, itemCount] = await queryBuilder.getManyAndCount();
+
+    let coursesWithEnrollmentStatus = items;
+    if (userId) {
+      const enrolledCourseIds = await this.getEnrolledCourseIds(userId);
+      coursesWithEnrollmentStatus = items.map(course => ({
+        ...course,
+        isPurchased: enrolledCourseIds.includes(course.id),
+      })); 
+    }
+
     const pageMetaDto = new PageMetaDto({ itemCount, pageOptionsDto });
 
-    return { result: items, meta: pageMetaDto };
+    return { result: coursesWithEnrollmentStatus, meta: pageMetaDto };
+  }
+
+  private async getEnrolledCourseIds(userId: number): Promise<number[]> {
+    const enrollments = await this.enrollmentRepository.find({
+      where: { student: { id: userId } },
+      relations: ['course'],
+    });
+    return enrollments.map(enrollment => enrollment.course.id);
   }
 
   async findCoursesByCategory(categoryIds: number[]): Promise<Course[]> {
@@ -217,7 +239,37 @@ export class CourseService {
     return this.courseRepository.save(course);
   }
 
-  async uploadLecture(file: Express.Multer.File) {
+
+  // upload new video lecture when it uploaded
+  async uploadLecture(
+    courseId: number,
+    sectionIndex: number,
+    lectureIndex: number,
+    file: Express.Multer.File,
+  ) {
+    const course = await this.courseRepository.findOne({
+      where: { id: courseId },
+    });
+    if (!course) {
+      throw new BadRequestException('Course not found');
+    }
+
+
+    const courseContent = await this.courseContentModel.findOne({ courseId });
+    if (!courseContent)
+      throw new BadRequestException('Course content not found');
+
+    const section = courseContent.sections[sectionIndex];
+    if (!section) throw new BadRequestException('Section not found');
+
+    const lecture = section.lectures[lectureIndex];
+    if (!lecture) throw new BadRequestException('Lecture not found');
+
+    if (lecture.videoUrl) {
+      const publicId = this.cloudinaryService.extractPublicId(lecture.videoUrl);
+      await this.cloudinaryService.deleteFile(publicId);
+    }
+
     const { url, duration } = await this.cloudinaryService.uploadVideo(
       file,
       'course-lectures',
@@ -225,30 +277,6 @@ export class CourseService {
 
     return url;
   }
-
-  // upload new video lecture when it uploaded
-  // async uploadLecture(
-  //   courseId: number,
-  //   sectionIndex: number,
-  //   lectureIndex: number,
-  //   file: Express.Multer.File,
-  // ) {
-  //   const course = await this.courseRepository.findOne({
-  //     where: { id: courseId },
-  //   });
-  //   if (!course) {
-  //     throw new BadRequestException('Course not found');
-  //   }
-
-  //   const courseContent = await this.courseContentModel.findOne({ courseId });
-  //   if (!courseContent)
-  //     throw new BadRequestException('Course content not found');
-
-  //   const section = courseContent.sections[sectionIndex];
-  //   if (!section) throw new BadRequestException('Section not found');
-
-  //   const lecture = section.lectures[lectureIndex];
-  //   if (!lecture) throw new BadRequestException('Lecture not found');
 
   //   // Upload video to Cloudinary
 
