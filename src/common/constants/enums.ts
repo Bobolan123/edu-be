@@ -8,4 +8,3 @@ export enum Role {
   SUPERVISOR = 'SUPERVISOR',
   SCANNER = 'SCANNER',
 }
-

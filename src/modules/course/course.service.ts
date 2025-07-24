@@ -77,8 +77,15 @@ export class CourseService {
   async findAll(
     pageOptionsDto: PageOptionsDto,
   ): Promise<ResponsePaginate<Course>> {
-    const { search, order, orderBy, minRating, categoryIds, instructorId, userId } =
-      pageOptionsDto;
+    const {
+      search,
+      order,
+      orderBy,
+      minRating,
+      categoryIds,
+      instructorId,
+      userId,
+    } = pageOptionsDto;
 
     const queryBuilder = this.courseRepository
       .createQueryBuilder('course')
@@ -122,10 +129,10 @@ export class CourseService {
     let coursesWithEnrollmentStatus = items;
     if (userId) {
       const enrolledCourseIds = await this.getEnrolledCourseIds(userId);
-      coursesWithEnrollmentStatus = items.map(course => ({
+      coursesWithEnrollmentStatus = items.map((course) => ({
         ...course,
         isPurchased: enrolledCourseIds.includes(course.id),
-      })); 
+      }));
     }
 
     const pageMetaDto = new PageMetaDto({ itemCount, pageOptionsDto });
@@ -138,7 +145,7 @@ export class CourseService {
       where: { student: { id: userId } },
       relations: ['course'],
     });
-    return enrollments.map(enrollment => enrollment.course.id);
+    return enrollments.map((enrollment) => enrollment.course.id);
   }
 
   async findCoursesByCategory(categoryIds: number[]): Promise<Course[]> {
@@ -239,7 +246,6 @@ export class CourseService {
     return this.courseRepository.save(course);
   }
 
-
   // upload new video lecture when it uploaded
   async uploadLecture(
     courseId: number,
@@ -253,7 +259,6 @@ export class CourseService {
     if (!course) {
       throw new BadRequestException('Course not found');
     }
-
 
     const courseContent = await this.courseContentModel.findOne({ courseId });
     if (!courseContent)

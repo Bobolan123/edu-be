@@ -1,4 +1,4 @@
-import { IsInt, IsOptional } from 'class-validator';
+import { IsInt } from 'class-validator';
 
 export class CreateEnrollmentDto {
   @IsInt()
@@ -6,8 +6,4 @@ export class CreateEnrollmentDto {
 
   @IsInt()
   userId: number;
-
-  @IsInt()
-  @IsOptional()
-  progress?: number;
 }

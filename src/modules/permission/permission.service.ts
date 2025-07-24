@@ -16,13 +16,18 @@ export class PermissionService {
   }
 
   async findOne(id: number): Promise<Permission> {
-    const permission = await this.permissionRepository.findOne({ where: { id } });
-    if (!permission) throw new NotFoundException(`Permission with ID ${id} not found`);
+    const permission = await this.permissionRepository.findOne({
+      where: { id },
+    });
+    if (!permission)
+      throw new NotFoundException(`Permission with ID ${id} not found`);
     return permission;
   }
 
   async create(data: CreatePermissionDto): Promise<Permission> {
-    const exestingPermission = await this.permissionRepository.findOne({ where: { action: data.action }});
+    const exestingPermission = await this.permissionRepository.findOne({
+      where: { action: data.action },
+    });
     if (exestingPermission) {
       throw new NotFoundException('Permission action existed');
     }
@@ -32,6 +37,7 @@ export class PermissionService {
 
   async delete(id: number): Promise<void> {
     const result = await this.permissionRepository.delete(id);
-    if (result.affected === 0) throw new NotFoundException(`Permission not found`);
+    if (result.affected === 0)
+      throw new NotFoundException(`Permission not found`);
   }
 }

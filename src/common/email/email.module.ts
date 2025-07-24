@@ -14,21 +14,21 @@ import { HandlebarsAdapter } from '@nest-modules/mailer/dist/adapters/handlebars
         transport: {
           host: configService.get('MAIL_HOST'),
           port: +configService.get('MAIL_PORT') || 465,
-          secure: configService.get('MAIL_SECURE') === 'true', 
+          secure: configService.get('MAIL_SECURE') === 'true',
           auth: {
             user: configService.get('MAIL_USER'),
             pass: configService.get('MAIL_PASSWORD'),
           },
-        }, 
-        defaults: { 
-          from: `"No Reply" <${configService.get('MAIL_FROM')}>`, 
+        },
+        defaults: {
+          from: `"No Reply" <${configService.get('MAIL_FROM')}>`,
         },
         template: {
           dir: join(__dirname, 'templates'),
           adapter: new HandlebarsAdapter(),
-          options: { 
+          options: {
             strict: true,
-          }, 
+          },
         },
       }),
     }),

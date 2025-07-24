@@ -13,7 +13,9 @@ export class CertificationService {
     private certificationRepository: Repository<Certification>,
   ) {}
 
-  async findAll(pageOptionsDto: PageOptionsDto): Promise<ResponsePaginate<Certification>> {
+  async findAll(
+    pageOptionsDto: PageOptionsDto,
+  ): Promise<ResponsePaginate<Certification>> {
     const queryBuilder = this.certificationRepository
       .createQueryBuilder('certification')
       .leftJoinAndSelect('certification.user', 'user')
@@ -52,7 +54,10 @@ export class CertificationService {
     return this.certificationRepository.save(newCertification);
   }
 
-  async findByUser(userId: number, pageOptionsDto: PageOptionsDto): Promise<ResponsePaginate<Certification>> {
+  async findByUser(
+    userId: number,
+    pageOptionsDto: PageOptionsDto,
+  ): Promise<ResponsePaginate<Certification>> {
     const queryBuilder = this.certificationRepository
       .createQueryBuilder('certification')
       .leftJoinAndSelect('certification.user', 'user')
@@ -80,7 +85,10 @@ export class CertificationService {
     return { result: items, meta: pageMetaDto };
   }
 
-  async findByCourse(courseId: number, pageOptionsDto: PageOptionsDto): Promise<ResponsePaginate<Certification>> {
+  async findByCourse(
+    courseId: number,
+    pageOptionsDto: PageOptionsDto,
+  ): Promise<ResponsePaginate<Certification>> {
     const queryBuilder = this.certificationRepository
       .createQueryBuilder('certification')
       .leftJoinAndSelect('certification.user', 'user')
@@ -115,4 +123,4 @@ export class CertificationService {
     }
     return certification;
   }
-} 
+}

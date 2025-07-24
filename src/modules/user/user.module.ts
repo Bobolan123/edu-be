@@ -9,9 +9,12 @@ import { Subscription } from 'src/entities/subscription.entity';
 import { CloudinaryModule } from '../cloudinary/cloudinary.module';
 import { Cart } from 'src/entities/cart.entity';
 @Module({
-  imports: [TypeOrmModule.forFeature([User, Role, Subscription, Cart]), CloudinaryModule],
+  imports: [
+    TypeOrmModule.forFeature([User, Role, Subscription, Cart]),
+    CloudinaryModule,
+  ],
   exports: [UserService],
-  controllers: [UserController],  
+  controllers: [UserController],
   providers: [UserService],
 })
 export class UserModule {}

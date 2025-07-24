@@ -118,7 +118,10 @@ export class ReviewService {
     comment?: string,
   ) {
     const user = await this.userRepo.findOneBy({ id: userId });
-    const course = await this.courseRepo.findOne({ where: { id: courseId }, relations: ['reviews'] });
+    const course = await this.courseRepo.findOne({
+      where: { id: courseId },
+      relations: ['reviews'],
+    });
 
     if (!user || !course) {
       throw new BadRequestException('User or Course not found');

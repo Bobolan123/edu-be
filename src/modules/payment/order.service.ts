@@ -43,7 +43,10 @@ export class OrderService {
       throw new NotFoundException('Cart not found or is empty.');
     }
 
-    const totalPrice = cart.cartItems.reduce((sum, item) => sum + item.price, 0);
+    const totalPrice = cart.cartItems.reduce(
+      (sum, item) => sum + item.price,
+      0,
+    );
 
     const order = await this.orderRepository.save(
       this.orderRepository.create({
@@ -57,10 +60,16 @@ export class OrderService {
     let paymentUrl: string;
     switch (paymentMethod) {
       case PaymentMethod.VNPAY:
-        paymentUrl = await this.vnpayService.createPaymentUrl(order.id, totalPrice);
+        paymentUrl = await this.vnpayService.createPaymentUrl(
+          order.id,
+          totalPrice,
+        );
         break;
       case PaymentMethod.PAYPAL:
-        paymentUrl = await this.paypalService.createPaymentUrl(order.id, totalPrice);
+        paymentUrl = await this.paypalService.createPaymentUrl(
+          order.id,
+          totalPrice,
+        );
         break;
       default:
         throw new BadRequestException('Unsupported payment method');
@@ -127,7 +136,10 @@ export class OrderService {
         if (cart.cartItems?.length) {
           await Promise.all(
             cart.cartItems.map((item) =>
-              this.enrollmentService.createFromEntities(order.user, item.course),
+              this.enrollmentService.createFromEntities(
+                order.user,
+                item.course,
+              ),
             ),
           );
         }
@@ -140,7 +152,9 @@ export class OrderService {
     return this.orderRepository.save(order);
   }
 
-  async findAll(pageOptionsDto: PageOptionsDto): Promise<{ items: Order[]; meta: PageMetaDto }> {
+  async findAll(
+    pageOptionsDto: PageOptionsDto,
+  ): Promise<{ items: Order[]; meta: PageMetaDto }> {
     const queryBuilder = this.orderRepository
       .createQueryBuilder('order')
       .leftJoinAndSelect('order.user', 'user')
@@ -149,7 +163,9 @@ export class OrderService {
       .take(pageOptionsDto.take);
 
     if (pageOptionsDto.search) {
-      queryBuilder.andWhere('order.id = :search', { search: pageOptionsDto.search });
+      queryBuilder.andWhere('order.id = :search', {
+        search: pageOptionsDto.search,
+      });
     }
 
     const [items, itemCount] = await queryBuilder.getManyAndCount();
@@ -157,7 +173,10 @@ export class OrderService {
     return { items, meta };
   }
 
-  async findByUser(userId: string, pageOptionsDto: PageOptionsDto): Promise<{ items: Order[]; meta: PageMetaDto }> {
+  async findByUser(
+    userId: string,
+    pageOptionsDto: PageOptionsDto,
+  ): Promise<{ items: Order[]; meta: PageMetaDto }> {
     const queryBuilder = this.orderRepository
       .createQueryBuilder('order')
       .leftJoinAndSelect('order.user', 'user')
@@ -167,7 +186,9 @@ export class OrderService {
       .take(pageOptionsDto.take);
 
     if (pageOptionsDto.search) {
-      queryBuilder.andWhere('order.id = :search', { search: pageOptionsDto.search });
+      queryBuilder.andWhere('order.id = :search', {
+        search: pageOptionsDto.search,
+      });
     }
 
     const [items, itemCount] = await queryBuilder.getManyAndCount();

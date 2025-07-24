@@ -8,6 +8,6 @@ export interface IUser {
   name: string;
   permissions?: {
     id: number;
-    action:string
+    action: string;
   }[];
 }

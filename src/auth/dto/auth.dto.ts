@@ -47,7 +47,7 @@ export class AuthVerifiedOtp {
 }
 
 export class AuthChangePassword {
-  otp:string
+  otp: string;
 
   @IsEmail()
   @IsNotEmpty()

@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Param, Body, ParseIntPipe, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Param,
+  Body,
+  ParseIntPipe,
+  Query,
+} from '@nestjs/common';
 import { CertificationService } from './certification.service';
 import { Certification } from 'src/entities/certification.entity';
 import { PageOptionsDto } from 'src/common/dtos/page-option.dto';
@@ -9,7 +17,9 @@ export class CertificationController {
   constructor(private readonly certificationService: CertificationService) {}
 
   @Get()
-  findAll(@Query() pageOptionsDto: PageOptionsDto): Promise<ResponsePaginate<Certification>> {
+  findAll(
+    @Query() pageOptionsDto: PageOptionsDto,
+  ): Promise<ResponsePaginate<Certification>> {
     return this.certificationService.findAll(pageOptionsDto);
   }
 
@@ -19,7 +29,9 @@ export class CertificationController {
   }
 
   @Post()
-  create(@Body() certification: Partial<Certification>): Promise<Certification> {
+  create(
+    @Body() certification: Partial<Certification>,
+  ): Promise<Certification> {
     return this.certificationService.create(certification);
   }
 
@@ -43,4 +55,4 @@ export class CertificationController {
   verify(@Param('id', ParseIntPipe) id: number): Promise<Certification> {
     return this.certificationService.verify(id);
   }
-} 
+}

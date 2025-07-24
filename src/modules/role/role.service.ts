@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Permission } from 'src/entities/permission.entity';
 import { Role } from 'src/entities/role.entity';
@@ -40,14 +44,21 @@ export class RoleService {
     if (result.affected === 0) throw new NotFoundException(`Role not found`);
   }
 
-  async updateRolePermissions(roleId: number, permissionIds: number[]): Promise<Role> {
-    const role = await this.roleRepository.findOne({ where: { id: roleId }, relations: ['permissions'] });
+  async updateRolePermissions(
+    roleId: number,
+    permissionIds: number[],
+  ): Promise<Role> {
+    const role = await this.roleRepository.findOne({
+      where: { id: roleId },
+      relations: ['permissions'],
+    });
     if (!role) {
       throw new NotFoundException('Role not found');
     }
 
     // Find permissions by the given IDs
-    const permissions = await this.permissionRepository.findByIds(permissionIds);
+    const permissions =
+      await this.permissionRepository.findByIds(permissionIds);
     if (permissions.length !== permissionIds.length) {
       throw new NotFoundException('Some permissions not found');
     }

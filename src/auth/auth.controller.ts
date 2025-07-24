@@ -59,11 +59,14 @@ export class AuthController {
   @Public()
   @ResponseMessage('Refresh token')
   @Post('refresh')
-  refreshToken(@Request() req: ReqExpress,@Res({ passthrough: true }) res: Response) {
+  refreshToken(
+    @Request() req: ReqExpress,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     const refresh_token = req.cookies['refresh_token'];
-    return this.authService.refreshToken(refresh_token,res);
+    return this.authService.refreshToken(refresh_token, res);
   }
- 
+
   @UseGuards(JwtAuthGuard)
   @ResponseMessage('User information')
   @Get('profile')
@@ -83,11 +86,13 @@ export class AuthController {
     // Redirects user to Google authentication
   }
 
-  @Post("google-login")
-  async googleLogin(@Body() userData: { email: string; name: string; googleId: string }) {
-      return this.authService.googleLogin(userData);
+  @Post('google-login')
+  async googleLogin(
+    @Body() userData: { email: string; name: string; googleId: string },
+  ) {
+    return this.authService.googleLogin(userData);
   }
-   
+
   @Get('google/callback')
   @UseGuards(AuthGuard('google'))
   async googleAuthRedirect(@Req() req, @Res() res) {

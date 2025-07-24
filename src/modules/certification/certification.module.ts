@@ -10,4 +10,4 @@ import { CertificationController } from './certification.controller';
   controllers: [CertificationController],
   providers: [CertificationService],
 })
-export class CertificationModule {} 
+export class CertificationModule {}

@@ -14,8 +14,9 @@ export class VNPayService {
     const returnUrl = this.configService.get('VNPAY_RETURN_URL');
 
     const date = new Date();
-    const createDate = date.toISOString().split('T')[0].split('-').join('') + 
-                      date.toTimeString().split(' ')[0].split(':').join('');
+    const createDate =
+      date.toISOString().split('T')[0].split('-').join('') +
+      date.toTimeString().split(' ')[0].split(':').join('');
 
     const currCode = 'VND';
     const vnp_Params = {
@@ -37,10 +38,10 @@ export class VNPayService {
     const signData = querystring.stringify(sortedParams, { encode: false });
     const hmac = crypto.createHmac('sha512', secretKey);
     const signed = hmac.update(new Buffer(signData, 'utf-8')).digest('hex');
-    
+
     sortedParams['vnp_SecureHash'] = signed;
     const finalUrl = `${vnpUrl}?${querystring.stringify(sortedParams, { encode: false })}`;
-    
+
     return finalUrl;
   }
 
@@ -62,13 +63,13 @@ export class VNPayService {
   private sortObject(obj: any): any {
     const sorted = {};
     const keys = Object.keys(obj).sort();
-    
+
     for (const key of keys) {
       if (obj[key]) {
         sorted[key] = obj[key];
       }
     }
-    
+
     return sorted;
   }
-} 
+}

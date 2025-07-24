@@ -25,7 +25,7 @@ export class PaypalService {
         this.config.paypal.clientId,
         this.config.paypal.clientSecret,
       );
-    } 
+    }
     this.client = new paypal.core.PayPalHttpClient(environment);
   }
 
@@ -36,7 +36,7 @@ export class PaypalService {
       intent: 'CAPTURE',
       application_context: {
         brand_name: 'Mindful Maze',
-        landing_page: 'LOGIN', 
+        landing_page: 'LOGIN',
         user_action: 'PAY_NOW',
         return_url: `${process.env.BACKEND_URL}/payments/paypal-return`,
         cancel_url: `${process.env.BACKEND_URL}/payments/paypal-cancel`,

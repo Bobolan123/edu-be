@@ -13,15 +13,22 @@ export class CategoryService {
     private categoryRepository: Repository<Category>,
   ) {}
 
-  async findAll(pageOptionsDto: PageOptionsDto): Promise<ResponsePaginate<Category>> {
+  async findAll(
+    pageOptionsDto: PageOptionsDto,
+  ): Promise<ResponsePaginate<Category>> {
     const queryBuilder = this.categoryRepository.createQueryBuilder('category');
 
     if (pageOptionsDto.search) {
-      queryBuilder.where('category.name LIKE :search', { search: `%${pageOptionsDto.search}%` });
+      queryBuilder.where('category.name LIKE :search', {
+        search: `%${pageOptionsDto.search}%`,
+      });
     }
-    
+
     queryBuilder
-      .orderBy(`category.${pageOptionsDto?.orderBy || "id"}`, pageOptionsDto?.order )
+      .orderBy(
+        `category.${pageOptionsDto?.orderBy || 'id'}`,
+        pageOptionsDto?.order,
+      )
       .skip(pageOptionsDto.skip)
       .take(pageOptionsDto.take);
 
@@ -32,7 +39,7 @@ export class CategoryService {
       pageOptionsDto,
     });
 
-    return {result: items, meta: pageMetaDto};
+    return { result: items, meta: pageMetaDto };
   }
 
   async findOne(id: number): Promise<Category> {
@@ -52,4 +59,4 @@ export class CategoryService {
   async delete(id: number): Promise<void> {
     await this.categoryRepository.delete(id);
   }
-}  
+}

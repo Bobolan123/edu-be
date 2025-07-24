@@ -23,7 +23,6 @@ export class Review {
   date_reviewed: Date;
 }
 
-  
 // const reviewRepo = dataSource.getRepository(Review);
 // const courseRepo = dataSource.getRepository(Course);
 

@@ -86,8 +86,11 @@ export class CourseController {
     @Param('courseId') courseId: number,
     @Body() contentDto: UpsertCourseContentDto,
   ) {
-    const res = await this.courseService.upsertCourseContent(courseId, contentDto);
-    return res 
+    const res = await this.courseService.upsertCourseContent(
+      courseId,
+      contentDto,
+    );
+    return res;
   }
 
   @Get('content/:courseId')
@@ -112,10 +115,14 @@ export class CourseController {
   @ResponseMessage('Upload course lecture')
   async uploadLecture(
     @UploadedFile() file: Express.Multer.File,
-    @Body() body: { courseId: number, sectionIndex: number, lectureIndex: number },
+    @Body()
+    body: { courseId: number; sectionIndex: number; lectureIndex: number },
   ) {
-    return this.courseService.uploadLecture(body.courseId, body.sectionIndex, body.lectureIndex, file);
+    return this.courseService.uploadLecture(
+      body.courseId,
+      body.sectionIndex,
+      body.lectureIndex,
+      file,
+    );
   }
-  
 }
-

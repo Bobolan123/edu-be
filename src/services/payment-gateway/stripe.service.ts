@@ -12,7 +12,10 @@ export class StripeService {
     });
   }
 
-  async createPaymentIntent(amount: number, currency: string = 'USD'): Promise<string> {
+  async createPaymentIntent(
+    amount: number,
+    currency: string = 'USD',
+  ): Promise<string> {
     const paymentIntent = await this.stripe.paymentIntents.create({
       amount: Math.round(amount * 100), // Convert to cents
       currency,
@@ -22,12 +25,13 @@ export class StripeService {
   }
 
   async confirmPayment(paymentIntentId: string): Promise<any> {
-    const paymentIntent = await this.stripe.paymentIntents.retrieve(paymentIntentId);
-    
+    const paymentIntent =
+      await this.stripe.paymentIntents.retrieve(paymentIntentId);
+
     return {
       transactionId: paymentIntent.id,
       status: paymentIntent.status,
-      paymentGatewayResponse: JSON.stringify(paymentIntent)
+      paymentGatewayResponse: JSON.stringify(paymentIntent),
     };
   }
-} 
+}

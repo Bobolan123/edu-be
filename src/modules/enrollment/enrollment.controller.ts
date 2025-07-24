@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Param, Body, Put, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Param,
+  Body,
+  Put,
+  Delete,
+} from '@nestjs/common';
 import { EnrollmentService } from './enrollment.service';
 import { Enrollment } from 'src/entities/enrollment.entity';
 import { CreateEnrollmentDto } from './dto/create-enrollment.dto';
@@ -19,7 +27,9 @@ export class EnrollmentController {
   }
 
   @Post()
-  async create(@Body() createEnrollmentDto: CreateEnrollmentDto): Promise<Enrollment> {
+  async create(
+    @Body() createEnrollmentDto: CreateEnrollmentDto,
+  ): Promise<Enrollment> {
     return this.enrollmentService.create(createEnrollmentDto);
   }
 
@@ -34,5 +44,42 @@ export class EnrollmentController {
   @Delete(':id')
   async remove(@Param('id') id: string): Promise<void> {
     return this.enrollmentService.remove(+id);
+  }
+
+  @Get('user/:userId/courses')
+  async getCoursesByUserWithProgress(@Param('userId') userId: string) {
+    return this.enrollmentService.getCoursesByUserWithProgress(+userId);
+  }
+
+  @Get(':enrollmentId/progress')
+  async getEnrollmentWithProgress(@Param('enrollmentId') enrollmentId: string) {
+    return this.enrollmentService.getEnrollmentWithProgress(+enrollmentId);
+  }
+
+  @Post(':enrollmentId/lectures/:lectureId/complete')
+  async markLectureAsCompleted(
+    @Param('enrollmentId') enrollmentId: string,
+    @Param('lectureId') lectureId: string,
+    @Body('courseId') courseId: number,
+  ): Promise<void> {
+    return this.enrollmentService.markLectureAsCompleted(
+      +enrollmentId,
+      courseId,
+      lectureId,
+    );
+  }
+
+  @Put(':enrollmentId/lectures/:lectureId/watch-time')
+  async updateWatchTime(
+    @Param('enrollmentId') enrollmentId: string,
+    @Param('lectureId') lectureId: string,
+    @Body() body: { courseId: number; watchTime: number },
+  ): Promise<void> {
+    return this.enrollmentService.updateWatchTime(
+      +enrollmentId,
+      body.courseId,
+      lectureId,
+      body.watchTime,
+    );
   }
 }

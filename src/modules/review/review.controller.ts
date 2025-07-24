@@ -91,8 +91,4 @@ export class ReviewController {
     await this.reviewService['recalculateCourseAverage'](courseId);
     return { message: 'Course average rating recalculated successfully' };
   }
-
-  
-
-  
 }

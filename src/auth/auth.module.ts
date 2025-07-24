@@ -18,14 +18,16 @@ import { GoogleStrategy } from './strategies/google.strategy';
       useFactory: async (configService: ConfigService) => ({
         secret: configService.get<string>('JWT_ACCESS_SECRET'),
         signOptions: {
-          expiresIn: configService.get<string | number>('JWT_ACCESS_EXPIRATION'),
-        }, 
+          expiresIn: configService.get<string | number>(
+            'JWT_ACCESS_EXPIRATION',
+          ),
+        },
       }),
       inject: [ConfigService],
     }),
     ConfigModule,
   ],
-  providers: [AuthService, JwtStrategy,LocalStrategy, GoogleStrategy],
+  providers: [AuthService, JwtStrategy, LocalStrategy, GoogleStrategy],
   controllers: [AuthController],
   exports: [AuthService],
 })

@@ -55,7 +55,7 @@ import { GeminiModule } from './modules/gemini/gemini.module';
     CategoryModule,
     ReviewModule,
     CartModule,
-    GeminiModule
+    GeminiModule,
   ],
   controllers: [AppController],
   providers: [

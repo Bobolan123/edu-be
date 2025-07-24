@@ -4,7 +4,10 @@ import cloudinary from './cloudinary.config';
 
 @Injectable()
 export class CloudinaryService {
-  async uploadImage(file: Express.Multer.File, folder: string): Promise<string> {
+  async uploadImage(
+    file: Express.Multer.File,
+    folder: string,
+  ): Promise<string> {
     try {
       const result = await new Promise((resolve, reject) => {
         const uploadStream = cloudinary.uploader.upload_stream(
@@ -15,7 +18,7 @@ export class CloudinaryService {
           (error, result) => {
             if (error) return reject(error);
             resolve(result);
-          }
+          },
         );
         const buffer = Readable.from(file.buffer);
         buffer.pipe(uploadStream);
@@ -27,7 +30,10 @@ export class CloudinaryService {
     }
   }
 
-  async uploadVideo(file: Express.Multer.File, folder: string): Promise<{ url: string; duration: number }> {
+  async uploadVideo(
+    file: Express.Multer.File,
+    folder: string,
+  ): Promise<{ url: string; duration: number }> {
     try {
       const result = await new Promise<any>((resolve, reject) => {
         const uploadStream = cloudinary.uploader.upload_stream(
@@ -38,20 +44,19 @@ export class CloudinaryService {
           (error, result) => {
             if (error) return reject(error);
             resolve(result);
-          }
+          },
         );
         Readable.from(file.buffer).pipe(uploadStream);
       });
-  
+
       return {
         url: result.secure_url,
-        duration: result.duration, 
+        duration: result.duration,
       };
     } catch (error) {
       throw new BadRequestException('Failed to upload video');
     }
   }
-  
 
   async uploadStream(streamUrl: string, folder: string): Promise<string> {
     try {
@@ -80,7 +85,4 @@ export class CloudinaryService {
     const fileName = parts[parts.length - 1];
     return fileName.split('.')[0]; // Remove .jpg or .mp4
   }
-  
-
-  
-} 
+}

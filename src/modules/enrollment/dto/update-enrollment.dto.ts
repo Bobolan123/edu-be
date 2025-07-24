@@ -1,8 +1,4 @@
-import { IsInt, IsOptional } from 'class-validator';
-
 export class UpdateEnrollmentDto {
-    @IsInt()
-    @IsOptional()
-    progress?: number;
-  }
-  
+  // Currently no updatable fields for enrollment
+  // Can be extended in the future if needed
+}

@@ -26,7 +26,7 @@ export class Course {
 
   @Column({ type: 'varchar', length: 255, nullable: true })
   language: string;
- 
+
   @Column({ type: 'varchar', length: 255, nullable: true })
   preview_url: string;
 
@@ -48,7 +48,7 @@ export class Course {
   @CreateDateColumn()
   date_created: Date;
 
-  @UpdateDateColumn() 
+  @UpdateDateColumn()
   last_updated: Date;
 
   @Column({ type: 'int', default: 0 })

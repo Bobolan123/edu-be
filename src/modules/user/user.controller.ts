@@ -20,9 +20,9 @@ import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { FileInterceptor } from '@nestjs/platform-express';
 
 export interface IUpdatePassword {
-  id:number,
-  password:string
-  newPassword:string
+  id: number;
+  password: string;
+  newPassword: string;
 }
 @Controller('users')
 export class UserController {
@@ -57,24 +57,27 @@ export class UserController {
   @UseGuards(JwtAuthGuard)
   @ResponseMessage('Update user password')
   @Patch('password/:id')
-  updatePassword(@Param('id') id: string, @Body() updatePassword: IUpdatePassword) {
+  updatePassword(
+    @Param('id') id: string,
+    @Body() updatePassword: IUpdatePassword,
+  ) {
     return this.userService.updatePassword(+id, updatePassword);
   }
 
   @ResponseMessage('Delete user')
-  @Delete(':id') 
+  @Delete(':id')
   remove(@Param('id') id: string) {
     return this.userService.remove(+id);
   }
 
-    @Post(':id/avatar')
-    @UseGuards(JwtAuthGuard)
-    @UseInterceptors(FileInterceptor('avatar'))
-    @ResponseMessage('Upload user avatar')
-    async uploadAvatar(
-      @Param('id') id: string,
-      @UploadedFile() file: Express.Multer.File,
-    ) {
-      return this.userService.uploadAvatar(+id, file);
-    }
+  @Post(':id/avatar')
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(FileInterceptor('avatar'))
+  @ResponseMessage('Upload user avatar')
+  async uploadAvatar(
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    return this.userService.uploadAvatar(+id, file);
+  }
 }

@@ -10,6 +10,6 @@ export class GeminiController {
   @ResponseMessage('Gemini response')
   async chat(@Body('prompt') prompt: string) {
     const result = await this.geminiService.generateChat(prompt);
-    return result
-  } 
-}   
+    return result;
+  }
+}

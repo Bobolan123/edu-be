@@ -1,5 +1,13 @@
 import { Transform, Type } from 'class-transformer';
-import { IsArray, IsEnum, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+import {
+  IsArray,
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+  Max,
+  Min,
+} from 'class-validator';
 
 import { Order } from '../constants';
 
@@ -15,9 +23,8 @@ export abstract class PageOptionsDto {
   instructorId?: number;
   userId?: number;
 
-
   @Transform(({ value }) =>
-    value ? (Array.isArray(value) ? value.map(Number) : [Number(value)]) : []
+    value ? (Array.isArray(value) ? value.map(Number) : [Number(value)]) : [],
   )
   @IsArray()
   @IsOptional()

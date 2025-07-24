@@ -23,13 +23,13 @@ export class CartController {
   constructor(private readonly cartService: CartService) {}
 
   @Get()
-  @ResponseMessage("Cart retrieved successfully")
+  @ResponseMessage('Cart retrieved successfully')
   async getCart(@Req() req: RequestWithUser) {
     return this.cartService.getOrCreateCart(req.user.id);
   }
 
   @Post(':courseId')
-  @ResponseMessage("Add to cart successfully")
+  @ResponseMessage('Add to cart successfully')
   async addToCart(
     @Param('courseId') courseId: string,
     @Req() req: RequestWithUser,
@@ -38,7 +38,7 @@ export class CartController {
   }
 
   @Delete(':courseId')
-  @ResponseMessage("Removed from cart successfully")
+  @ResponseMessage('Removed from cart successfully')
   async removeFromCart(
     @Param('courseId') courseId: string,
     @Req() req: RequestWithUser,

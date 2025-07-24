@@ -13,7 +13,9 @@ export class SubscriptionService {
     private subscriptionRepository: Repository<Subscription>,
   ) {}
 
-  async findAll(pageOptionsDto: PageOptionsDto): Promise<ResponsePaginate<Subscription>> {
+  async findAll(
+    pageOptionsDto: PageOptionsDto,
+  ): Promise<ResponsePaginate<Subscription>> {
     const queryBuilder = this.subscriptionRepository
       .createQueryBuilder('subscription')
       .leftJoinAndSelect('subscription.user', 'user');
@@ -63,7 +65,10 @@ export class SubscriptionService {
     await this.subscriptionRepository.delete(id);
   }
 
-  async findByUser(userId: number, pageOptionsDto: PageOptionsDto): Promise<ResponsePaginate<Subscription>> {
+  async findByUser(
+    userId: number,
+    pageOptionsDto: PageOptionsDto,
+  ): Promise<ResponsePaginate<Subscription>> {
     const queryBuilder = this.subscriptionRepository
       .createQueryBuilder('subscription')
       .leftJoinAndSelect('subscription.user', 'user')

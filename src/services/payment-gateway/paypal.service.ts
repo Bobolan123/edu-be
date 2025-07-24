@@ -9,21 +9,26 @@ export class PayPalService {
   constructor(private configService: ConfigService) {
     const clientId = this.configService.get('PAYPAL_CLIENT_ID');
     const clientSecret = this.configService.get('PAYPAL_CLIENT_SECRET');
-    const environment = new paypal.core.SandboxEnvironment(clientId, clientSecret);
+    const environment = new paypal.core.SandboxEnvironment(
+      clientId,
+      clientSecret,
+    );
     this.client = new paypal.core.PayPalHttpClient(environment);
   }
 
   async createOrder(amount: number, currency: string = 'USD'): Promise<string> {
     const request = new paypal.orders.OrdersCreateRequest();
-    request.prefer("return=representation");
+    request.prefer('return=representation');
     request.requestBody({
       intent: 'CAPTURE',
-      purchase_units: [{
-        amount: {
-          currency_code: currency,
-          value: amount.toString()
-        }
-      }]
+      purchase_units: [
+        {
+          amount: {
+            currency_code: currency,
+            value: amount.toString(),
+          },
+        },
+      ],
     });
 
     const order = await this.client.execute(request);
@@ -34,11 +39,11 @@ export class PayPalService {
     const request = new paypal.orders.OrdersCaptureRequest(orderId);
     request.requestBody({});
     const capture = await this.client.execute(request);
-    
+
     return {
       transactionId: capture.result.purchase_units[0].payments.captures[0].id,
       status: capture.result.status,
-      paymentGatewayResponse: JSON.stringify(capture.result)
+      paymentGatewayResponse: JSON.stringify(capture.result),
     };
   }
-} 
+}

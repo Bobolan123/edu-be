@@ -50,7 +50,6 @@ export class UserService {
 
     if (existingUser && !existingUser.isActive) {
       throw new HttpException('Email is not verified', 403);
- 
     } else if (existingUser) {
       throw new BadRequestException(
         `The email ${existingUser.email} already exists`,
@@ -147,7 +146,7 @@ export class UserService {
     });
     return { id: user.id, email: user.email };
   }
- 
+
   async changePassword(data: AuthChangePassword) {
     if (data.password !== data.confirmPassword) {
       throw new BadRequestException(
@@ -170,8 +169,7 @@ export class UserService {
     if (data.otp && user.otp && +data.otp !== +user.otp) {
       throw new BadRequestException('OTP is invalid');
     }
-    
-    
+
     user.password = await this.hashPassword(data.password);
     user.otp = null; // Clear OTP after password reset
     user.otpExpired = null; // Clear expiration
@@ -222,7 +220,10 @@ export class UserService {
   }
 
   async findOne(id: number): Promise<User> {
-    return this.userRepository.findOne({ where: { id }, relations: ['role','courses'] });
+    return this.userRepository.findOne({
+      where: { id },
+      relations: ['role', 'courses'],
+    });
   }
 
   async update(id: number, updateUserDto: UpdateUserDto): Promise<User> {

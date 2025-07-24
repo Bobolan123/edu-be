@@ -12,9 +12,7 @@ interface StripeConfig {
 export class StripeService {
   private stripe: Stripe;
 
-  constructor(
-    @Inject('PAYMENT_CONFIG') private readonly config: StripeConfig
-  ) {
+  constructor(@Inject('PAYMENT_CONFIG') private readonly config: StripeConfig) {
     this.stripe = new Stripe(this.config.stripe.secretKey, {
       apiVersion: '2025-02-24.acacia',
     });
@@ -55,7 +53,7 @@ export class StripeService {
       const event = this.stripe.webhooks.constructEvent(
         params.body,
         params.signature,
-        this.config.stripe.webhookSecret
+        this.config.stripe.webhookSecret,
       );
 
       if (event.type === 'checkout.session.completed') {
@@ -69,11 +67,14 @@ export class StripeService {
     }
   }
 
-  async constructWebhookEvent(payload: string, signature: string): Promise<Stripe.Event> {
+  async constructWebhookEvent(
+    payload: string,
+    signature: string,
+  ): Promise<Stripe.Event> {
     return this.stripe.webhooks.constructEvent(
       payload,
       signature,
-      this.config.stripe.webhookSecret
+      this.config.stripe.webhookSecret,
     );
   }
-} 
+}

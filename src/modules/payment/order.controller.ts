@@ -10,11 +10,7 @@ import {
   Res,
 } from '@nestjs/common';
 import { CreateOrderDto } from './dto/create-order.dto';
-import {
-  PaymentMethod,
-  Order,
-  OrderStatus,
-} from '../../entities/order.entity';
+import { PaymentMethod, Order, OrderStatus } from '../../entities/order.entity';
 import { Request, Response } from 'express';
 import { User } from '../../entities/user.entity';
 import { PageOptionsDto } from 'src/common/dtos';
@@ -37,7 +33,7 @@ export class OrderController {
     @Req() req: RequestWithUser,
   ): Promise<Order & { paymentUrl: string }> {
     return this.orderService.createOrder(
-      createOrderDto, 
+      createOrderDto,
       +req.user.id.toString(),
     );
   }
@@ -92,10 +88,7 @@ export class OrderController {
     @Query() pageOptionsDto: PageOptionsDto,
     @Req() req: RequestWithUser,
   ) {
-    return this.orderService.findByUser(
-      req.user.id.toString(),
-      pageOptionsDto,
-    );
+    return this.orderService.findByUser(req.user.id.toString(), pageOptionsDto);
   }
 
   @Get(':id')

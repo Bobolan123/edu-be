@@ -21,7 +21,7 @@ export class Cart {
   isCheckedOut: boolean;
 
   @CreateDateColumn()
-  createdAt: Date; 
+  createdAt: Date;
 
   @UpdateDateColumn()
   updatedAt: Date;
@@ -31,4 +31,4 @@ export class Cart {
 
   @OneToMany(() => CartItem, (item) => item.cart, { cascade: true })
   cartItems: CartItem[];
-} 
+}

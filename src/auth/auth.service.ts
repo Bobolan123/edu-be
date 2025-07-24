@@ -1,5 +1,12 @@
 import { ConfigService } from '@nestjs/config';
-import { BadRequestException, Body, HttpException, HttpStatus, Injectable, Post } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  HttpException,
+  HttpStatus,
+  Injectable,
+  Post,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { User } from 'src/entities/user.entity';
@@ -93,7 +100,7 @@ export class AuthService {
     return res;
   }
 
-  async refreshToken(refresh_token: string, response:Response) {
+  async refreshToken(refresh_token: string, response: Response) {
     try {
       const decoded_token = this.jwtService.verify(refresh_token, {
         secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
@@ -121,17 +128,21 @@ export class AuthService {
     }
   }
 
-  async googleLogin(userData: { email: string; name: string; googleId: string }) {
+  async googleLogin(userData: {
+    email: string;
+    name: string;
+    googleId: string;
+  }) {
     let user = await this.userService.findByEmail(userData.email);
     if (!user) {
-        // If the user doesn't exist, create a new one
-        user = await this.userService.create({
-            email: userData.email,
-            name: userData.name,
-            googleId: userData.googleId,
-        });
+      // If the user doesn't exist, create a new one
+      user = await this.userService.create({
+        email: userData.email,
+        name: userData.name,
+        googleId: userData.googleId,
+      });
     }
 
-    return user
-}
+    return user;
+  }
 }
