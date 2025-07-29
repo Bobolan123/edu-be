@@ -8,8 +8,15 @@ import { User } from 'src/entities/user.entity';
 import { Repository } from 'typeorm';
 import { CreateEnrollmentDto } from './dto/create-enrollment.dto';
 import { UpdateEnrollmentDto } from './dto/update-enrollment.dto';
-import { LectureProgress, LectureProgressDocument } from 'src/schemas/lecture-progress.schema';
-import { CourseContent, CourseContentDocument } from 'src/schemas/course-content.schema';
+import { PageMetaDto, PageOptionsDto, ResponsePaginate } from 'src/common/dtos';
+import {
+  LectureProgress,
+  LectureProgressDocument,
+} from 'src/schemas/lecture-progress.schema';
+import {
+  CourseContent,
+  CourseContentDocument,
+} from 'src/schemas/course-content.schema';
 
 @Injectable()
 export class EnrollmentService {
@@ -135,10 +142,17 @@ export class EnrollmentService {
     courseId: number,
     lectureId: string,
   ): Promise<void> {
+    const existingProgress = await this.lectureProgressModel.findOne({
+      enrollmentId,
+      courseId,
+      lectureId,
+    });
+
+    const currentCompletionStatus = existingProgress?.isCompleted || false;
     return await this.lectureProgressModel.findOneAndUpdate(
       { enrollmentId, courseId, lectureId },
       {
-        isCompleted: true,
+        isCompleted: !currentCompletionStatus,
         completedAt: new Date(),
       },
       { upsert: true, new: true },
@@ -162,14 +176,14 @@ export class EnrollmentService {
     enrollmentId: number,
     courseId: number,
   ): Promise<LectureProgress[]> {
-    return this.lectureProgressModel
-      .find({ enrollmentId, courseId })
-      .exec();
+    return this.lectureProgressModel.find({ enrollmentId, courseId, isCompleted: true }).exec();
   }
 
-  async getEnrollmentWithProgress(
-    enrollmentId: number,
-  ): Promise<{ enrollment: Enrollment; lectureProgress: LectureProgress[]; progressPercentage: number }> {
+  async getEnrollmentWithProgress(enrollmentId: number): Promise<{
+    enrollment: Enrollment;
+    lectureProgress: LectureProgress[];
+    progressPercentage: number; 
+  }> {
     const enrollment = await this.findOne(enrollmentId);
     const lectureProgress = await this.getLectureProgress(
       enrollmentId,
@@ -177,6 +191,36 @@ export class EnrollmentService {
     );
     const progressPercentage = await this.calculateProgress(
       enrollmentId,
+      enrollment.course.id,
+    );
+    return { enrollment, lectureProgress, progressPercentage };
+  }
+
+  async getEnrollmentWithProgressByUserAndCourse(
+    userId: number,
+    courseId: number,
+  ): Promise<{
+    enrollment: Enrollment;
+    lectureProgress: LectureProgress[];
+    progressPercentage: number;
+  }> {
+    const enrollment = await this.enrollmentRepository.findOne({
+      where: { student: { id: userId }, course: { id: courseId } },
+      relations: ['course', 'student'],
+    });
+
+    if (!enrollment) {
+      throw new NotFoundException(
+        `Enrollment not found for user ${userId} and course ${courseId}`,
+      );
+    }
+
+    const lectureProgress = await this.getLectureProgress(
+      enrollment.id,
+      enrollment.course.id,
+    );
+    const progressPercentage = await this.calculateProgress(
+      enrollment.id,
       enrollment.course.id,
     );
     return { enrollment, lectureProgress, progressPercentage };
@@ -201,7 +245,37 @@ export class EnrollmentService {
       : 0;
   }
 
-  async getCoursesByUserWithProgress(userId: number) {
+  async getCoursesByUserWithProgress(userId: number, courseId?: number) {
+    if (courseId) {
+      const enrollment = await this.enrollmentRepository.findOne({
+        where: { student: { id: userId }, course: { id: courseId } },
+        relations: ['course'],
+      });
+
+      if (!enrollment) {
+        throw new NotFoundException(
+          `Enrollment not found for user ${userId} and course ${courseId}`,
+        );
+      }
+
+      const lectureProgress = await this.getLectureProgress(
+        enrollment.id,
+        enrollment.course.id,
+      );
+      const progress = await this.calculateProgress(
+        enrollment.id,
+        enrollment.course.id,
+      );
+
+      return {
+        ...enrollment.course,
+        enrollmentId: enrollment.id,
+        progress,
+        dateEnrolled: enrollment.date_enrolled,
+        lectureProgress: lectureProgress.length,
+      };
+    }
+
     const enrollments = await this.enrollmentRepository.find({
       where: { student: { id: userId } },
       relations: ['course'],
@@ -217,18 +291,68 @@ export class EnrollmentService {
           enrollment.id,
           enrollment.course.id,
         );
-        
+
         return {
           ...enrollment.course,
           enrollmentId: enrollment.id,
           progress,
           dateEnrolled: enrollment.date_enrolled,
           lectureProgress: lectureProgress.length,
-          completedLectures: lectureProgress.filter(p => p.isCompleted).length,
+          completedLectures: lectureProgress.filter((p) => p.isCompleted)
+            .length,
         };
       }),
     );
 
     return coursesWithProgress;
+  }
+
+  async getCoursesByUserWithProgressPaginated(
+    userId: number,
+    pageOptionsDto: PageOptionsDto,
+  ): Promise<ResponsePaginate<any>> {
+    const { search, order, orderBy } = pageOptionsDto;
+
+    const queryBuilder = this.enrollmentRepository
+      .createQueryBuilder('enrollment')
+      .leftJoinAndSelect('enrollment.course', 'course')
+      .leftJoinAndSelect('course.categories', 'categories')
+      .leftJoinAndSelect('course.instructor', 'instructor')
+      .where('enrollment.student = :userId', { userId });
+
+    if (search) {
+      queryBuilder.andWhere('course.title LIKE :search', {
+        search: `%${search}%`,
+      });
+    }
+
+    queryBuilder.skip(pageOptionsDto.skip).take(pageOptionsDto.take);
+
+    const [enrollments, itemCount] = await queryBuilder.getManyAndCount();
+
+    const coursesWithProgress = await Promise.all(
+      enrollments.map(async (enrollment) => {
+        const lectureProgress = await this.getLectureProgress(
+          enrollment.id,
+          enrollment.course.id,
+        );
+        const progress = await this.calculateProgress(
+          enrollment.id,
+          enrollment.course.id,
+        );
+
+        return {
+          ...enrollment.course,
+          enrollmentId: enrollment.id,
+          progress,
+          dateEnrolled: enrollment.date_enrolled,
+          lectureProgress: lectureProgress.length,
+        };
+      }),
+    );
+
+    const pageMetaDto = new PageMetaDto({ itemCount, pageOptionsDto });
+
+    return new ResponsePaginate(coursesWithProgress, pageMetaDto);
   }
 }

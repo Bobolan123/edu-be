@@ -6,11 +6,13 @@ import {
   Body,
   Put,
   Delete,
+  Query,
 } from '@nestjs/common';
 import { EnrollmentService } from './enrollment.service';
 import { Enrollment } from 'src/entities/enrollment.entity';
 import { CreateEnrollmentDto } from './dto/create-enrollment.dto';
 import { UpdateEnrollmentDto } from './dto/update-enrollment.dto';
+import { PageOptionsDto, ResponsePaginate } from 'src/common/dtos';
 
 @Controller('enrollments')
 export class EnrollmentController {
@@ -46,15 +48,35 @@ export class EnrollmentController {
     return this.enrollmentService.remove(+id);
   }
 
-  @Get('user/:userId/courses')
-  async getCoursesByUserWithProgress(@Param('userId') userId: string) {
-    return this.enrollmentService.getCoursesByUserWithProgress(+userId);
+  @Get('user/:userId/course')
+  async getCourseByUserWithProgress(
+    @Param('userId') userId: string,
+    @Query('courseId') courseId?: string,
+  ) {
+    return this.enrollmentService.getCoursesByUserWithProgress(
+      +userId,
+      courseId ? +courseId : undefined,
+    );
   }
 
-  @Get(':enrollmentId/progress')
-  async getEnrollmentWithProgress(@Param('enrollmentId') enrollmentId: string) {
-    return this.enrollmentService.getEnrollmentWithProgress(+enrollmentId);
+  @Get('user/:userId/courses')
+  async getCoursesByUserWithProgressPaginated(
+    @Param('userId') userId: string,
+    @Query() pageOptionsDto: PageOptionsDto,
+  ): Promise<ResponsePaginate<any>> {
+    return this.enrollmentService.getCoursesByUserWithProgressPaginated(
+      +userId,
+      pageOptionsDto,
+    );
   }
+
+  @Get('user/:userId/course/:courseId/progress')
+  async getEnrollmentWithProgress(
+    @Param('userId') userId: string,
+    @Param('courseId') courseId: string,
+  ) {
+    return this.enrollmentService.getEnrollmentWithProgressByUserAndCourse(+userId, +courseId);
+  } 
 
   @Post(':enrollmentId/lectures/:lectureId/complete')
   async markLectureAsCompleted(
@@ -64,7 +86,7 @@ export class EnrollmentController {
   ): Promise<void> {
     return this.enrollmentService.markLectureAsCompleted(
       +enrollmentId,
-      courseId,
+      courseId, 
       lectureId,
     );
   }
