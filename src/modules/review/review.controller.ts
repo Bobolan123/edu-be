@@ -12,6 +12,7 @@ import {
 import { ReviewService } from './review.service';
 import { Review } from 'src/entities/review.entity';
 import { PageOptionsDto } from 'src/common/dtos/page-option.dto';
+import { ReviewFilterDto } from './dto/review-filter.dto';
 
 @Controller('reviews')
 export class ReviewController {
@@ -23,14 +24,11 @@ export class ReviewController {
   }
 
   @Get()
-  async getAll(@Query() pageOptionsDto: PageOptionsDto) {
-    return this.reviewService.findAll(pageOptionsDto);
+  async getAll(@Query() reviewFilterDto: ReviewFilterDto) {
+    return this.reviewService.findAll(reviewFilterDto);
   }
 
-  @Get(':id')
-  async getOne(@Param('id', ParseIntPipe) id: number): Promise<Review> {
-    return this.reviewService.findOne(id);
-  }
+
 
   @Post()
   async create(@Body() review: Partial<Review>): Promise<Review> {
@@ -51,19 +49,19 @@ export class ReviewController {
   }
 
   @Get('course/:courseId')
-  async getByCourse(
+  async getByCourseWithDistribution(
     @Param('courseId', ParseIntPipe) courseId: number,
-    @Query() pageOptionsDto: PageOptionsDto,
+    @Query() reviewFilterDto: ReviewFilterDto,
   ) {
-    return this.reviewService.findByCourse(courseId, pageOptionsDto);
+    return this.reviewService.findByCourse(courseId, reviewFilterDto);
   }
 
-  @Get('user/:userId')
+  @Get('user/:userId') 
   async getByUser(
     @Param('userId', ParseIntPipe) userId: number,
-    @Query() pageOptionsDto: PageOptionsDto,
+    @Query() reviewFilterDto: ReviewFilterDto,
   ) {
-    return this.reviewService.findByUser(userId, pageOptionsDto);
+    return this.reviewService.findByUser(userId, reviewFilterDto);
   }
 
   @Post('rate')
@@ -85,10 +83,4 @@ export class ReviewController {
     );
   }
 
-  // Optional: admin or debug route to force recalculate
-  @Post('recalculate/:courseId')
-  async forceRecalculate(@Param('courseId', ParseIntPipe) courseId: number) {
-    await this.reviewService['recalculateCourseAverage'](courseId);
-    return { message: 'Course average rating recalculated successfully' };
-  }
 }

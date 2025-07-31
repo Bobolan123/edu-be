@@ -7,6 +7,7 @@ import { User } from 'src/entities/user.entity';
 import { PageOptionsDto } from 'src/common/dtos/page-option.dto';
 import { PageMetaDto } from 'src/common/dtos/page-meta.dto';
 import { ResponsePaginate } from 'src/common/dtos/response-paginate.dto';
+import { ReviewFilterDto, ReviewSortBy } from './dto/review-filter.dto';
 
 @Injectable()
 export class ReviewService {
@@ -16,21 +17,38 @@ export class ReviewService {
     @InjectRepository(User) private userRepo: Repository<User>,
   ) {}
 
-  // ────────────────────────────────
-  // 🔎 Generic Pagination Helper
   private async paginateQuery(
     queryBuilder: ReturnType<Repository<Review>['createQueryBuilder']>,
-    pageOptionsDto: PageOptionsDto,
+    pageOptionsDto: PageOptionsDto | ReviewFilterDto,
   ): Promise<ResponsePaginate<Review>> {
-    const allowedOrderFields = ['id', 'rating', 'date_reviewed'];
-    const orderBy = allowedOrderFields.includes(pageOptionsDto.orderBy)
-      ? pageOptionsDto.orderBy
-      : 'date_reviewed';
+    const filterDto = pageOptionsDto as ReviewFilterDto;
 
-    queryBuilder
-      .orderBy(`review.${orderBy}`, pageOptionsDto.order)
-      .skip(pageOptionsDto.skip)
-      .take(pageOptionsDto.take);
+    if (filterDto.sortBy) {
+      switch (filterDto.sortBy) {
+        case ReviewSortBy.NEWEST:
+          queryBuilder.orderBy('review.date_reviewed', 'DESC');
+          break;
+        case ReviewSortBy.OLDEST:
+          queryBuilder.orderBy('review.date_reviewed', 'ASC');
+          break;
+        case ReviewSortBy.HIGHEST_RATING:
+          queryBuilder.orderBy('review.rating', 'DESC');
+          break;
+        case ReviewSortBy.LOWEST_RATING:
+          queryBuilder.orderBy('review.rating', 'ASC');
+          break;
+        default:
+          queryBuilder.orderBy('review.date_reviewed', 'DESC');
+      }
+    } else {
+      const allowedOrderFields = ['id', 'rating', 'date_reviewed'];
+      const orderBy = allowedOrderFields.includes(pageOptionsDto.orderBy)
+        ? pageOptionsDto.orderBy
+        : 'date_reviewed';
+      queryBuilder.orderBy(`review.${orderBy}`, pageOptionsDto.order);
+    }
+
+    queryBuilder.skip(pageOptionsDto.skip).take(pageOptionsDto.take);
 
     const [items, itemCount] = await queryBuilder.getManyAndCount();
     const meta = new PageMetaDto({ itemCount, pageOptionsDto });
@@ -38,21 +56,47 @@ export class ReviewService {
     return { result: items, meta };
   }
 
-  // ────────────────────────────────
-  // 🔄 CRUD
-  async findAll(pageOptionsDto: PageOptionsDto) {
+  private applyFilters(
+    queryBuilder: ReturnType<Repository<Review>['createQueryBuilder']>,
+    filterDto: ReviewFilterDto,
+  ) {
+    if (filterDto.rating) {
+      queryBuilder.andWhere('review.rating = :rating', {
+        rating: filterDto.rating,
+      });
+    }
+
+    if (filterDto.minRating) {
+      queryBuilder.andWhere('review.rating >= :minRating', {
+        minRating: filterDto.minRating,
+      });
+    }
+
+    if (filterDto.maxRating) {
+      queryBuilder.andWhere('review.rating <= :maxRating', {
+        maxRating: filterDto.maxRating,
+      });
+    }
+
+    if (filterDto.search) {
+      queryBuilder.andWhere(
+        'review.comment LIKE :search OR course.title LIKE :search',
+        {
+          search: `%${filterDto.search}%`,
+        },
+      );
+    }
+  }
+
+  async findAll(reviewFilterDto: ReviewFilterDto) {
     const qb = this.reviewRepo
       .createQueryBuilder('review')
       .leftJoinAndSelect('review.user', 'user')
       .leftJoinAndSelect('review.course', 'course');
 
-    if (pageOptionsDto.search) {
-      qb.where('review.comment LIKE :search OR course.title LIKE :search', {
-        search: `%${pageOptionsDto.search}%`,
-      });
-    }
+    this.applyFilters(qb, reviewFilterDto);
 
-    return this.paginateQuery(qb, pageOptionsDto);
+    return this.paginateQuery(qb, reviewFilterDto);
   }
 
   async findOne(id: number) {
@@ -75,42 +119,34 @@ export class ReviewService {
     await this.reviewRepo.delete(id);
   }
 
-  // ────────────────────────────────
-  // 🔎 Query by Course / User
-  async findByCourse(courseId: number, pageOptionsDto: PageOptionsDto) {
+  async findByCourse(courseId: number, reviewFilterDto: ReviewFilterDto) {
     const qb = this.reviewRepo
       .createQueryBuilder('review')
       .leftJoinAndSelect('review.user', 'user')
-      .leftJoinAndSelect('review.course', 'course')
+      .leftJoin('review.course', 'course')
       .where('course.id = :courseId', { courseId });
 
-    if (pageOptionsDto.search) {
-      qb.andWhere('review.comment LIKE :search', {
-        search: `%${pageOptionsDto.search}%`,
-      });
-    }
+    this.applyFilters(qb, reviewFilterDto);
 
-    return this.paginateQuery(qb, pageOptionsDto);
+    const paginatedReviews = await this.paginateQuery(qb, reviewFilterDto);
+
+    return paginatedReviews;
   }
 
-  async findByUser(userId: number, pageOptionsDto: PageOptionsDto) {
+  async findByUser(userId: number, reviewFilterDto?: ReviewFilterDto) {
     const qb = this.reviewRepo
       .createQueryBuilder('review')
       .leftJoinAndSelect('review.user', 'user')
       .leftJoinAndSelect('review.course', 'course')
       .where('user.id = :userId', { userId });
 
-    if (pageOptionsDto.search) {
-      qb.andWhere('review.comment LIKE :search OR course.title LIKE :search', {
-        search: `%${pageOptionsDto.search}%`,
-      });
+    if (reviewFilterDto) {
+      this.applyFilters(qb, reviewFilterDto);
     }
 
-    return this.paginateQuery(qb, pageOptionsDto);
+    return this.paginateQuery(qb, reviewFilterDto);
   }
 
-  // ────────────────────────────────
-  // ⭐ Add or Update Review
   async addOrUpdateReview(
     userId: number,
     courseId: number,
@@ -144,8 +180,6 @@ export class ReviewService {
     return review;
   }
 
-  // ────────────────────────────────
-  // 📊 Course Rating & Distribution
   private async getAverageRating(courseId: number): Promise<number> {
     const { avg } = await this.reviewRepo
       .createQueryBuilder('review')
