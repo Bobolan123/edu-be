@@ -15,6 +15,7 @@ import {
   CourseContent,
   CourseContentDocument,
 } from 'src/schemas/course-content.schema';
+import { ReviewService } from '../review/review.service';
 
 @Injectable()
 export class CourseService {
@@ -35,6 +36,8 @@ export class CourseService {
 
     @InjectModel(CourseContent.name)
     private readonly courseContentModel: Model<CourseContentDocument>,
+
+    private readonly reviewService: ReviewService,
   ) {}
 
   async create(createCourseDto: CreateCourseDto) {
@@ -126,10 +129,21 @@ export class CourseService {
 
     const [items, itemCount] = await queryBuilder.getManyAndCount();
 
-    let coursesWithEnrollmentStatus = items;
+    // Calculate average rating for each course
+    const coursesWithRatings = await Promise.all(
+      items.map(async (course) => {
+        const averageRating = await this.reviewService.getAverageRating(course.id);
+        return {
+          ...course,
+          average_rating: averageRating,
+        };
+      })
+    );
+
+    let coursesWithEnrollmentStatus = coursesWithRatings;
     if (userId) {
       const enrolledCourseIds = await this.getEnrolledCourseIds(userId);
-      coursesWithEnrollmentStatus = items.map((course) => ({
+      coursesWithEnrollmentStatus = coursesWithRatings.map((course) => ({
         ...course,
         isPurchased: enrolledCourseIds.includes(course.id),
       }));
@@ -166,7 +180,13 @@ export class CourseService {
       throw new BadRequestException(`Course with ID ${id} not found.`);
     }
 
-    return course;
+    // Calculate and add average rating
+    const averageRating = await this.reviewService.getAverageRating(course.id);
+    
+    return {
+      ...course,
+      average_rating: averageRating,
+    };
   }
 
   async update(id: number, updateCourseDto: UpdateCourseDto): Promise<Course> {

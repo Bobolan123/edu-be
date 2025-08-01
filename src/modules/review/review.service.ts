@@ -8,6 +8,8 @@ import { PageOptionsDto } from 'src/common/dtos/page-option.dto';
 import { PageMetaDto } from 'src/common/dtos/page-meta.dto';
 import { ResponsePaginate } from 'src/common/dtos/response-paginate.dto';
 import { ReviewFilterDto, ReviewSortBy } from './dto/review-filter.dto';
+import { CreateReviewDto } from './dto/create-review.dto';
+import { UpdateReviewDto } from './dto/update-review.dto';
 
 @Injectable()
 export class ReviewService {
@@ -88,17 +90,6 @@ export class ReviewService {
     }
   }
 
-  async findAll(reviewFilterDto: ReviewFilterDto) {
-    const qb = this.reviewRepo
-      .createQueryBuilder('review')
-      .leftJoinAndSelect('review.user', 'user')
-      .leftJoinAndSelect('review.course', 'course');
-
-    this.applyFilters(qb, reviewFilterDto);
-
-    return this.paginateQuery(qb, reviewFilterDto);
-  }
-
   async findOne(id: number) {
     return this.reviewRepo.findOne({
       where: { id },
@@ -106,13 +97,56 @@ export class ReviewService {
     });
   }
 
-  async create(review: Partial<Review>) {
-    return this.reviewRepo.save(this.reviewRepo.create(review));
+  async createReview(createReviewDto: CreateReviewDto): Promise<Review> {
+    const { userId, courseId, rating, comment } = createReviewDto;
+
+    const user = await this.userRepo.findOneBy({ id: userId });
+    const course = await this.courseRepo.findOneBy({ id: courseId });
+
+    if (!user || !course) {
+      throw new BadRequestException('User or Course not found');
+    }
+
+    const existingReview = await this.reviewRepo.findOne({
+      where: { user: { id: userId }, course: { id: courseId } },
+    });
+
+    if (existingReview) {
+      throw new BadRequestException('Review already exists for this course');
+    }
+
+    const review = this.reviewRepo.create({ user, course, rating, comment });
+    const savedReview = await this.reviewRepo.save(review);
+
+    return savedReview;
   }
 
-  async update(id: number, review: Partial<Review>) {
-    await this.reviewRepo.update(id, review);
-    return this.findOne(id);
+  async updateReview(
+    id: number,
+    updateReviewDto: UpdateReviewDto,
+  ): Promise<Review> {
+    const review = await this.reviewRepo.findOne({
+      where: { id },
+      relations: ['user', 'course'],
+    });
+
+    if (!review) {
+      throw new BadRequestException('Review not found');
+    }
+
+    if (updateReviewDto.rating !== undefined) {
+      review.rating = updateReviewDto.rating;
+      review.date_reviewed = new Date();
+    }
+
+    if (updateReviewDto.comment !== undefined) {
+      review.comment = updateReviewDto.comment;
+      review.date_reviewed = new Date();
+    }
+
+    const updatedReview = await this.reviewRepo.save(review);
+
+    return updatedReview;
   }
 
   async delete(id: number) {
@@ -133,18 +167,16 @@ export class ReviewService {
     return paginatedReviews;
   }
 
-  async findByUser(userId: number, reviewFilterDto?: ReviewFilterDto) {
-    const qb = this.reviewRepo
-      .createQueryBuilder('review')
-      .leftJoinAndSelect('review.user', 'user')
-      .leftJoinAndSelect('review.course', 'course')
-      .where('user.id = :userId', { userId });
+  async findUserCourseReview(userId: number, courseId: number) {
+    const review = await this.reviewRepo.findOne({
+      where: {
+        user: { id: userId },
+        course: { id: courseId },
+      },
+      relations: ['user', 'course'],
+    });
 
-    if (reviewFilterDto) {
-      this.applyFilters(qb, reviewFilterDto);
-    }
-
-    return this.paginateQuery(qb, reviewFilterDto);
+    return review;
   }
 
   async addOrUpdateReview(
@@ -175,12 +207,11 @@ export class ReviewService {
     }
 
     await this.reviewRepo.save(review);
-    await this.recalculateCourseAverage(courseId);
 
     return review;
   }
 
-  private async getAverageRating(courseId: number): Promise<number> {
+  async getAverageRating(courseId: number): Promise<number> {
     const { avg } = await this.reviewRepo
       .createQueryBuilder('review')
       .select('AVG(review.rating)', 'avg')
@@ -188,20 +219,6 @@ export class ReviewService {
       .getRawOne();
 
     return parseFloat(Number(avg ?? 0).toFixed(1));
-  }
-
-  private async recalculateCourseAverage(courseId: number) {
-    const { avg, count } = await this.reviewRepo
-      .createQueryBuilder('review')
-      .select('AVG(review.rating)', 'avg')
-      .addSelect('COUNT(review.id)', 'count')
-      .where('review.courseId = :courseId', { courseId })
-      .getRawOne();
-
-    await this.courseRepo.update(courseId, {
-      average_rating: parseFloat(Number(avg ?? 0).toFixed(2)),
-      total_reviews: parseInt(count ?? 0),
-    });
   }
 
   async getRatingDistribution(courseId: number) {

@@ -15,6 +15,7 @@ import {
   CourseContentSchema,
 } from 'src/schemas/course-content.schema';
 import { Enrollment } from 'src/entities/enrollment.entity';
+import { ReviewModule } from '../review/review.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { Enrollment } from 'src/entities/enrollment.entity';
     MongooseModule.forFeature([
       { name: CourseContent.name, schema: CourseContentSchema },
     ]),
+    ReviewModule,
   ],
   exports: [CourseService],
   controllers: [CourseController],

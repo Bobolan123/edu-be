@@ -8,11 +8,17 @@ import {
   Query,
   Body,
   ParseIntPipe,
+  Patch,
+  UseGuards,
+  Request,
 } from '@nestjs/common';
 import { ReviewService } from './review.service';
 import { Review } from 'src/entities/review.entity';
 import { PageOptionsDto } from 'src/common/dtos/page-option.dto';
 import { ReviewFilterDto } from './dto/review-filter.dto';
+import { CreateReviewDto } from './dto/create-review.dto';
+import { UpdateReviewDto } from './dto/update-review.dto';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 
 @Controller('reviews')
 export class ReviewController {
@@ -21,66 +27,42 @@ export class ReviewController {
   @Get('distribution')
   async getReviewDistribution(@Query('id') courseId: string) {
     return this.reviewService.getRatingDistribution(+courseId);
-  }
-
-  @Get()
-  async getAll(@Query() reviewFilterDto: ReviewFilterDto) {
-    return this.reviewService.findAll(reviewFilterDto);
-  }
-
-
-
+  } 
+  
   @Post()
-  async create(@Body() review: Partial<Review>): Promise<Review> {
-    return this.reviewService.create(review);
+  @UseGuards(JwtAuthGuard)
+  async create(@Body() createReviewDto: CreateReviewDto): Promise<Review> {
+    return this.reviewService.createReview(createReviewDto);
   }
 
-  @Put(':id')
+  @Patch(':id')
+  @UseGuards(JwtAuthGuard)
   async update(
     @Param('id', ParseIntPipe) id: number,
-    @Body() review: Partial<Review>,
+    @Body() updateReviewDto: UpdateReviewDto,
   ): Promise<Review> {
-    return this.reviewService.update(id, review);
+    return this.reviewService.updateReview(id, updateReviewDto);
   }
 
   @Delete(':id')
+  @UseGuards(JwtAuthGuard)
   async delete(@Param('id', ParseIntPipe) id: number): Promise<void> {
     return this.reviewService.delete(id);
   }
-
+  
   @Get('course/:courseId')
-  async getByCourseWithDistribution(
+  async findFilterByCourse(
     @Param('courseId', ParseIntPipe) courseId: number,
     @Query() reviewFilterDto: ReviewFilterDto,
   ) {
     return this.reviewService.findByCourse(courseId, reviewFilterDto);
   }
 
-  @Get('user/:userId') 
-  async getByUser(
+  @Get('user/:userId/course/:courseId') 
+  async getUserCourseReview(
     @Param('userId', ParseIntPipe) userId: number,
-    @Query() reviewFilterDto: ReviewFilterDto,
+    @Param('courseId', ParseIntPipe) courseId: number,
   ) {
-    return this.reviewService.findByUser(userId, reviewFilterDto);
+    return this.reviewService.findUserCourseReview(userId, courseId);
   }
-
-  @Post('rate')
-  async addOrUpdateReview(
-    @Body()
-    data: {
-      userId: number;
-      courseId: number;
-      rating: number;
-      comment?: string;
-    },
-  ): Promise<Review> {
-    const { userId, courseId, rating, comment } = data;
-    return this.reviewService.addOrUpdateReview(
-      userId,
-      courseId,
-      rating,
-      comment,
-    );
-  }
-
 }
