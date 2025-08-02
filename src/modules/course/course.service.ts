@@ -11,6 +11,7 @@ import { CreateCourseDto } from './dto/create-course.dto';
 import { UpdateCourseDto } from './dto/update-course.dto';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { PageMetaDto, PageOptionsDto, ResponsePaginate } from 'src/common/dtos';
+import { CourseSearchFilterDto } from './dto/course-search-filter.dto';
 import {
   CourseContent,
   CourseContentDocument,
@@ -78,80 +79,171 @@ export class CourseService {
   }
 
   async findAll(
-    pageOptionsDto: PageOptionsDto,
+    filterDto: CourseSearchFilterDto,
   ): Promise<ResponsePaginate<Course>> {
     const {
       search,
+      title,
+      description,
       order,
       orderBy,
       minRating,
+      maxRating,
       categoryIds,
       instructorId,
       userId,
-    } = pageOptionsDto;
+      minPrice,
+      maxPrice,
+    } = filterDto;
 
     const queryBuilder = this.courseRepository
       .createQueryBuilder('course')
       .leftJoinAndSelect('course.categories', 'categories')
       .leftJoinAndSelect('course.instructor', 'instructor');
 
+    // Instructor filter
     if (instructorId) {
       queryBuilder.andWhere('course.instructor = :instructorId', {
         instructorId,
       });
     }
 
+    // General search across title and description
     if (search) {
-      queryBuilder.where('course.title LIKE :search', {
-        search: `%${search}%`,
+      queryBuilder.andWhere(
+        '(course.title LIKE :search OR course.description LIKE :search)',
+        { search: `%${search}%` },
+      );
+    }
+
+    // Specific title search
+    if (title) {
+      queryBuilder.andWhere('course.title LIKE :title', {
+        title: `%${title}%`,
       });
     }
 
-    if (minRating) {
-      queryBuilder.andWhere('course.average_rating >= :minRating', {
-        minRating,
+    // Specific description search
+    if (description) {
+      queryBuilder.andWhere('course.description LIKE :description', {
+        description: `%${description}%`,
       });
     }
 
+    // Price range filters
+    if (minPrice !== undefined) {
+      queryBuilder.andWhere('course.price >= :minPrice', { minPrice });
+    }
+
+    if (maxPrice !== undefined) {
+      queryBuilder.andWhere('course.price <= :maxPrice', { maxPrice });
+    }
+
+    // Category filters
     if (categoryIds?.length > 0) {
       queryBuilder.andWhere('categories.id IN (:...categoryIds)', {
         categoryIds,
       });
     }
 
-    const validOrderByFields = ['title', 'date_created', 'last_updated'];
+    // Sorting
+    const validOrderByFields = [
+      'title',
+      'date_created',
+      'last_updated',
+      'price',
+    ];
     const sortField = validOrderByFields.includes(orderBy) ? orderBy : 'title';
 
-    queryBuilder
-      .orderBy(`course.${sortField}`, order || 'ASC')
-      .skip(pageOptionsDto.skip)
-      .take(pageOptionsDto.take);
+    // If rating filters are applied, we need to get all items first, filter by rating, then paginate
+    if (minRating !== undefined || maxRating !== undefined) {
+      // Get all matching courses without pagination
+      const allItems = await queryBuilder
+        .orderBy(`course.${sortField}`, order || 'ASC')
+        .getMany();
 
-    const [items, itemCount] = await queryBuilder.getManyAndCount();
+      // Calculate ratings and filter
+      const coursesWithRatings = await Promise.all(
+        allItems.map(async (course) => {
+          const averageRating = await this.reviewService.getAverageRating(
+            course.id,
+          );
+          return {
+            ...course,
+            average_rating: averageRating,
+          };
+        }),
+      );
 
-    // Calculate average rating for each course
-    const coursesWithRatings = await Promise.all(
-      items.map(async (course) => {
-        const averageRating = await this.reviewService.getAverageRating(course.id);
-        return {
+      const filteredCourses = coursesWithRatings.filter((course) => {
+        const rating = course.average_rating || 0;
+        const meetsMinRating = minRating === undefined || rating >= minRating;
+        const meetsMaxRating = maxRating === undefined || rating <= maxRating;
+        return meetsMinRating && meetsMaxRating;
+      });
+
+      // Apply pagination to filtered results
+      const totalItemCount = filteredCourses.length;
+      const paginatedCourses = filteredCourses.slice(
+        filterDto.skip,
+        filterDto.skip + filterDto.take,
+      );
+
+      // Add enrollment status if userId provided
+      let coursesWithEnrollmentStatus = paginatedCourses;
+      if (userId) {
+        const enrolledCourseIds = await this.getEnrolledCourseIds(userId);
+        coursesWithEnrollmentStatus = paginatedCourses.map((course) => ({
           ...course,
-          average_rating: averageRating,
-        };
-      })
-    );
+          isPurchased: enrolledCourseIds.includes(course.id),
+        }));
+      }
 
-    let coursesWithEnrollmentStatus = coursesWithRatings;
-    if (userId) {
-      const enrolledCourseIds = await this.getEnrolledCourseIds(userId);
-      coursesWithEnrollmentStatus = coursesWithRatings.map((course) => ({
-        ...course,
-        isPurchased: enrolledCourseIds.includes(course.id),
-      }));
+      const pageMetaDto = new PageMetaDto({
+        itemCount: totalItemCount,
+        pageOptionsDto: filterDto,
+      });
+
+      return { result: coursesWithEnrollmentStatus, meta: pageMetaDto };
+    } else {
+      // No rating filters, use normal pagination
+      queryBuilder
+        .orderBy(`course.${sortField}`, order || 'ASC')
+        .skip(filterDto.skip)
+        .take(filterDto.take);
+
+      const [items, itemCount] = await queryBuilder.getManyAndCount();
+
+      // Calculate average rating for each course
+      const coursesWithRatings = await Promise.all(
+        items.map(async (course) => {
+          const averageRating = await this.reviewService.getAverageRating(
+            course.id,
+          );
+          return {
+            ...course,
+            average_rating: averageRating,
+          };
+        }),
+      );
+
+      // Add enrollment status if userId provided
+      let coursesWithEnrollmentStatus = coursesWithRatings;
+      if (userId) {
+        const enrolledCourseIds = await this.getEnrolledCourseIds(userId);
+        coursesWithEnrollmentStatus = coursesWithRatings.map((course) => ({
+          ...course,
+          isPurchased: enrolledCourseIds.includes(course.id),
+        }));
+      }
+
+      const pageMetaDto = new PageMetaDto({
+        itemCount,
+        pageOptionsDto: filterDto,
+      });
+
+      return { result: coursesWithEnrollmentStatus, meta: pageMetaDto };
     }
-
-    const pageMetaDto = new PageMetaDto({ itemCount, pageOptionsDto });
-
-    return { result: coursesWithEnrollmentStatus, meta: pageMetaDto };
   }
 
   private async getEnrolledCourseIds(userId: number): Promise<number[]> {
@@ -182,7 +274,7 @@ export class CourseService {
 
     // Calculate and add average rating
     const averageRating = await this.reviewService.getAverageRating(course.id);
-    
+
     return {
       ...course,
       average_rating: averageRating,

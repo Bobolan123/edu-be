@@ -20,6 +20,7 @@ import { ResponseMessage } from 'src/decorator/responseMessage.decorator';
 import { UpdateCourseDto } from './dto/update-course.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { PageOptionsDto } from 'src/common/dtos';
+import { CourseSearchFilterDto } from './dto/course-search-filter.dto';
 import { Category } from 'src/entities/category.entity';
 import { UpsertCourseContentDto } from './dto/course-content.dto';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
@@ -37,8 +38,8 @@ export class CourseController {
   @Get()
   @ResponseMessage('Fetch all Courses')
   @UsePipes(new ValidationPipe({ transform: true }))
-  findAll(@Query() pageOptionsDto: PageOptionsDto) {
-    return this.courseService.findAll(pageOptionsDto);
+  findAll(@Query() courseSearchFilterDto: CourseSearchFilterDto) {
+    return this.courseService.findAll(courseSearchFilterDto);
   }
 
   @Get('by-category')

@@ -42,7 +42,7 @@ export class ReviewController {
     @Body() updateReviewDto: UpdateReviewDto,
   ): Promise<Review> {
     return this.reviewService.updateReview(id, updateReviewDto);
-  }
+  } 
 
   @Delete(':id')
   @UseGuards(JwtAuthGuard)
