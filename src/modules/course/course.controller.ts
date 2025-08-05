@@ -83,6 +83,7 @@ export class CourseController {
   }
 
   @Patch('content/:courseId')
+  @ResponseMessage('Update course content')
   async updateContent(
     @Param('courseId') courseId: number,
     @Body() contentDto: UpsertCourseContentDto,
@@ -95,6 +96,7 @@ export class CourseController {
   }
 
   @Get('content/:courseId')
+  @ResponseMessage('Get course content')
   async getCourseContent(@Param('courseId') courseId: number) {
     return this.courseService.getCourseContent(courseId);
   }
