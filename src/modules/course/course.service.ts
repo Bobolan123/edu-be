@@ -361,8 +361,8 @@ export class CourseService {
   // upload new video lecture when it uploaded
   async uploadLecture(
     courseId: number,
-    sectionIndex: number,
-    lectureIndex: number,
+    sectionId: string,
+    lectureId: string,
     file: Express.Multer.File,
   ) {
     const course = await this.courseRepository.findOne({
@@ -376,10 +376,10 @@ export class CourseService {
     if (!courseContent)
       throw new BadRequestException('Course content not found');
 
-    const section = courseContent.sections[sectionIndex];
+    const section = courseContent.sections.find(s => s._id.toString() === sectionId);
     if (!section) throw new BadRequestException('Section not found');
 
-    const lecture = section.lectures[lectureIndex];
+    const lecture = section.lectures.find(l => l._id.toString() === lectureId);
     if (!lecture) throw new BadRequestException('Lecture not found');
 
     if (lecture.videoUrl) {
@@ -387,15 +387,18 @@ export class CourseService {
       await this.cloudinaryService.deleteFile(publicId);
     }
 
-    const { url, duration } = await this.cloudinaryService.uploadVideo(
+    const { url } = await this.cloudinaryService.uploadVideo(
       file,
       'course-lectures',
     );
 
+    lecture.videoUrl = url;
+    await courseContent.save();
+
     return url;
   }
 
-  //   // Upload video to Cloudinary
+  // Upload video to Cloudinary
 
   async getCourseContent(courseId: number) {
     const content = await this.courseContentModel.findOne({ courseId }).lean();

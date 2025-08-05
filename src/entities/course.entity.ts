@@ -42,9 +42,6 @@ export class Course {
   })
   instructor: User;
 
-  @Column({ type: 'float', default: 0 })
-  duration: number;
-
   @CreateDateColumn()
   date_created: Date;
 

@@ -15,6 +15,7 @@ export const LectureSchema = SchemaFactory.createForClass(Lecture);
 
 @Schema()
 export class Section {
+  _id?: string;
   @Prop({ required: true }) title: string;
   @Prop({ required: true }) totalLectures: number;
   @Prop({ type: [LectureSchema], default: [] }) lectures: Lecture[];

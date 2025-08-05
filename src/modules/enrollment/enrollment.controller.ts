@@ -7,6 +7,7 @@ import {
   Put,
   Delete,
   Query,
+  Patch,
 } from '@nestjs/common';
 import { EnrollmentService } from './enrollment.service';
 import { Enrollment } from 'src/entities/enrollment.entity';
@@ -75,8 +76,11 @@ export class EnrollmentController {
     @Param('userId') userId: string,
     @Param('courseId') courseId: string,
   ) {
-    return this.enrollmentService.getEnrollmentWithProgressByUserAndCourse(+userId, +courseId);
-  } 
+    return this.enrollmentService.getEnrollmentWithProgressByUserAndCourse(
+      +userId,
+      +courseId,
+    );
+  }
 
   @Post(':enrollmentId/lectures/:lectureId/complete')
   async markLectureAsCompleted(
@@ -86,12 +90,12 @@ export class EnrollmentController {
   ): Promise<void> {
     return this.enrollmentService.markLectureAsCompleted(
       +enrollmentId,
-      courseId, 
+      courseId,
       lectureId,
     );
   }
 
-  @Put(':enrollmentId/lectures/:lectureId/watch-time')
+  @Patch(':enrollmentId/lectures/:lectureId/watch-time')
   async updateWatchTime(
     @Param('enrollmentId') enrollmentId: string,
     @Param('lectureId') lectureId: string,

@@ -27,8 +27,8 @@ export class ReviewController {
   @Get('distribution')
   async getReviewDistribution(@Query('id') courseId: string) {
     return this.reviewService.getRatingDistribution(+courseId);
-  } 
-  
+  }
+
   @Post()
   @UseGuards(JwtAuthGuard)
   async create(@Body() createReviewDto: CreateReviewDto): Promise<Review> {
@@ -42,14 +42,14 @@ export class ReviewController {
     @Body() updateReviewDto: UpdateReviewDto,
   ): Promise<Review> {
     return this.reviewService.updateReview(id, updateReviewDto);
-  } 
+  }
 
   @Delete(':id')
   @UseGuards(JwtAuthGuard)
   async delete(@Param('id', ParseIntPipe) id: number): Promise<void> {
     return this.reviewService.delete(id);
   }
-  
+
   @Get('course/:courseId')
   async findFilterByCourse(
     @Param('courseId', ParseIntPipe) courseId: number,
@@ -58,7 +58,7 @@ export class ReviewController {
     return this.reviewService.findByCourse(courseId, reviewFilterDto);
   }
 
-  @Get('user/:userId/course/:courseId') 
+  @Get('user/:userId/course/:courseId')
   async getUserCourseReview(
     @Param('userId', ParseIntPipe) userId: number,
     @Param('courseId', ParseIntPipe) courseId: number,

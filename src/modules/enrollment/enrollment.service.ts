@@ -176,13 +176,15 @@ export class EnrollmentService {
     enrollmentId: number,
     courseId: number,
   ): Promise<LectureProgress[]> {
-    return this.lectureProgressModel.find({ enrollmentId, courseId, isCompleted: true }).exec();
+    return this.lectureProgressModel
+      .find({ enrollmentId, courseId, isCompleted: true })
+      .exec();
   }
 
   async getEnrollmentWithProgress(enrollmentId: number): Promise<{
     enrollment: Enrollment;
     lectureProgress: LectureProgress[];
-    progressPercentage: number; 
+    progressPercentage: number;
   }> {
     const enrollment = await this.findOne(enrollmentId);
     const lectureProgress = await this.getLectureProgress(

@@ -33,11 +33,6 @@ export class CreateCourseDto {
   @Min(0)
   price: number;
 
-  @IsOptional()
-  @IsInt()
-  @Min(1)
-  duration?: number;
-
   @IsNotEmpty()
   @IsInt()
   instructorId: number;

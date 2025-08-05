@@ -16,7 +16,7 @@ export class ReviewFilterDto extends PageOptionsDto {
   @Max(5)
   @IsOptional()
   rating?: number;
- 
+
   @IsEnum(ReviewSortBy)
   @IsOptional()
   sortBy?: ReviewSortBy = ReviewSortBy.NEWEST;

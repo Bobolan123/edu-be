@@ -22,4 +22,3 @@ export class Review {
   @Column({ default: () => 'CURRENT_TIMESTAMP' })
   date_reviewed: Date;
 }
-
