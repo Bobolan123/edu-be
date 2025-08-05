@@ -101,6 +101,17 @@ export class CourseController {
     return this.courseService.getCourseContent(courseId);
   }
 
+  @Get(':id/students')
+  @UseGuards(JwtAuthGuard)
+  @ResponseMessage('Get course students with progress')
+  @UsePipes(new ValidationPipe({ transform: true }))
+  async getCourseStudentsWithProgress(
+    @Param('id') id: string,
+    @Query() pageOptionsDto: PageOptionsDto,
+  ) {
+    return this.courseService.getCourseStudentsWithProgress(+id, pageOptionsDto);
+  }
+
   @Post(':id/thumbnail')
   @UseGuards(JwtAuthGuard)
   @UseInterceptors(FileInterceptor('thumbnail'))

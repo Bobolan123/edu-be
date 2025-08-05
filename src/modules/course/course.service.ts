@@ -16,6 +16,10 @@ import {
   CourseContent,
   CourseContentDocument,
 } from 'src/schemas/course-content.schema';
+import {
+  LectureProgress,
+  LectureProgressDocument,
+} from 'src/schemas/lecture-progress.schema';
 import { ReviewService } from '../review/review.service';
 
 @Injectable()
@@ -37,6 +41,9 @@ export class CourseService {
 
     @InjectModel(CourseContent.name)
     private readonly courseContentModel: Model<CourseContentDocument>,
+
+    @InjectModel(LectureProgress.name)
+    private readonly lectureProgressModel: Model<LectureProgressDocument>,
 
     private readonly reviewService: ReviewService,
   ) {}
@@ -290,11 +297,16 @@ export class CourseService {
     if (!course) {
       throw new BadRequestException(`Course with ID ${id} not found.`);
     }
-
-    if (course.title === updateCourseDto.title) {
-      throw new BadRequestException(
-        `The course "${updateCourseDto.title}" already exists.`,
-      );
+    
+    if (updateCourseDto.title && updateCourseDto.title !== course.title) {
+      const existingCourse = await this.courseRepository.findOne({
+        where: { title: updateCourseDto.title },
+      });
+      if (existingCourse) {
+        throw new BadRequestException(
+          `The course "${updateCourseDto.title}" already exists.`,
+        );
+      }
     }
 
     const { instructorId, categoryIds, ...updateFields } = updateCourseDto;
@@ -414,5 +426,69 @@ export class CourseService {
       { $set: { ...content } },
       { upsert: true, new: true },
     );
+  }
+
+  async getCourseStudentsWithProgress(
+    courseId: number,
+    pageOptionsDto: PageOptionsDto,
+  ): Promise<ResponsePaginate<any>> {
+    const course = await this.courseRepository.findOne({
+      where: { id: courseId },
+    });
+    if (!course) {
+      throw new BadRequestException(`Course with ID ${courseId} not found.`);
+    }
+
+    const courseContent = await this.courseContentModel.findOne({ courseId });
+    if (!courseContent) {
+      throw new BadRequestException('Course content not found');
+    }
+
+    const totalLectures = courseContent.totalLectures;
+
+    const enrollmentsQuery = this.enrollmentRepository
+      .createQueryBuilder('enrollment')
+      .leftJoinAndSelect('enrollment.student', 'student')
+      .where('enrollment.course = :courseId', { courseId })
+      .skip(pageOptionsDto.skip)
+      .take(pageOptionsDto.take);
+
+    const [enrollments, itemCount] = await enrollmentsQuery.getManyAndCount();
+
+    const studentsWithProgress = await Promise.all(
+      enrollments.map(async (enrollment) => {
+        const completedLectures = await this.lectureProgressModel.countDocuments({
+          enrollmentId: enrollment.id,
+          courseId: courseId,
+          isCompleted: true,
+        });
+
+        const progressPercentage = totalLectures > 0 
+          ? Math.round((completedLectures / totalLectures) * 100)
+          : 0;
+
+        return {
+          enrollmentId: enrollment.id,
+          student: {
+            id: enrollment.student.id,
+            name: enrollment.student.name,
+            email: enrollment.student.email,
+            profile_picture: enrollment.student.profile_picture,
+            avatar_url: enrollment.student.avatar_url,
+          },
+          enrolledAt: enrollment.date_enrolled,
+          completedLectures,
+          totalLectures,
+          progressPercentage,
+        };
+      }),
+    );
+
+    const pageMetaDto = new PageMetaDto({
+      itemCount,
+      pageOptionsDto,
+    });
+
+    return { result: studentsWithProgress, meta: pageMetaDto };
   }
 }

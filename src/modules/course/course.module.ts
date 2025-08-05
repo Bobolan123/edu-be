@@ -14,6 +14,10 @@ import {
   CourseContent,
   CourseContentSchema,
 } from 'src/schemas/course-content.schema';
+import {
+  LectureProgress,
+  LectureProgressSchema,
+} from 'src/schemas/lecture-progress.schema';
 import { Enrollment } from 'src/entities/enrollment.entity';
 import { ReviewModule } from '../review/review.module';
 
@@ -31,6 +35,7 @@ import { ReviewModule } from '../review/review.module';
     CloudinaryModule,
     MongooseModule.forFeature([
       { name: CourseContent.name, schema: CourseContentSchema },
+      { name: LectureProgress.name, schema: LectureProgressSchema },
     ]),
     ReviewModule,
   ],
