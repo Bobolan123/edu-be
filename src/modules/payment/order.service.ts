@@ -5,7 +5,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { Order, OrderStatus, PaymentMethod } from '../../entities/order.entity';
 import { VNPayService } from './services/vnpay.service';
 import { PaypalService } from './services/paypal.service';
@@ -26,6 +26,7 @@ export class OrderService {
     @InjectRepository(Cart)
     private cartRepository: Repository<Cart>,
     private enrollmentService: EnrollmentService,
+    private dataSource: DataSource,
   ) {}
 
   async createOrder(
@@ -84,16 +85,19 @@ export class OrderService {
   ): Promise<Order> {
     let order: Order;
     let isValid = false;
+    let isSuccess = false;
     let transactionId: string;
     let status = OrderStatus.FAILED;
 
     switch (paymentMethod) {
       case PaymentMethod.VNPAY:
-        isValid = await this.vnpayService.verifyReturnUrl(params);
+        const vnpayResult = this.vnpayService.verifyReturnUrl(params);
+        isValid = vnpayResult.isValid;
+        isSuccess = vnpayResult.isSuccess;
         if (isValid) {
           order = await this.findOne(params.vnp_TxnRef);
           transactionId = params.vnp_TransactionNo;
-          status = OrderStatus.COMPLETED;
+          status = isSuccess ? OrderStatus.COMPLETED : OrderStatus.FAILED;
         }
         break;
       case PaymentMethod.PAYPAL:
@@ -102,6 +106,7 @@ export class OrderService {
           order = await this.findOne(params.orderId);
           transactionId = params.token;
           status = OrderStatus.COMPLETED;
+          isSuccess = true;
         }
         break;
       case PaymentMethod.CREDIT_CARD:
@@ -110,6 +115,7 @@ export class OrderService {
           order = await this.findOne(params.metadata.orderId);
           transactionId = params.id;
           status = OrderStatus.COMPLETED;
+          isSuccess = true;
         }
         break;
       default:
@@ -123,33 +129,37 @@ export class OrderService {
       throw new NotFoundException('Order not found');
     }
 
-    if (status === OrderStatus.COMPLETED) {
-      const cart = await this.cartRepository.findOne({
-        where: { user: { id: order.user.id }, isCheckedOut: false },
-        relations: ['cartItems', 'cartItems.course'],
-      });
+    return this.dataSource.transaction(async (manager) => {
+      try {
+        if (status === OrderStatus.COMPLETED) {
+          const cart = await manager.findOne(Cart, {
+            where: { user: { id: order.user.id }, isCheckedOut: false },
+            relations: ['cartItems', 'cartItems.course', 'user'],
+          });
 
-      if (cart) {
-        cart.isCheckedOut = true;
-        await this.cartRepository.save(cart);
+          if (cart && cart.cartItems?.length) {
+            const enrollmentPromises = cart.cartItems.map((item) =>
+              this.enrollmentService.createFromEntities(order.user, item.course),
+            );
+            
+            await Promise.all(enrollmentPromises);
 
-        if (cart.cartItems?.length) {
-          await Promise.all(
-            cart.cartItems.map((item) =>
-              this.enrollmentService.createFromEntities(
-                order.user,
-                item.course,
-              ),
-            ),
-          );
+            cart.isCheckedOut = true;
+            await manager.save(Cart, cart);
+          }
         }
-      }
-    }
 
-    order.status = status;
-    order.transactionId = transactionId;
-    order.paymentGatewayResponse = JSON.stringify(params);
-    return this.orderRepository.save(order);
+        order.status = status;
+        order.transactionId = transactionId;
+        order.paymentGatewayResponse = JSON.stringify(params);
+        
+        return await manager.save(Order, order);
+      } catch (error) {
+        throw new BadRequestException(
+          `Failed to process payment callback: ${error.message}`,
+        );
+      }
+    });
   }
 
   async findAll(
@@ -205,5 +215,14 @@ export class OrderService {
       throw new NotFoundException('Order not found');
     }
     return order;
+  }
+
+  async updateOrderStatus(id: string, status: OrderStatus, gatewayResponse?: any): Promise<Order> {
+    const order = await this.findOne(id);
+    order.status = status;
+    if (gatewayResponse) {
+      order.paymentGatewayResponse = JSON.stringify(gatewayResponse);
+    }
+    return this.orderRepository.save(order);
   }
 }

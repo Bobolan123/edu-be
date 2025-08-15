@@ -57,7 +57,7 @@ export class ReviewController {
 
   @Get('course/:courseId')
   @ResponseMessage('Get course reviews')
-  async findFilterByCourse(
+  async findByCourse(
     @Param('courseId', ParseIntPipe) courseId: number,
     @Query() reviewFilterDto: ReviewFilterDto,
   ) {

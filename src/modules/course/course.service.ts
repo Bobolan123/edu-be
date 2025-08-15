@@ -141,7 +141,7 @@ export class CourseService {
     if (minPrice !== undefined) {
       queryBuilder.andWhere('course.price >= :minPrice', { minPrice });
     }
-
+ 
     if (maxPrice !== undefined) {
       queryBuilder.andWhere('course.price <= :maxPrice', { maxPrice });
     }
