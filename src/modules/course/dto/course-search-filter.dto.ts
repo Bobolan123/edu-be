@@ -48,6 +48,10 @@ export class CourseSearchFilterDto {
   @IsOptional()
   userId?: number;
 
+  @Transform(({ value }) => value === 'true')
+  @IsOptional()
+  excludeEnrolled?: boolean;
+
   @Transform(({ value }) =>
     value ? (Array.isArray(value) ? value.map(Number) : [Number(value)]) : [],
   )

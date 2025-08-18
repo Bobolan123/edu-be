@@ -104,6 +104,7 @@ export class CourseService {
       userId,
       minPrice,
       maxPrice,
+      excludeEnrolled,
     } = filterDto;
 
     const queryBuilder = this.courseRepository
@@ -154,6 +155,17 @@ export class CourseService {
       queryBuilder.andWhere('categories.id IN (:...categoryIds)', {
         categoryIds,
       });
+    }
+
+    // Exclude enrolled courses filter
+    if (excludeEnrolled && userId) {
+      const enrolledCourseIds = await this.getEnrolledCourseIds(userId);
+
+      if (enrolledCourseIds.length > 0) {
+        queryBuilder.andWhere('course.id NOT IN (:...enrolledCourseIds)', {
+          enrolledCourseIds,
+        });
+      }
     }
 
     // Sorting
