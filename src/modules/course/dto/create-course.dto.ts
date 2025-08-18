@@ -12,7 +12,7 @@ import {
 import { Category } from 'src/entities/category.entity';
 
 export class CreateCourseDto {
-  id:number
+  id: number;
   @IsNotEmpty()
   @IsString()
   title: string;

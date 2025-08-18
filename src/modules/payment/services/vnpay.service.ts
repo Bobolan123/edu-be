@@ -72,11 +72,14 @@ export class VNPayService {
     return redirectUrl.toString();
   }
 
-  verifyReturnUrl(params: Record<string, string>): { isValid: boolean; isSuccess: boolean } {
+  verifyReturnUrl(params: Record<string, string>): {
+    isValid: boolean;
+    isSuccess: boolean;
+  } {
     const receivedSecureHash = params.vnp_SecureHash;
     const responseCode = params.vnp_ResponseCode;
     const transactionStatus = params.vnp_TransactionStatus;
-    
+
     // Create a copy for hash verification
     const paramsForHash = { ...params };
     delete paramsForHash.vnp_SecureHash;
@@ -103,7 +106,8 @@ export class VNPayService {
 
     const isValid = receivedSecureHash === generatedHash;
     // VNPay response codes: 00 = success, 24 = cancelled by user, others = failed
-    const isSuccess = isValid && responseCode === '00' && transactionStatus === '00';
+    const isSuccess =
+      isValid && responseCode === '00' && transactionStatus === '00';
 
     return { isValid, isSuccess };
   }

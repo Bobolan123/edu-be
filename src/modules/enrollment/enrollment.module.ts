@@ -14,6 +14,7 @@ import {
   CourseContent,
   CourseContentSchema,
 } from 'src/schemas/course-content.schema';
+import { CourseModule } from '../course/course.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import {
       { name: LectureProgress.name, schema: LectureProgressSchema },
       { name: CourseContent.name, schema: CourseContentSchema },
     ]),
+    CourseModule,
   ],
   exports: [EnrollmentService],
   controllers: [EnrollmentController],

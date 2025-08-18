@@ -21,6 +21,7 @@ import {
   LectureProgressDocument,
 } from 'src/schemas/lecture-progress.schema';
 import { ReviewService } from '../review/review.service';
+import { CourseProgressSyncService } from './course-progress-sync.service';
 
 @Injectable()
 export class CourseService {
@@ -46,6 +47,8 @@ export class CourseService {
     private readonly lectureProgressModel: Model<LectureProgressDocument>,
 
     private readonly reviewService: ReviewService,
+
+    private readonly courseProgressSyncService: CourseProgressSyncService,
   ) {}
 
   async create(createCourseDto: CreateCourseDto) {
@@ -141,7 +144,7 @@ export class CourseService {
     if (minPrice !== undefined) {
       queryBuilder.andWhere('course.price >= :minPrice', { minPrice });
     }
- 
+
     if (maxPrice !== undefined) {
       queryBuilder.andWhere('course.price <= :maxPrice', { maxPrice });
     }
@@ -297,7 +300,7 @@ export class CourseService {
     if (!course) {
       throw new BadRequestException(`Course with ID ${id} not found.`);
     }
-    
+
     if (updateCourseDto.title && updateCourseDto.title !== course.title) {
       const existingCourse = await this.courseRepository.findOne({
         where: { title: updateCourseDto.title },
@@ -340,6 +343,9 @@ export class CourseService {
     if (!course) {
       throw new BadRequestException(`Course with ID ${id} not found.`);
     }
+
+    // Clean up progress records before deleting course content
+    await this.lectureProgressModel.deleteMany({ courseId: id });
 
     await this.courseRepository.delete(id);
     await this.courseContentModel.deleteOne({ courseId: id });
@@ -388,10 +394,14 @@ export class CourseService {
     if (!courseContent)
       throw new BadRequestException('Course content not found');
 
-    const section = courseContent.sections.find(s => s._id.toString() === sectionId);
+    const section = courseContent.sections.find(
+      (s) => s._id.toString() === sectionId,
+    );
     if (!section) throw new BadRequestException('Section not found');
 
-    const lecture = section.lectures.find(l => l._id.toString() === lectureId);
+    const lecture = section.lectures.find(
+      (l) => l._id.toString() === lectureId,
+    );
     if (!lecture) throw new BadRequestException('Lecture not found');
 
     if (lecture.videoUrl) {
@@ -407,6 +417,11 @@ export class CourseService {
     lecture.videoUrl = url;
     await courseContent.save();
 
+    // Synchronize progress after lecture upload
+    await this.courseProgressSyncService.synchronizeProgressWithContent(
+      courseId,
+    );
+
     return url;
   }
 
@@ -421,11 +436,18 @@ export class CourseService {
   }
 
   async upsertCourseContent(courseId: number, content: any) {
-    return await this.courseContentModel.findOneAndUpdate(
+    const result = await this.courseContentModel.findOneAndUpdate(
       { courseId },
       { $set: { ...content } },
       { upsert: true, new: true },
     );
+
+    // Synchronize progress after content update
+    await this.courseProgressSyncService.synchronizeProgressWithContent(
+      courseId,
+    );
+
+    return result;
   }
 
   async getCourseStudentsWithProgress(
@@ -444,7 +466,11 @@ export class CourseService {
       throw new BadRequestException('Course content not found');
     }
 
-    const totalLectures = courseContent.totalLectures;
+    // Calculate totalLectures from sections array
+    const totalLectures =
+      courseContent.sections?.reduce((total, section) => {
+        return total + (section.lectures?.length || 0);
+      }, 0) || 0;
 
     const enrollmentsQuery = this.enrollmentRepository
       .createQueryBuilder('enrollment')
@@ -457,15 +483,17 @@ export class CourseService {
 
     const studentsWithProgress = await Promise.all(
       enrollments.map(async (enrollment) => {
-        const completedLectures = await this.lectureProgressModel.countDocuments({
-          enrollmentId: enrollment.id,
-          courseId: courseId,
-          isCompleted: true,
-        });
+        const completedLectures =
+          await this.lectureProgressModel.countDocuments({
+            enrollmentId: enrollment.id,
+            courseId: courseId,
+            isCompleted: true,
+          });
 
-        const progressPercentage = totalLectures > 0 
-          ? Math.round((completedLectures / totalLectures) * 100)
-          : 0;
+        const progressPercentage =
+          totalLectures > 0
+            ? Math.round((completedLectures / totalLectures) * 100)
+            : 0;
 
         return {
           enrollmentId: enrollment.id,

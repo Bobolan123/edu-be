@@ -139,9 +139,12 @@ export class OrderService {
 
           if (cart && cart.cartItems?.length) {
             const enrollmentPromises = cart.cartItems.map((item) =>
-              this.enrollmentService.createFromEntities(order.user, item.course),
+              this.enrollmentService.createFromEntities(
+                order.user,
+                item.course,
+              ),
             );
-            
+
             await Promise.all(enrollmentPromises);
 
             cart.isCheckedOut = true;
@@ -152,7 +155,7 @@ export class OrderService {
         order.status = status;
         order.transactionId = transactionId;
         order.paymentGatewayResponse = JSON.stringify(params);
-        
+
         return await manager.save(Order, order);
       } catch (error) {
         throw new BadRequestException(
@@ -217,7 +220,11 @@ export class OrderService {
     return order;
   }
 
-  async updateOrderStatus(id: string, status: OrderStatus, gatewayResponse?: any): Promise<Order> {
+  async updateOrderStatus(
+    id: string,
+    status: OrderStatus,
+    gatewayResponse?: any,
+  ): Promise<Order> {
     const order = await this.findOne(id);
     order.status = status;
     if (gatewayResponse) {

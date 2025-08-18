@@ -17,6 +17,7 @@ import {
   CourseContent,
   CourseContentDocument,
 } from 'src/schemas/course-content.schema';
+import { CourseProgressSyncService } from '../course/course-progress-sync.service';
 
 @Injectable()
 export class EnrollmentService {
@@ -35,6 +36,8 @@ export class EnrollmentService {
 
     @InjectModel(CourseContent.name)
     private courseContentModel: Model<CourseContentDocument>,
+
+    private readonly courseProgressSyncService: CourseProgressSyncService,
   ) {}
 
   async findAll(): Promise<Enrollment[]> {
@@ -235,16 +238,29 @@ export class EnrollmentService {
     const courseContent = await this.courseContentModel.findOne({ courseId });
     if (!courseContent) return 0;
 
-    const totalLectures = courseContent.totalLectures;
+    // Calculate totalLectures from sections array
+    const totalLectures =
+      courseContent.sections?.reduce((total, section) => {
+        return total + (section.lectures?.length || 0);
+      }, 0) || 0;
+
+    if (totalLectures === 0) return 0;
+
     const completedLectures = await this.lectureProgressModel.countDocuments({
       enrollmentId,
       courseId,
       isCompleted: true,
     });
 
-    return totalLectures > 0
-      ? Math.round((completedLectures / totalLectures) * 100)
-      : 0;
+    const progressPercentage = Math.round(
+      (completedLectures / totalLectures) * 100,
+    );
+
+    console.log(
+      `Course ${courseId} - Total: ${totalLectures}, Completed: ${completedLectures}, Progress: ${progressPercentage}%`,
+    );
+
+    return progressPercentage;
   }
 
   async getCoursesByUserWithProgress(userId: number, courseId?: number) {

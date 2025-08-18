@@ -20,6 +20,7 @@ import {
 } from 'src/schemas/lecture-progress.schema';
 import { Enrollment } from 'src/entities/enrollment.entity';
 import { ReviewModule } from '../review/review.module';
+import { CourseProgressSyncService } from './course-progress-sync.service';
 
 @Module({
   imports: [
@@ -39,8 +40,8 @@ import { ReviewModule } from '../review/review.module';
     ]),
     ReviewModule,
   ],
-  exports: [CourseService],
+  exports: [CourseService, CourseProgressSyncService],
   controllers: [CourseController],
-  providers: [CourseService],
+  providers: [CourseService, CourseProgressSyncService],
 })
 export class CourseModule {}

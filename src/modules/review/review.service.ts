@@ -50,7 +50,12 @@ export class ReviewService {
       queryBuilder.orderBy(`review.${orderBy}`, pageOptionsDto.order);
     }
 
-    console.log('DEBUG PAGINATE - skip:', pageOptionsDto.skip, 'take:', pageOptionsDto.take);
+    console.log(
+      'DEBUG PAGINATE - skip:',
+      pageOptionsDto.skip,
+      'take:',
+      pageOptionsDto.take,
+    );
     queryBuilder.skip(pageOptionsDto.skip).take(pageOptionsDto.take);
 
     const [items, itemCount] = await queryBuilder.getManyAndCount();
@@ -156,10 +161,15 @@ export class ReviewService {
 
   async findByCourse(courseId: number, reviewFilterDto: ReviewFilterDto) {
     // Convert string values to numbers and calculate skip manually
-    const page = typeof reviewFilterDto.page === 'string' ? parseInt(reviewFilterDto.page, 10) : reviewFilterDto.page;
-    const take = typeof reviewFilterDto.take === 'string' ? parseInt(reviewFilterDto.take, 10) : reviewFilterDto.take;
+    const page =
+      typeof reviewFilterDto.page === 'string'
+        ? parseInt(reviewFilterDto.page, 10)
+        : reviewFilterDto.page;
+    const take =
+      typeof reviewFilterDto.take === 'string'
+        ? parseInt(reviewFilterDto.take, 10)
+        : reviewFilterDto.take;
     const skip = (page - 1) * take;
-
 
     const qb = this.reviewRepo
       .createQueryBuilder('review')
@@ -173,7 +183,10 @@ export class ReviewService {
     qb.skip(skip).take(take);
 
     const [items, itemCount] = await qb.getManyAndCount();
-    const meta = new PageMetaDto({ itemCount, pageOptionsDto: { ...reviewFilterDto, page, take, skip } });
+    const meta = new PageMetaDto({
+      itemCount,
+      pageOptionsDto: { ...reviewFilterDto, page, take, skip },
+    });
 
     return { result: items, meta };
   }

@@ -109,7 +109,10 @@ export class CourseController {
     @Param('id') id: string,
     @Query() pageOptionsDto: PageOptionsDto,
   ) {
-    return this.courseService.getCourseStudentsWithProgress(+id, pageOptionsDto);
+    return this.courseService.getCourseStudentsWithProgress(
+      +id,
+      pageOptionsDto,
+    );
   }
 
   @Post(':id/thumbnail')

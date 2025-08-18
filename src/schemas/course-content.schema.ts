@@ -17,7 +17,6 @@ export const LectureSchema = SchemaFactory.createForClass(Lecture);
 export class Section {
   _id?: string;
   @Prop({ required: true }) title: string;
-  @Prop({ required: true }) totalLectures: number;
   @Prop({ type: [LectureSchema], default: [] }) lectures: Lecture[];
 }
 
@@ -29,11 +28,20 @@ export class CourseContent {
   courseId: number;
   @Prop({ required: true })
   totalLength: number;
-  @Prop({ required: true })
-  totalLectures: number;
   @Prop({ type: [String], required: true })
   whatYoullLearn: string[];
   @Prop({ type: [SectionSchema], default: [] }) sections: Section[];
+
+  // Helper method to get all lecture IDs for validation
+  getAllLectureIds(): string[] {
+    if (!this.sections) return [];
+    return this.sections.flatMap(
+      (section) =>
+        section.lectures
+          ?.map((lecture) => lecture._id?.toString())
+          .filter(Boolean) || [],
+    );
+  }
 }
 
 export const CourseContentSchema = SchemaFactory.createForClass(CourseContent);

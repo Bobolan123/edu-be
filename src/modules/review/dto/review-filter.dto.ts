@@ -1,4 +1,12 @@
-import { IsEnum, IsOptional, IsArray, IsInt, IsString, Min, Max } from 'class-validator';
+import {
+  IsEnum,
+  IsOptional,
+  IsArray,
+  IsInt,
+  IsString,
+  Min,
+  Max,
+} from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 import { PageOptionsDto } from 'src/common/dtos/page-option.dto';
 
@@ -14,7 +22,7 @@ export class ReviewFilterDto extends PageOptionsDto {
   @IsInt()
   @Min(1)
   @Max(5)
-  @IsOptional() 
+  @IsOptional()
   rating?: number;
 
   @IsEnum(ReviewSortBy)

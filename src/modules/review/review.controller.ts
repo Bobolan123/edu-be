@@ -63,7 +63,7 @@ export class ReviewController {
   ) {
     return this.reviewService.findByCourse(courseId, reviewFilterDto);
   }
- 
+
   @Get('user/:userId/course/:courseId')
   @ResponseMessage('Get user course review')
   async getUserCourseReview(

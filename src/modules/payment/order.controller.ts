@@ -57,9 +57,13 @@ export class OrderController {
     });
 
     if (result.status === OrderStatus.COMPLETED) {
-      return res.redirect(`${process.env.FRONTEND_URL}/payment/success?${params}`);
+      return res.redirect(
+        `${process.env.FRONTEND_URL}/payment/success?${params}`,
+      );
     } else {
-      return res.redirect(`${process.env.FRONTEND_URL}/payment/failed?${params}`);
+      return res.redirect(
+        `${process.env.FRONTEND_URL}/payment/failed?${params}`,
+      );
     }
   }
 
@@ -81,9 +85,13 @@ export class OrderController {
     });
 
     if (result.status === OrderStatus.COMPLETED) {
-      return res.redirect(`${process.env.FRONTEND_URL}/payment/success?${params}`);
+      return res.redirect(
+        `${process.env.FRONTEND_URL}/payment/success?${params}`,
+      );
     } else {
-      return res.redirect(`${process.env.FRONTEND_URL}/payment/failed?${params}`);
+      return res.redirect(
+        `${process.env.FRONTEND_URL}/payment/failed?${params}`,
+      );
     }
   }
 
