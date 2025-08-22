@@ -32,7 +32,10 @@ export class UserService {
   }
 
   async findByEmail(email: string): Promise<User> {
-    return this.userRepository.findOne({ where: { email } });
+    return this.userRepository.findOne({ 
+      where: { email },
+      relations: ['role', 'role.permissions']
+    });
   }
 
   async isActiveGmail(email: string): Promise<boolean> {
@@ -195,7 +198,7 @@ export class UserService {
   async findOneByToken(id: number): Promise<User> {
     const user = await this.userRepository.findOne({
       where: { id },
-      relations: ['role'],
+      relations: ['role', 'role.permissions'],
     });
     return user;
   }

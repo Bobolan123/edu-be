@@ -256,10 +256,6 @@ export class EnrollmentService {
       (completedLectures / totalLectures) * 100,
     );
 
-    console.log(
-      `Course ${courseId} - Total: ${totalLectures}, Completed: ${completedLectures}, Progress: ${progressPercentage}%`,
-    );
-
     return progressPercentage;
   }
 

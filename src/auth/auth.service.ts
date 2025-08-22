@@ -53,10 +53,17 @@ export class AuthService {
       throw new HttpException('Email is not verified', HttpStatus.FORBIDDEN);
     }
 
+    const permissions = user.role?.permissions?.map(permission => ({
+      action: permission.action,
+      module: permission.module
+    })) || [];
+
     const payload = {
       id: user.id,
       name: user.name,
       email: user.email,
+      role: user.role?.name,
+      permissions: permissions,
     };
     const access_token = this.jwtService.sign(payload);
     const refresh_token = this.jwtService.sign(payload, {
