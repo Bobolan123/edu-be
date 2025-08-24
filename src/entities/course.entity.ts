@@ -49,7 +49,7 @@ export class Course {
   last_updated: Date;
 
   @Column({ type: 'int', default: 0 })
-  price: number;
+  price: number; 
 
   @Column({ type: 'float', default: 0 })
   average_rating: number;

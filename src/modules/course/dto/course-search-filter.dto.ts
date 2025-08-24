@@ -8,6 +8,7 @@ import {
   Min,
   Max,
   IsNumber,
+  IsBoolean,
 } from 'class-validator';
 import { Order } from '../../../common/constants';
 
@@ -78,6 +79,11 @@ export class CourseSearchFilterDto {
   @IsString()
   @IsOptional()
   orderBy?: string = 'id';
+
+  @Transform(({ value }) => value === 'true')
+  @IsBoolean()
+  @IsOptional()
+  status?: boolean;
 
   @Type(() => Number)
   @IsInt()

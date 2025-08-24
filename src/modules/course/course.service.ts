@@ -105,6 +105,7 @@ export class CourseService {
       minPrice,
       maxPrice,
       excludeEnrolled,
+      status,
     } = filterDto;
 
     const queryBuilder = this.courseRepository
@@ -166,6 +167,11 @@ export class CourseService {
           enrolledCourseIds,
         });
       }
+    }
+
+    // Status filter (true = active, false = inactive)
+    if (status !== undefined) {
+      queryBuilder.andWhere('course.active = :status', { status });
     }
 
     // Sorting
