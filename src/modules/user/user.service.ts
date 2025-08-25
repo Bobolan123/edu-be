@@ -225,11 +225,11 @@ export class UserService {
       search,
       name,
       email,
-      roleId,
+      role,
+      status,
       order,
       orderBy,
     } = filterDto;
-
     const queryBuilder = this.userRepository
       .createQueryBuilder('user')
       .leftJoinAndSelect('user.role', 'role');
@@ -257,8 +257,13 @@ export class UserService {
     }
 
     // Role filter
-    if (roleId) {
-      queryBuilder.andWhere('user.role = :roleId', { roleId });
+    if (role) {
+      queryBuilder.andWhere('role.name = :role', { role });
+    }
+
+    // Active status filter
+    if (status !== undefined) {
+      queryBuilder.andWhere('user.isActive = :status', { status });
     }
 
     // Sorting

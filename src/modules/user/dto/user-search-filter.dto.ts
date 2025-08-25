@@ -1,4 +1,4 @@
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
 import {
   IsEnum,
   IsInt,
@@ -6,6 +6,7 @@ import {
   IsString,
   Min,
   Max,
+  IsBoolean,
 } from 'class-validator';
 import { Order } from '../../../common/constants';
 
@@ -22,10 +23,18 @@ export class UserSearchFilterDto {
   @IsOptional()
   email?: string;
 
-  @Type(() => Number)
-  @IsInt()
+  @IsString()
   @IsOptional()
-  roleId?: number;
+  role?: string;
+
+  @Transform(({ value }) => {
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+    return value;
+  })
+  @IsBoolean()
+  @IsOptional()
+  status?: boolean;
 
   @IsEnum(Order)
   @IsOptional()
