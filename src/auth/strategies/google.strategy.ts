@@ -28,7 +28,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     const email = profile.emails[0].value;
     const name = profile.displayName;
     const googleId = profile.id;
-    const profile_picture = profile.photos?.[0]?.value || null;
+    const avatar_url = profile.photos?.[0]?.value || null;
 
     // Check if user exists
     let user = await this.userService.findByEmail(email);
@@ -39,7 +39,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
         email,
         name,
         googleId,
-        profile_picture,
+        avatar_url,
         password: null, // No password for Google users
         role: null, // Optional, unless you assign a default role
         isActive: true,

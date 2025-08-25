@@ -36,8 +36,6 @@ export class User {
   @Column({ default: () => 'CURRENT_TIMESTAMP' })
   date_joined: Date;
 
-  @Column({ nullable: true })
-  profile_picture: string;
 
   @Column({ nullable: true })
   bio: string;

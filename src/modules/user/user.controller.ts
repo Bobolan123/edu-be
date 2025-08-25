@@ -9,10 +9,14 @@ import {
   UseInterceptors,
   UseGuards,
   UploadedFile,
+  Query,
+  UsePipes,
+  ValidationPipe,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { UserSearchFilterDto } from './dto/user-search-filter.dto';
 import { ResponseMessage } from 'src/decorator/responseMessage.decorator';
 import { Permissions } from 'src/decorator/requirePermission.decorator';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
@@ -34,12 +38,13 @@ export class UserController {
     return this.userService.create(createUserDto);
   }
 
-  @Permissions('view_users')
+  // @Permissions('view_users')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @ResponseMessage('View Users')
   @Get('')
-  findAll() {
-    return this.userService.findAll();
+  @UsePipes(new ValidationPipe({ transform: true }))
+  findAll(@Query() userSearchFilterDto: UserSearchFilterDto) {
+    return this.userService.findAll(userSearchFilterDto);
   }
 
   @ResponseMessage('View one User')

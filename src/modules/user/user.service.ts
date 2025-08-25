@@ -2,6 +2,8 @@ import { permission } from 'process';
 import { BadRequestException, HttpException, Injectable } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { UserSearchFilterDto } from './dto/user-search-filter.dto';
+import { PageMetaDto, ResponsePaginate } from 'src/common/dtos';
 import { User } from '../../entities/user.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -218,8 +220,64 @@ export class UserService {
     }
   }
 
-  async findAll(): Promise<User[]> {
-    return this.userRepository.find({ relations: ['role'] });
+  async findAll(filterDto: UserSearchFilterDto): Promise<ResponsePaginate<User>> {
+    const {
+      search,
+      name,
+      email,
+      roleId,
+      order,
+      orderBy,
+    } = filterDto;
+
+    const queryBuilder = this.userRepository
+      .createQueryBuilder('user')
+      .leftJoinAndSelect('user.role', 'role');
+
+    // General search across name and email
+    if (search) {
+      queryBuilder.andWhere(
+        '(user.name LIKE :search OR user.email LIKE :search)',
+        { search: `%${search}%` },
+      );
+    }
+
+    // Specific name search
+    if (name) {
+      queryBuilder.andWhere('user.name LIKE :name', {
+        name: `%${name}%`,
+      });
+    }
+
+    // Specific email search
+    if (email) {
+      queryBuilder.andWhere('user.email LIKE :email', {
+        email: `%${email}%`,
+      });
+    }
+
+    // Role filter
+    if (roleId) {
+      queryBuilder.andWhere('user.role = :roleId', { roleId });
+    }
+
+    // Sorting
+    const validOrderByFields = ['name', 'email', 'id', 'createdAt', 'updatedAt'];
+    const sortField = validOrderByFields.includes(orderBy) ? orderBy : 'id';
+
+    queryBuilder
+      .orderBy(`user.${sortField}`, order || 'DESC')
+      .skip(filterDto.skip)
+      .take(filterDto.take);
+
+    const [items, itemCount] = await queryBuilder.getManyAndCount();
+
+    const pageMetaDto = new PageMetaDto({
+      itemCount,
+      pageOptionsDto: filterDto,
+    });
+
+    return { result: items, meta: pageMetaDto };
   }
 
   async findOne(id: number): Promise<User> {

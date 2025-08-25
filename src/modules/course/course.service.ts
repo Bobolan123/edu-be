@@ -519,7 +519,6 @@ export class CourseService {
             id: enrollment.student.id,
             name: enrollment.student.name,
             email: enrollment.student.email,
-            profile_picture: enrollment.student.profile_picture,
             avatar_url: enrollment.student.avatar_url,
           },
           enrolledAt: enrollment.date_enrolled,
