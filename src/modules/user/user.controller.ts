@@ -38,6 +38,16 @@ export class UserController {
     return this.userService.create(createUserDto);
   }
 
+  @Post('admin')
+  @UseInterceptors(FileInterceptor('avatar'))
+  @ResponseMessage('Create new User')
+  createUserAdmin(
+    @Body() createUserDto: CreateUserDto,
+    @UploadedFile() avatar?: Express.Multer.File,
+  ) {
+    return this.userService.createUserAdmin(createUserDto, avatar);
+  }
+
   // @Permissions('view_users')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @ResponseMessage('View Users')

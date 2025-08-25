@@ -13,6 +13,7 @@ import * as dayjs from 'dayjs';
 import { MailerService } from '@nest-modules/mailer';
 import { IUpdatePassword } from './user.controller';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
+import { Role } from 'src/entities/role.entity';
 
 @Injectable()
 export class UserService {
@@ -21,6 +22,8 @@ export class UserService {
     private readonly userRepository: Repository<User>,
     private mailerService: MailerService,
     private cloudinaryService: CloudinaryService,
+    @InjectRepository(Role)
+    private readonly roleRepository: Repository<Role>,
   ) {}
 
   generateOTP() {
@@ -34,15 +37,50 @@ export class UserService {
   }
 
   async findByEmail(email: string): Promise<User> {
-    return this.userRepository.findOne({ 
+    return this.userRepository.findOne({
       where: { email },
-      relations: ['role', 'role.permissions']
+      relations: ['role', 'role.permissions'],
     });
   }
 
   async isActiveGmail(email: string): Promise<boolean> {
     const user = await this.userRepository.findOne({ where: { email } });
     return user?.isActive || false;
+  }
+
+  async createUserAdmin(
+    createUserDto: CreateUserDto,
+    avatarFile?: Express.Multer.File,
+  ) {
+    const { email, password, name, roleId, isActive, bio } = createUserDto;
+    const existingUser = await this.userRepository.findOne({
+      where: { email },
+    });
+    if (existingUser) {
+      throw new BadRequestException('User already exists');
+    }
+    
+    let avatar_url: string | null = null;
+    if (avatarFile) {
+      avatar_url = await this.cloudinaryService.uploadImage(
+        avatarFile,
+        'avatars',
+      );
+    }
+    let role = null;
+    if (roleId) {
+      role = await this.roleRepository.findOne({ where: { id: roleId } });
+    }
+    const user = this.userRepository.create({
+      email,
+      password: await this.hashPassword(password),
+      name,
+      role: role,
+      isActive,
+      bio,
+      avatar_url,
+    });
+    return this.userRepository.save(user);
   }
 
   async create(createUserDto: CreateUserDto) {
@@ -220,16 +258,10 @@ export class UserService {
     }
   }
 
-  async findAll(filterDto: UserSearchFilterDto): Promise<ResponsePaginate<User>> {
-    const {
-      search,
-      name,
-      email,
-      role,
-      status,
-      order,
-      orderBy,
-    } = filterDto;
+  async findAll(
+    filterDto: UserSearchFilterDto,
+  ): Promise<ResponsePaginate<User>> {
+    const { search, name, email, role, status, order, orderBy } = filterDto;
     const queryBuilder = this.userRepository
       .createQueryBuilder('user')
       .leftJoinAndSelect('user.role', 'role');
@@ -267,7 +299,13 @@ export class UserService {
     }
 
     // Sorting
-    const validOrderByFields = ['name', 'email', 'id', 'createdAt', 'updatedAt'];
+    const validOrderByFields = [
+      'name',
+      'email',
+      'id',
+      'createdAt',
+      'updatedAt',
+    ];
     const sortField = validOrderByFields.includes(orderBy) ? orderBy : 'id';
 
     queryBuilder

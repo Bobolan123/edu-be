@@ -28,7 +28,6 @@ export class CreateUserDto {
   @IsEmail({}, { message: 'Please provide a valid Email.' })
   email: string;
 
-  @IsOptional()
   @Matches(passwordRegEx, {
     message: `Password must be between 8-20 characters, include at least one uppercase letter, 
     one lowercase letter, one number, and one special character.`,
@@ -61,4 +60,8 @@ export class CreateUserDto {
 
   @IsOptional()
   role?: Role;
+
+  @IsOptional()
+  @IsInt()
+  roleId?: number;
 }
