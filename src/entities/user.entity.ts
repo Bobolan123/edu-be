@@ -6,6 +6,9 @@ import {
   ManyToMany,
   JoinTable,
   ManyToOne,
+  DeleteDateColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 import { Course } from './course.entity';
 import { Enrollment } from './enrollment.entity';
@@ -33,9 +36,14 @@ export class User {
   @Column({ nullable: true })
   password: string;
 
-  @Column({ default: () => 'CURRENT_TIMESTAMP' })
+  @CreateDateColumn()
   date_joined: Date;
 
+  @UpdateDateColumn()
+  updated_at: Date;
+
+  @DeleteDateColumn()
+  deleted_at: Date;
 
   @Column({ nullable: true })
   bio: string;

@@ -40,11 +40,15 @@ export class UserService {
     return this.userRepository.findOne({
       where: { email },
       relations: ['role', 'role.permissions'],
+      withDeleted: false,
     });
   }
 
   async isActiveGmail(email: string): Promise<boolean> {
-    const user = await this.userRepository.findOne({ where: { email } });
+    const user = await this.userRepository.findOne({ 
+      where: { email },
+      withDeleted: false,
+    });
     return user?.isActive || false;
   }
 
@@ -55,6 +59,7 @@ export class UserService {
     const { email, password, name, roleId, isActive, bio } = createUserDto;
     const existingUser = await this.userRepository.findOne({
       where: { email },
+      withDeleted: false,
     });
     if (existingUser) {
       throw new BadRequestException('User already exists');
@@ -89,6 +94,7 @@ export class UserService {
     // Check if the user already exists
     const existingUser = await this.userRepository.findOne({
       where: { email },
+      withDeleted: false,
     });
 
     if (existingUser && !existingUser.isActive) {
@@ -148,6 +154,7 @@ export class UserService {
   async verifyOtp(data: AuthVerifiedOtp) {
     const user = await this.userRepository.findOne({
       where: { id: data.id, otp: data.otp },
+      withDeleted: false,
     });
 
     if (!user || user.otp != data.otp) {
@@ -171,7 +178,10 @@ export class UserService {
   }
 
   async resendOtp(email: string) {
-    const user = await this.userRepository.findOne({ where: { email } });
+    const user = await this.userRepository.findOne({ 
+      where: { email },
+      withDeleted: false,
+    });
 
     if (!user) {
       throw new BadRequestException('Invalid user');
@@ -199,6 +209,7 @@ export class UserService {
 
     const user = await this.userRepository.findOne({
       where: { email: data.email },
+      withDeleted: false,
     });
 
     if (!user) {
@@ -221,7 +232,10 @@ export class UserService {
   }
 
   async updatePassword(id: number, updateUserDto: IUpdatePassword) {
-    const user = await this.userRepository.findOneBy({ id });
+    const user = await this.userRepository.findOne({ 
+      where: { id },
+      withDeleted: false,
+    });
     if (!user) {
       throw new BadRequestException('User does not exist');
     }
@@ -239,6 +253,7 @@ export class UserService {
     const user = await this.userRepository.findOne({
       where: { id },
       relations: ['role', 'role.permissions'],
+      withDeleted: false,
     });
     return user;
   }
@@ -327,11 +342,15 @@ export class UserService {
     return this.userRepository.findOne({
       where: { id },
       relations: ['role', 'courses'],
+      withDeleted: false,
     });
   }
 
   async update(id: number, updateUserDto: UpdateUserDto): Promise<User> {
-    const user = await this.userRepository.findOne({ where: { id } });
+    const user = await this.userRepository.findOne({ 
+      where: { id },
+      withDeleted: false,
+    });
 
     if (!user) {
       throw new BadRequestException('Invalid user');
@@ -344,10 +363,39 @@ export class UserService {
   }
 
   async remove(id: number) {
-    const user = await this.userRepository.findOne({ where: { id } });
+    const user = await this.userRepository.findOne({ 
+      where: { id },
+      withDeleted: false,
+    });
 
     if (!user) {
       throw new BadRequestException('Invalid user');
+    }
+
+    return this.userRepository.softDelete(id);
+  }
+
+  async restore(id: number) {
+    const user = await this.userRepository.findOne({ 
+      where: { id },
+      withDeleted: true,
+    });
+
+    if (!user) {
+      throw new BadRequestException('User not found or not deleted');
+    }
+
+    return this.userRepository.restore(id);
+  }
+
+  async forceRemove(id: number) {
+    const user = await this.userRepository.findOne({ 
+      where: { id },
+      withDeleted: true,
+    });
+
+    if (!user) {
+      throw new BadRequestException('User not found');
     }
 
     return this.userRepository.delete(id);

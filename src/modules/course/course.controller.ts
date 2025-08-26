@@ -67,9 +67,21 @@ export class CourseController {
   }
 
   @Delete(':id')
-  @ResponseMessage('Delete a Course')
+  @ResponseMessage('Soft delete a Course')
   remove(@Param('id') id: string) {
     return this.courseService.remove(+id);
+  }
+
+  @Patch(':id/restore')
+  @ResponseMessage('Restore deleted Course')
+  restore(@Param('id') id: string) {
+    return this.courseService.restore(+id);
+  }
+
+  @Delete(':id/force')
+  @ResponseMessage('Permanently delete Course')
+  forceRemove(@Param('id') id: string) {
+    return this.courseService.forceRemove(+id);
   }
 
   @Post(':id/thumbnail')

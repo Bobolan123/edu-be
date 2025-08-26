@@ -46,7 +46,7 @@ export class RoleService {
 
   async updateRolePermissions(
     roleId: number,
-    permissionIds: number[],
+    permissionIds: number[], 
   ): Promise<Role> {
     const role = await this.roleRepository.findOne({
       where: { id: roleId },

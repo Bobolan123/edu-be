@@ -79,10 +79,22 @@ export class UserController {
     return this.userService.updatePassword(+id, updatePassword);
   }
 
-  @ResponseMessage('Delete user')
+  @ResponseMessage('Soft delete user')
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.userService.remove(+id);
+  }
+
+  @ResponseMessage('Restore deleted user')
+  @Patch(':id/restore')
+  restore(@Param('id') id: string) {
+    return this.userService.restore(+id);
+  }
+
+  @ResponseMessage('Permanently delete user')
+  @Delete(':id/force')
+  forceRemove(@Param('id') id: string) {
+    return this.userService.forceRemove(+id);
   }
 
   @Post(':id/avatar')

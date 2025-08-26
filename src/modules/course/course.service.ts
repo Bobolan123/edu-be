@@ -56,13 +56,15 @@ export class CourseService {
 
     const courseExists = await this.courseRepository.findOne({
       where: { title },
+      withDeleted: false,
     });
     if (courseExists) {
       throw new BadRequestException(`The course "${title}" already exists.`);
     }
 
-    const instructor = await this.userRepository.findOneBy({
-      id: instructorId,
+    const instructor = await this.userRepository.findOne({
+      where: { id: instructorId },
+      withDeleted: false,
     });
     if (!instructor) {
       throw new BadRequestException(
@@ -111,7 +113,8 @@ export class CourseService {
     const queryBuilder = this.courseRepository
       .createQueryBuilder('course')
       .leftJoinAndSelect('course.categories', 'categories')
-      .leftJoinAndSelect('course.instructor', 'instructor');
+      .leftJoinAndSelect('course.instructor', 'instructor')
+      .where('course.deleted_at IS NULL');
 
     // Instructor filter
     if (instructorId) {
@@ -294,6 +297,7 @@ export class CourseService {
     const course = await this.courseRepository.findOne({
       where: { id },
       relations: ['instructor', 'categories', 'reviews', 'reviews.user'],
+      withDeleted: false,
     });
 
     if (!course) {
@@ -313,6 +317,7 @@ export class CourseService {
     const course = await this.courseRepository.findOne({
       where: { id },
       relations: ['instructor', 'categories'],
+      withDeleted: false,
     });
 
     if (!course) {
@@ -322,6 +327,7 @@ export class CourseService {
     if (updateCourseDto.title && updateCourseDto.title !== course.title) {
       const existingCourse = await this.courseRepository.findOne({
         where: { title: updateCourseDto.title },
+        withDeleted: false,
       });
       if (existingCourse) {
         throw new BadRequestException(
@@ -333,8 +339,9 @@ export class CourseService {
     const { instructorId, categoryIds, ...updateFields } = updateCourseDto;
 
     if (instructorId) {
-      const instructor = await this.userRepository.findOneBy({
-        id: instructorId,
+      const instructor = await this.userRepository.findOne({
+        where: { id: instructorId },
+        withDeleted: false,
       });
       if (!instructor) {
         throw new BadRequestException(
@@ -357,12 +364,39 @@ export class CourseService {
   }
 
   async remove(id: number): Promise<void> {
-    const course = await this.courseRepository.findOne({ where: { id } });
+    const course = await this.courseRepository.findOne({ 
+      where: { id },
+      withDeleted: false,
+    });
     if (!course) {
       throw new BadRequestException(`Course with ID ${id} not found.`);
     }
 
-    // Clean up progress records before deleting course content
+    await this.courseRepository.softDelete(id);
+  }
+
+  async restore(id: number): Promise<void> {
+    const course = await this.courseRepository.findOne({ 
+      where: { id },
+      withDeleted: true,
+    });
+    if (!course) {
+      throw new BadRequestException(`Course with ID ${id} not found or not deleted.`);
+    }
+
+    await this.courseRepository.restore(id);
+  }
+
+  async forceRemove(id: number): Promise<void> {
+    const course = await this.courseRepository.findOne({ 
+      where: { id },
+      withDeleted: true,
+    });
+    if (!course) {
+      throw new BadRequestException(`Course with ID ${id} not found.`);
+    }
+
+    // Clean up progress records before permanently deleting course content
     await this.lectureProgressModel.deleteMany({ courseId: id });
 
     await this.courseRepository.delete(id);
@@ -403,6 +437,7 @@ export class CourseService {
   ) {
     const course = await this.courseRepository.findOne({
       where: { id: courseId },
+      withDeleted: false,
     });
     if (!course) {
       throw new BadRequestException('Course not found');
@@ -474,6 +509,7 @@ export class CourseService {
   ): Promise<ResponsePaginate<any>> {
     const course = await this.courseRepository.findOne({
       where: { id: courseId },
+      withDeleted: false,
     });
     if (!course) {
       throw new BadRequestException(`Course with ID ${courseId} not found.`);

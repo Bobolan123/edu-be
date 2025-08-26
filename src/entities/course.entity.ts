@@ -8,6 +8,7 @@ import {
   JoinTable,
   CreateDateColumn,
   UpdateDateColumn,
+  DeleteDateColumn,
 } from 'typeorm';
 
 import { User } from './user.entity';
@@ -47,6 +48,9 @@ export class Course {
 
   @UpdateDateColumn()
   last_updated: Date;
+
+  @DeleteDateColumn()
+  deleted_at: Date;
 
   @Column({ type: 'int', default: 0 })
   price: number; 
