@@ -108,13 +108,22 @@ export class CourseService {
       maxPrice,
       excludeEnrolled,
       status,
-    } = filterDto;
+      includeDeleted,
+    } = filterDto; 
 
     const queryBuilder = this.courseRepository
       .createQueryBuilder('course')
       .leftJoinAndSelect('course.categories', 'categories')
-      .leftJoinAndSelect('course.instructor', 'instructor')
-      .where('course.deleted_at IS NULL');
+      .leftJoinAndSelect('course.instructor', 'instructor');
+
+    // Handle soft delete filter
+    if (includeDeleted) {
+      // Show only deleted courses - need to include deleted records first
+      queryBuilder.withDeleted().where('course.deleted_at IS NOT NULL');
+    } else {
+      // Show only active (non-deleted) courses (default behavior)
+      queryBuilder.where('course.deleted_at IS NULL');
+    }
 
     // Instructor filter
     if (instructorId) {
@@ -285,17 +294,54 @@ export class CourseService {
     return enrollments.map((enrollment) => enrollment.course.id);
   }
 
-  async findCoursesByCategory(categoryIds: number[]): Promise<Course[]> {
-    return await this.courseRepository
+  async findCoursesByCategory(
+    categoryIds: number[],
+    includeDeleted: boolean = false,
+  ): Promise<Course[]> {
+    const queryBuilder = this.courseRepository
       .createQueryBuilder('course')
       .innerJoinAndSelect('course.categories', 'category')
-      .where('category.id IN (:...categoryIds)', { categoryIds })
-      .getMany();
+      .where('category.id IN (:...categoryIds)', { categoryIds });
+
+    if (includeDeleted) {
+      // Show only deleted courses - need to include deleted records first
+      queryBuilder.withDeleted().andWhere('course.deleted_at IS NOT NULL');
+    } else {
+      // Show only active (non-deleted) courses
+      queryBuilder.andWhere('course.deleted_at IS NULL');
+    }
+
+    return await queryBuilder.getMany();
   }
 
-  async findOne(id: number): Promise<Course> {
+  async findOne(id: number, includeDeleted: boolean = false): Promise<Course> {
+    let whereCondition: any = { id };
+    
+    if (includeDeleted) {
+      // Find only deleted courses - need to use query builder for this
+      const course = await this.courseRepository
+        .createQueryBuilder('course')
+        .leftJoinAndSelect('course.instructor', 'instructor')
+        .leftJoinAndSelect('course.categories', 'categories')
+        .leftJoinAndSelect('course.reviews', 'reviews')
+        .leftJoinAndSelect('reviews.user', 'user')
+        .where('course.id = :id', { id })
+        .andWhere('course.deleted_at IS NOT NULL')
+        .getOne();
+        
+      if (!course) {
+        throw new BadRequestException(`Deleted course with ID ${id} not found.`);
+      }
+      
+      const averageRating = await this.reviewService.getAverageRating(course.id);
+      return {
+        ...course,
+        average_rating: averageRating,
+      };
+    }
+    
     const course = await this.courseRepository.findOne({
-      where: { id },
+      where: whereCondition,
       relations: ['instructor', 'categories', 'reviews', 'reviews.user'],
       withDeleted: false,
     });
@@ -311,6 +357,10 @@ export class CourseService {
       ...course,
       average_rating: averageRating,
     };
+  }
+
+  async findOneWithDeleted(id: number): Promise<Course> {
+    return this.findOne(id, true);
   }
 
   async update(id: number, updateCourseDto: UpdateCourseDto): Promise<Course> {
@@ -363,7 +413,7 @@ export class CourseService {
     return await this.courseRepository.save(course);
   }
 
-  async remove(id: number): Promise<void> {
+  async remove(id: number): Promise<any> {
     const course = await this.courseRepository.findOne({ 
       where: { id },
       withDeleted: false,
@@ -371,8 +421,9 @@ export class CourseService {
     if (!course) {
       throw new BadRequestException(`Course with ID ${id} not found.`);
     }
+     
 
-    await this.courseRepository.softDelete(id);
+    return await this.courseRepository.softDelete(id);
   }
 
   async restore(id: number): Promise<void> {
@@ -386,7 +437,7 @@ export class CourseService {
 
     await this.courseRepository.restore(id);
   }
-
+ 
   async forceRemove(id: number): Promise<void> {
     const course = await this.courseRepository.findOne({ 
       where: { id },

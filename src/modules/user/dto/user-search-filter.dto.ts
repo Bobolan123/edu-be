@@ -36,6 +36,11 @@ export class UserSearchFilterDto {
   @IsOptional()
   status?: boolean;
 
+  @Transform(({ value }) => value === 'true')
+  @IsBoolean()
+  @IsOptional()
+  includeDeleted?: boolean = false; // true = show only deleted users, false = show only active users
+
   @IsEnum(Order)
   @IsOptional()
   order?: Order = Order.DESC;

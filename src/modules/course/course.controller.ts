@@ -44,20 +44,28 @@ export class CourseController {
 
   @Get('by-category')
   @ResponseMessage('Fetch Courses by Category IDs')
-  findCoursesByCategory(@Query('ids') ids: string) {
+  findCoursesByCategory(
+    @Query('ids') ids: string,
+    @Query('includeDeleted') includeDeleted?: string,
+  ) {
     const categoryIds = ids
       .split(',')
       .map((id) => id.trim())
       .filter((id) => /^\d+$/.test(id))
       .map(Number);
 
-    return this.courseService.findCoursesByCategory(categoryIds);
+    const includeDeletedBool = includeDeleted === 'true';
+    return this.courseService.findCoursesByCategory(categoryIds, includeDeletedBool);
   }
 
   @Get(':id')
   @ResponseMessage('Fetch a single Course')
-  findOne(@Param('id') id: string) {
-    return this.courseService.findOne(+id);
+  findOne(
+    @Param('id') id: string,
+    @Query('includeDeleted') includeDeleted?: string,
+  ) {
+    const includeDeletedBool = includeDeleted === 'true';
+    return this.courseService.findOne(+id, includeDeletedBool);
   }
 
   @Patch(':id')

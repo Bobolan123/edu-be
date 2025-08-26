@@ -59,8 +59,12 @@ export class UserController {
 
   @ResponseMessage('View one User')
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.userService.findOne(+id);
+  findOne(
+    @Param('id') id: string,
+    @Query('includeDeleted') includeDeleted?: string,
+  ) {
+    const includeDeletedBool = includeDeleted === 'true';
+    return this.userService.findOne(+id, includeDeletedBool);
   }
 
   @ResponseMessage('Update User')

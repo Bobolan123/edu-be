@@ -266,6 +266,7 @@ export class UserService {
         .leftJoin('role.permission', 'permission')
         .select(['permission.action AS action', 'permission.module  AS module'])
         .where('user.id = :userId', { userId })
+        .andWhere('user.deleted_at IS NULL')
         .getRawMany(); // Use getRawMany to fetch raw data for the APIs
       return permissions;
     } catch (error) {
@@ -276,10 +277,19 @@ export class UserService {
   async findAll(
     filterDto: UserSearchFilterDto,
   ): Promise<ResponsePaginate<User>> {
-    const { search, name, email, role, status, order, orderBy } = filterDto;
+    const { search, name, email, role, status, order, orderBy, includeDeleted } = filterDto;
     const queryBuilder = this.userRepository
       .createQueryBuilder('user')
       .leftJoinAndSelect('user.role', 'role');
+
+    // Handle soft delete filter
+    if (includeDeleted) {
+      // Show only deleted users - need to include deleted records first
+      queryBuilder.withDeleted().where('user.deleted_at IS NOT NULL');
+    } else {
+      // Show only active (non-deleted) users
+      queryBuilder.where('user.deleted_at IS NULL');
+    }
 
     // General search across name and email
     if (search) {
@@ -338,12 +348,27 @@ export class UserService {
     return { result: items, meta: pageMetaDto };
   }
 
-  async findOne(id: number): Promise<User> {
+  async findOne(id: number, includeDeleted: boolean = false): Promise<User> {
+    if (includeDeleted) {
+      // Find only deleted users - need to use query builder for this
+      return this.userRepository
+        .createQueryBuilder('user')
+        .leftJoinAndSelect('user.role', 'role')
+        .leftJoinAndSelect('user.courses', 'courses')
+        .where('user.id = :id', { id })
+        .andWhere('user.deleted_at IS NOT NULL')
+        .getOne();
+    }
+    
     return this.userRepository.findOne({
       where: { id },
       relations: ['role', 'courses'],
       withDeleted: false,
     });
+  }
+
+  async findOneWithDeleted(id: number): Promise<User> {
+    return this.findOne(id, true);
   }
 
   async update(id: number, updateUserDto: UpdateUserDto): Promise<User> {
