@@ -160,17 +160,6 @@ export class ReviewService {
   }
 
   async findByCourse(courseId: number, reviewFilterDto: ReviewFilterDto) {
-    // Convert string values to numbers and calculate skip manually
-    const page =
-      typeof reviewFilterDto.page === 'string'
-        ? parseInt(reviewFilterDto.page, 10)
-        : reviewFilterDto.page;
-    const take =
-      typeof reviewFilterDto.take === 'string'
-        ? parseInt(reviewFilterDto.take, 10)
-        : reviewFilterDto.take;
-    const skip = (page - 1) * take;
-
     const qb = this.reviewRepo
       .createQueryBuilder('review')
       .leftJoinAndSelect('review.user', 'user')
@@ -179,13 +168,12 @@ export class ReviewService {
 
     this.applyFilters(qb, reviewFilterDto);
 
-    // Pass the calculated values directly to the query
-    qb.skip(skip).take(take);
+    qb.skip(reviewFilterDto.skip).take(reviewFilterDto.take);
 
     const [items, itemCount] = await qb.getManyAndCount();
     const meta = new PageMetaDto({
       itemCount,
-      pageOptionsDto: { ...reviewFilterDto, page, take, skip },
+      pageOptionsDto: reviewFilterDto,
     });
 
     return { result: items, meta };

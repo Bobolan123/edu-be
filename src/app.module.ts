@@ -30,6 +30,7 @@ import { GeminiModule } from './modules/gemini/gemini.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      
     }),
     DatabaseModule,
     UserModule,
