@@ -135,21 +135,21 @@ export class CourseService {
     // General search across title and description
     if (search) {
       queryBuilder.andWhere(
-        '(course.title LIKE :search OR course.description LIKE :search)',
+        '(course.title ILIKE :search OR course.description ILIKE :search)',
         { search: `%${search}%` },
       );
     }
 
     // Specific title search
     if (title) {
-      queryBuilder.andWhere('course.title LIKE :title', {
+      queryBuilder.andWhere('course.title ILIKE :title', {
         title: `%${title}%`,
       });
     }
 
     // Specific description search
     if (description) {
-      queryBuilder.andWhere('course.description LIKE :description', {
+      queryBuilder.andWhere('course.description ILIKE :description', {
         description: `%${description}%`,
       });
     }

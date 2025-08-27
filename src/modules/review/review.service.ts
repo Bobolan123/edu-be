@@ -88,7 +88,7 @@ export class ReviewService {
 
     if (filterDto.search) {
       queryBuilder.andWhere(
-        'review.comment LIKE :search OR course.title LIKE :search',
+        'review.comment ILIKE :search OR course.title ILIKE :search',
         {
           search: `%${filterDto.search}%`,
         },

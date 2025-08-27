@@ -335,7 +335,7 @@ export class EnrollmentService {
       .where('enrollment.student = :userId', { userId });
 
     if (search) {
-      queryBuilder.andWhere('course.title LIKE :search', {
+      queryBuilder.andWhere('course.title ILIKE :search', {
         search: `%${search}%`,
       });
     }

@@ -294,21 +294,21 @@ export class UserService {
     // General search across name and email
     if (search) {
       queryBuilder.andWhere(
-        '(user.name LIKE :search OR user.email LIKE :search)',
+        '(user.name ILIKE :search OR user.email ILIKE :search)',
         { search: `%${search}%` },
       );
     }
 
     // Specific name search
     if (name) {
-      queryBuilder.andWhere('user.name LIKE :name', {
+      queryBuilder.andWhere('user.name ILIKE :name', {
         name: `%${name}%`,
       });
     }
 
     // Specific email search
     if (email) {
-      queryBuilder.andWhere('user.email LIKE :email', {
+      queryBuilder.andWhere('user.email ILIKE :email', {
         email: `%${email}%`,
       });
     }

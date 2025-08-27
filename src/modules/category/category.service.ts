@@ -5,6 +5,7 @@ import { Category } from 'src/entities/category.entity';
 import { PageOptionsDto } from 'src/common/dtos/page-option.dto';
 import { PageMetaDto } from 'src/common/dtos/page-meta.dto';
 import { ResponsePaginate } from 'src/common/dtos/response-paginate.dto';
+import { CategoryWithCountDto } from './dto/category-with-count.dto';
 
 @Injectable()
 export class CategoryService {
@@ -15,16 +16,17 @@ export class CategoryService {
 
   async findAll(
     pageOptionsDto: PageOptionsDto,
-  ): Promise<ResponsePaginate<Category>> {
-    const queryBuilder = this.categoryRepository.createQueryBuilder('category');
+  ): Promise<ResponsePaginate<CategoryWithCountDto>> {
+    // First, get all categories with pagination
+    const categoryQuery = this.categoryRepository.createQueryBuilder('category');
 
     if (pageOptionsDto.search) {
-      queryBuilder.where('category.name LIKE :search', {
+      categoryQuery.where('category.name ILIKE :search', {
         search: `%${pageOptionsDto.search}%`,
       });
     }
 
-    queryBuilder
+    categoryQuery
       .orderBy(
         `category.${pageOptionsDto?.orderBy || 'id'}`,
         pageOptionsDto?.order,
@@ -32,16 +34,46 @@ export class CategoryService {
       .skip(pageOptionsDto.skip)
       .take(pageOptionsDto.take);
 
-    const [items, itemCount] = await queryBuilder.getManyAndCount();
+    const [categories, totalCount] = await categoryQuery.getManyAndCount();
+
+    // Get course counts for each category
+    const categoryIds = categories.map(cat => cat.id);
+    let courseCounts: { [key: number]: number } = {};
+
+    if (categoryIds.length > 0) {
+      const countQuery = await this.categoryRepository
+        .createQueryBuilder('category')
+        .leftJoin('category.courses', 'course')
+        .select('category.id', 'categoryId')
+        .addSelect('COUNT(course.id)', 'courseCount')
+        .where('category.id IN (:...categoryIds)', { categoryIds })
+        .groupBy('category.id')
+        .getRawMany();
+
+      courseCounts = countQuery.reduce((acc, item) => {
+        acc[item.categoryId] = parseInt(item.courseCount) || 0;
+        return acc;
+      }, {});
+    }
+
+    // Combine categories with their course counts
+    const items = categories.map(category => 
+      new CategoryWithCountDto({
+        id: category.id,
+        name: category.name,
+        description: category.description,
+        courseCount: courseCounts[category.id] || 0
+      })
+    );
 
     const pageMetaDto = new PageMetaDto({
-      itemCount,
+      itemCount: totalCount,
       pageOptionsDto,
     });
 
     return { result: items, meta: pageMetaDto };
-  }
-
+  } 
+ 
   async findOne(id: number): Promise<Category> {
     return this.categoryRepository.findOne({ where: { id } });
   }
@@ -59,4 +91,6 @@ export class CategoryService {
   async delete(id: number): Promise<void> {
     await this.categoryRepository.delete(id);
   }
+
+ 
 }
