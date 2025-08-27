@@ -11,7 +11,8 @@ import { VNPayService } from './services/vnpay.service';
 import { PaypalService } from './services/paypal.service';
 import { StripeService } from './services/stripe.service';
 import { CreateOrderDto } from './dto/create-order.dto';
-import { PageMetaDto, PageOptionsDto } from 'src/common/dtos';
+import { PageMetaDto, PageOptionsDto, ResponsePaginate } from 'src/common/dtos';
+import { OrderSearchFilterDto } from './dto/order-search-filter.dto';
 import { Cart } from 'src/entities/cart.entity';
 import { EnrollmentService } from '../enrollment/enrollment.service';
 
@@ -166,24 +167,121 @@ export class OrderService {
   }
 
   async findAll(
-    pageOptionsDto: PageOptionsDto,
-  ): Promise<{ items: Order[]; meta: PageMetaDto }> {
+    filterDto: OrderSearchFilterDto,
+  ): Promise<ResponsePaginate<Order>> {
+    const {
+      search,
+      transactionId,
+      status,
+      paymentMethod,
+      minPrice,
+      maxPrice,
+      startDate,
+      endDate,
+      userId,
+      userName,
+      userEmail,
+      order,
+      orderBy,
+    } = filterDto;
+
     const queryBuilder = this.orderRepository
       .createQueryBuilder('order')
-      .leftJoinAndSelect('order.user', 'user')
-      .orderBy('order.createdAt', pageOptionsDto.order)
-      .skip(pageOptionsDto.skip)
-      .take(pageOptionsDto.take);
+      .leftJoinAndSelect('order.user', 'user');
 
-    if (pageOptionsDto.search) {
-      queryBuilder.andWhere('order.id = :search', {
-        search: pageOptionsDto.search,
+    // General search across order ID, transaction ID, and user details
+    if (search) {
+      queryBuilder.andWhere(
+        '(CAST(order.id AS TEXT) ILIKE :search OR order.transactionId ILIKE :search OR user.name ILIKE :search OR user.email ILIKE :search)',
+        { search: `%${search}%` },
+      );
+    }
+
+    // Specific transaction ID search
+    if (transactionId) {
+      queryBuilder.andWhere('order.transactionId ILIKE :transactionId', {
+        transactionId: `%${transactionId}%`,
       });
     }
 
+    // Status filter
+    if (status) {
+      queryBuilder.andWhere('order.status = :status', { status });
+    }
+
+    // Payment method filter
+    if (paymentMethod) {
+      queryBuilder.andWhere('order.paymentMethod = :paymentMethod', {
+        paymentMethod,
+      });
+    }
+
+    // Price range filters
+    if (minPrice !== undefined) {
+      queryBuilder.andWhere('order.totalPrice >= :minPrice', { minPrice });
+    }
+
+    if (maxPrice !== undefined) {
+      queryBuilder.andWhere('order.totalPrice <= :maxPrice', { maxPrice });
+    }
+
+    // Date range filters
+    if (startDate) {
+      queryBuilder.andWhere('order.createdAt >= :startDate', {
+        startDate: new Date(startDate),
+      });
+    }
+
+    if (endDate) {
+      queryBuilder.andWhere('order.createdAt <= :endDate', {
+        endDate: new Date(endDate + 'T23:59:59.999Z'),
+      });
+    }
+
+    // User ID filter
+    if (userId) {
+      queryBuilder.andWhere('user.id = :userId', { userId });
+    }
+
+    // User name filter
+    if (userName) {
+      queryBuilder.andWhere('user.name ILIKE :userName', {
+        userName: `%${userName}%`,
+      });
+    }
+
+    // User email filter
+    if (userEmail) {
+      queryBuilder.andWhere('user.email ILIKE :userEmail', {
+        userEmail: `%${userEmail}%`,
+      });
+    }
+
+    // Sorting
+    const validOrderByFields = [
+      'id',
+      'totalPrice',
+      'status',
+      'paymentMethod',
+      'createdAt',
+      'updatedAt',
+      'transactionId',
+    ];
+    const sortField = validOrderByFields.includes(orderBy) ? orderBy : 'createdAt';
+
+    queryBuilder
+      .orderBy(`order.${sortField}`, order || 'DESC')
+      .skip(filterDto.skip)
+      .take(filterDto.take);
+
     const [items, itemCount] = await queryBuilder.getManyAndCount();
-    const meta = new PageMetaDto({ itemCount, pageOptionsDto });
-    return { items, meta };
+
+    const pageMetaDto = new PageMetaDto({
+      itemCount,
+      pageOptionsDto: filterDto,
+    });
+
+    return { result: items, meta: pageMetaDto };
   }
 
   async findByUser(
@@ -199,8 +297,8 @@ export class OrderService {
       .take(pageOptionsDto.take);
 
     if (pageOptionsDto.search) {
-      queryBuilder.andWhere('order.id = :search', {
-        search: pageOptionsDto.search,
+      queryBuilder.andWhere('CAST(order.id AS TEXT) ILIKE :search', {
+        search: `%${pageOptionsDto.search}%`,
       });
     }
 

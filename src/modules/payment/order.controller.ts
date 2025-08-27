@@ -14,7 +14,9 @@ import { OrderInfoDto } from './dto/order-info.dto';
 import { PaymentMethod, Order, OrderStatus } from '../../entities/order.entity';
 import { Request, Response } from 'express';
 import { User } from '../../entities/user.entity';
-import { PageOptionsDto } from 'src/common/dtos';
+import { PageOptionsDto, ResponsePaginate } from 'src/common/dtos';
+import { OrderSearchFilterDto } from './dto/order-search-filter.dto';
+import { ResponseMessage } from 'src/decorator/responseMessage.decorator';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { Public } from 'src/auth/Public';
 import { OrderService } from './order.service';
@@ -132,8 +134,9 @@ export class OrderController {
   }
 
   @Get()
-  async findAll(@Query() pageOptionsDto: PageOptionsDto) {
-    return this.orderService.findAll(pageOptionsDto);
+  @ResponseMessage('Get all orders with filters')
+  async findAll(@Query() filterDto: OrderSearchFilterDto): Promise<ResponsePaginate<Order>> {
+    return this.orderService.findAll(filterDto);
   }
 
   @Get('user')
