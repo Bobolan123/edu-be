@@ -311,7 +311,7 @@ export class OrderService {
   async findOne(id: string): Promise<Order> {
     const order = await this.orderRepository.findOne({
       where: { id },
-      relations: ['user'],
+      relations: ['user', 'courses'],
     });
     if (!order) {
       throw new NotFoundException('Order not found');
@@ -330,5 +330,9 @@ export class OrderService {
       order.paymentGatewayResponse = JSON.stringify(gatewayResponse);
     }
     return this.orderRepository.save(order);
+  }
+
+  async deleteOrder(id: string): Promise<void> {
+    await this.orderRepository.delete(id);
   }
 }

@@ -8,6 +8,7 @@ import {
   UseGuards,
   Req,
   Res,
+  Delete,
 } from '@nestjs/common';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { OrderInfoDto } from './dto/order-info.dto';
@@ -134,7 +135,7 @@ export class OrderController {
   }
 
   @Get()
-  @ResponseMessage('Get all orders with filters')
+  @ResponseMessage('Get all orders')
   async findAll(@Query() filterDto: OrderSearchFilterDto): Promise<ResponsePaginate<Order>> {
     return this.orderService.findAll(filterDto);
   }
@@ -173,5 +174,11 @@ export class OrderController {
     @Body() params: any,
   ) {
     return this.orderService.handlePaymentCallback(method, params);
+  }
+
+  @ResponseMessage('Delete order')
+  @Delete(':id')
+  async deleteOrder(@Param('id') id: string) {
+    return this.orderService.deleteOrder(id);
   }
 }

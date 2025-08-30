@@ -1,9 +1,10 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Review } from 'src/entities/review.entity';
 import { Course } from 'src/entities/course.entity';
 import { User } from 'src/entities/user.entity';
+import { ReviewVote, VoteType } from 'src/entities/review-vote.entity';
 import { PageOptionsDto } from 'src/common/dtos/page-option.dto';
 import { PageMetaDto } from 'src/common/dtos/page-meta.dto';
 import { ResponsePaginate } from 'src/common/dtos/response-paginate.dto';
@@ -17,6 +18,7 @@ export class ReviewService {
     @InjectRepository(Review) private reviewRepo: Repository<Review>,
     @InjectRepository(Course) private courseRepo: Repository<Course>,
     @InjectRepository(User) private userRepo: Repository<User>,
+    @InjectRepository(ReviewVote) private reviewVoteRepo: Repository<ReviewVote>,
   ) {}
 
   private async paginateQuery(
@@ -93,6 +95,18 @@ export class ReviewService {
           search: `%${filterDto.search}%`,
         },
       );
+    }
+
+    if (filterDto.status) {
+      queryBuilder.andWhere('review.status = :status', {
+        status: filterDto.status,
+      });
+    }
+
+    if (filterDto.minUpVotes !== undefined) {
+      queryBuilder.andWhere('review.upVotes >= :minUpVotes', {
+        minUpVotes: filterDto.minUpVotes,
+      });
     }
   }
 
@@ -189,6 +203,82 @@ export class ReviewService {
     });
 
     return review;
+  }
+
+  async voteOnReview(reviewId: number, userId: number, voteType: VoteType): Promise<{ review: Review; userVote: ReviewVote | null }> {
+    const review = await this.findOne(reviewId);
+    if (!review) {
+      throw new NotFoundException('Review not found');
+    }
+
+    const user = await this.userRepo.findOne({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Check if user has already voted on this review
+    const existingVote = await this.reviewVoteRepo.findOne({
+      where: { user: { id: userId }, review: { id: reviewId } },
+    });
+
+    if (existingVote) {
+      // User has already voted
+      if (existingVote.voteType === voteType) {
+        // Same vote type - remove vote (toggle off)
+        await this.reviewVoteRepo.remove(existingVote);
+        
+        // Update review vote counts
+        if (voteType === VoteType.UP) {
+          review.upVotes -= 1;
+        } else {
+          review.downVotes -= 1;
+        }
+        
+        await this.reviewRepo.save(review);
+        return { review, userVote: null };
+      } else {
+        // Different vote type - update vote
+        existingVote.voteType = voteType;
+        await this.reviewVoteRepo.save(existingVote);
+        
+        // Update review vote counts (swing by 1 each)
+        if (voteType === VoteType.UP) {
+          review.upVotes += 1;
+          review.downVotes -= 1;
+        } else {
+          review.upVotes -= 1;
+          review.downVotes += 1;
+        }
+        
+        await this.reviewRepo.save(review);
+        return { review, userVote: existingVote };
+      }
+    } else {
+      // New vote
+      const newVote = this.reviewVoteRepo.create({
+        user,
+        review,
+        voteType,
+      });
+      
+      await this.reviewVoteRepo.save(newVote);
+      
+      // Update review vote counts
+      if (voteType === VoteType.UP) {
+        review.upVotes += 1;
+      } else {
+        review.downVotes += 1;
+      }
+      
+      await this.reviewRepo.save(review);
+      return { review, userVote: newVote };
+    }
+  }
+
+  async getUserVoteOnReview(reviewId: number, userId: number): Promise<ReviewVote | null> {
+    return this.reviewVoteRepo.findOne({
+      where: { user: { id: userId }, review: { id: reviewId } },
+    });
   }
 
   async addOrUpdateReview(

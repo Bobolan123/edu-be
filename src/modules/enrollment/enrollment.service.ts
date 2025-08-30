@@ -9,6 +9,7 @@ import { Repository } from 'typeorm';
 import { CreateEnrollmentDto } from './dto/create-enrollment.dto';
 import { UpdateEnrollmentDto } from './dto/update-enrollment.dto';
 import { PageMetaDto, PageOptionsDto, ResponsePaginate } from 'src/common/dtos';
+import { EnrollmentFilterDto } from './dto/enrollment-filter.dto';
 import {
   LectureProgress,
   LectureProgressDocument,
@@ -39,13 +40,6 @@ export class EnrollmentService {
 
     private readonly courseProgressSyncService: CourseProgressSyncService,
   ) {}
-
-  async findAll(): Promise<Enrollment[]> {
-    return this.enrollmentRepository.find({
-      relations: ['course', 'student'],
-      order: { id: 'ASC' },
-    });
-  }
 
   async getCoursesByUser(userId: number): Promise<Course[]> {
     const enrollments = await this.enrollmentRepository.find({
@@ -368,5 +362,181 @@ export class EnrollmentService {
     const pageMetaDto = new PageMetaDto({ itemCount, pageOptionsDto });
 
     return new ResponsePaginate(coursesWithProgress, pageMetaDto);
+  }
+
+  async findAllWithPaginationAndFilter(
+    filterDto: EnrollmentFilterDto,
+  ): Promise<ResponsePaginate<Enrollment>> {
+    const {
+      search,
+      userId,
+      courseId,
+      instructorId,
+      courseName,
+      studentName,
+      studentEmail,
+      enrolledFromDate,
+      enrolledToDate,
+      order,
+      orderBy,
+    } = filterDto;
+
+    const queryBuilder = this.enrollmentRepository
+      .createQueryBuilder('enrollment')
+      .leftJoinAndSelect('enrollment.course', 'course')
+      .leftJoinAndSelect('enrollment.student', 'student')
+      .leftJoinAndSelect('course.instructor', 'instructor');
+
+    if (search) {
+      queryBuilder.andWhere(
+        '(course.title ILIKE :search OR student.name ILIKE :search OR student.email ILIKE :search)',
+        { search: `%${search}%` },
+      );
+    }
+
+    if (userId) {
+      queryBuilder.andWhere('student.id = :userId', { userId });
+    }
+
+    if (courseId) {
+      queryBuilder.andWhere('course.id = :courseId', { courseId });
+    }
+
+    if (instructorId) {
+      queryBuilder.andWhere('instructor.id = :instructorId', { instructorId });
+    } 
+
+    if (courseName) {
+      queryBuilder.andWhere('course.title ILIKE :courseName', {
+        courseName: `%${courseName}%`,
+      });
+    }
+
+    if (studentName) {
+      queryBuilder.andWhere('student.name ILIKE :studentName', {
+        studentName: `%${studentName}%`,
+      });
+    }
+
+    if (studentEmail) {
+      queryBuilder.andWhere('student.email ILIKE :studentEmail', {
+        studentEmail: `%${studentEmail}%`,
+      });
+    }
+
+    if (enrolledFromDate) {
+      queryBuilder.andWhere('enrollment.date_enrolled >= :enrolledFromDate', {
+        enrolledFromDate,
+      });
+    }
+
+    if (enrolledToDate) {
+      queryBuilder.andWhere('enrollment.date_enrolled <= :enrolledToDate', {
+        enrolledToDate,
+      });
+    }
+
+    if (orderBy && order) {
+      switch (orderBy) {
+        case 'course_title':
+          queryBuilder.orderBy('course.title', order);
+          break;
+        case 'student_name':
+          queryBuilder.orderBy('student.name', order);
+          break;
+        case 'instructor_name':
+          queryBuilder.orderBy('instructor.name', order);
+          break;
+        case 'date_enrolled':
+          queryBuilder.orderBy('enrollment.date_enrolled', order);
+          break;
+        case 'id':
+          queryBuilder.orderBy('enrollment.id', order);
+          break;
+        default:
+          queryBuilder.orderBy('enrollment.date_enrolled', order);
+          break;
+      }
+    } else {
+      queryBuilder.orderBy('enrollment.date_enrolled', 'DESC');
+    }
+
+    queryBuilder.skip(filterDto.skip).take(filterDto.take);
+
+    const [enrollments, itemCount] = await queryBuilder.getManyAndCount();
+
+    const enrollmentsWithProgress = await Promise.all(
+      enrollments.map(async (enrollment) => {
+        const lectureProgress = await this.getLectureProgress(
+          enrollment.id,
+          enrollment.course.id,
+        );
+        const progressPercentage = await this.calculateProgress(
+          enrollment.id,
+          enrollment.course.id,
+        );
+        const totalWatchTime = await this.getTotalWatchTime(
+          enrollment.id,
+          enrollment.course.id,
+        );
+        const completedLecturesCount = lectureProgress.filter(
+          (p) => p.isCompleted,
+        ).length;
+
+        return {
+          ...enrollment,
+          progressData: {
+            progressPercentage,
+            completedLecturesCount,
+            totalLecturesCount: await this.getTotalLecturesCount(enrollment.course.id),
+            totalWatchTime,
+            lastActivity: await this.getLastActivity(enrollment.id, enrollment.course.id),
+          },
+        };
+      }),
+    );
+
+    const pageMetaDto = new PageMetaDto({ 
+      itemCount, 
+      pageOptionsDto: {
+        page: filterDto.page,
+        take: filterDto.take,
+        skip: filterDto.skip,
+      } as PageOptionsDto,
+    });
+
+    return new ResponsePaginate(enrollmentsWithProgress, pageMetaDto);
+  }
+
+  private async getTotalWatchTime(
+    enrollmentId: number,
+    courseId: number,
+  ): Promise<number> {
+    const progressRecords = await this.lectureProgressModel
+      .find({ enrollmentId, courseId })
+      .exec();
+    
+    return progressRecords.reduce((total, record) => total + (record.watchTime || 0), 0);
+  }
+
+  private async getTotalLecturesCount(courseId: number): Promise<number> {
+    const courseContent = await this.courseContentModel.findOne({ courseId });
+    if (!courseContent) return 0;
+
+    return courseContent.sections?.reduce((total, section) => {
+      return total + (section.lectures?.length || 0);
+    }, 0) || 0;
+  }
+
+  private async getLastActivity(
+    enrollmentId: number,
+    courseId: number,
+  ): Promise<Date | null> {
+    const lastProgress = await this.lectureProgressModel
+      .findOne({ enrollmentId, courseId })
+      .sort({ completedAt: -1 })
+      .exec();
+
+    return lastProgress?.completedAt || null;
   }
 }

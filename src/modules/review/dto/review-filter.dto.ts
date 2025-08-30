@@ -9,6 +9,7 @@ import {
 } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 import { PageOptionsDto } from 'src/common/dtos/page-option.dto';
+import { ReviewStatus } from '../../../entities/review.entity';
 
 export enum ReviewSortBy {
   NEWEST = 'newest',
@@ -46,4 +47,13 @@ export class ReviewFilterDto extends PageOptionsDto {
   @IsString()
   @IsOptional()
   search?: string;
+
+  @IsEnum(ReviewStatus)
+  @IsOptional()
+  status?: ReviewStatus;
+
+  @Type(() => Number)
+  @IsInt()
+  @IsOptional()
+  minUpVotes?: number;
 }

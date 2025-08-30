@@ -1,5 +1,6 @@
-import { IsInt, IsOptional, IsString, Min, Max } from 'class-validator';
+import { IsInt, IsOptional, IsString, Min, Max, IsEnum } from 'class-validator';
 import { Type } from 'class-transformer';
+import { ReviewStatus } from '../../../entities/review.entity';
 
 export class UpdateReviewDto {
   @Type(() => Number)
@@ -12,4 +13,18 @@ export class UpdateReviewDto {
   @IsString()
   @IsOptional()
   comment?: string;
+
+  @IsEnum(ReviewStatus)
+  @IsOptional()
+  status?: ReviewStatus;
+
+  @Type(() => Number)
+  @IsInt()
+  @IsOptional()
+  upVotes?: number;
+
+  @Type(() => Number)
+  @IsInt()
+  @IsOptional()
+  downVotes?: number;
 }

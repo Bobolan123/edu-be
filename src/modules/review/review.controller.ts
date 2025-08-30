@@ -14,6 +14,7 @@ import {
 } from '@nestjs/common';
 import { ReviewService } from './review.service';
 import { Review } from 'src/entities/review.entity';
+import { VoteType } from 'src/entities/review-vote.entity';
 import { PageOptionsDto } from 'src/common/dtos/page-option.dto';
 import { ReviewFilterDto } from './dto/review-filter.dto';
 import { CreateReviewDto } from './dto/create-review.dto';
@@ -71,5 +72,35 @@ export class ReviewController {
     @Param('courseId', ParseIntPipe) courseId: number,
   ) {
     return this.reviewService.findUserCourseReview(userId, courseId);
+  }
+
+  @Post(':id/vote/up')
+  @UseGuards(JwtAuthGuard)
+  @ResponseMessage('Vote up on review')
+  async voteUp(
+    @Param('id', ParseIntPipe) id: number, 
+    @Request() req: any
+  ) {
+    return this.reviewService.voteOnReview(id, req.user.id, VoteType.UP);
+  }
+
+  @Post(':id/vote/down')
+  @UseGuards(JwtAuthGuard)
+  @ResponseMessage('Vote down on review')
+  async voteDown(
+    @Param('id', ParseIntPipe) id: number, 
+    @Request() req: any
+  ) {
+    return this.reviewService.voteOnReview(id, req.user.id, VoteType.DOWN);
+  }
+
+  @Get(':id/vote/user')
+  @UseGuards(JwtAuthGuard)
+  @ResponseMessage('Get user vote on review')
+  async getUserVote(
+    @Param('id', ParseIntPipe) id: number, 
+    @Request() req: any
+  ) {
+    return this.reviewService.getUserVoteOnReview(id, req.user.id);
   }
 }

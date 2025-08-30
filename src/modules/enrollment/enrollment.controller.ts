@@ -14,14 +14,17 @@ import { Enrollment } from 'src/entities/enrollment.entity';
 import { CreateEnrollmentDto } from './dto/create-enrollment.dto';
 import { UpdateEnrollmentDto } from './dto/update-enrollment.dto';
 import { PageOptionsDto, ResponsePaginate } from 'src/common/dtos';
+import { EnrollmentFilterDto } from './dto/enrollment-filter.dto';
 
 @Controller('enrollments')
 export class EnrollmentController {
   constructor(private readonly enrollmentService: EnrollmentService) {}
 
   @Get()
-  async findAll(): Promise<Enrollment[]> {
-    return this.enrollmentService.findAll();
+  async findAll(
+    @Query() filterDto: EnrollmentFilterDto,
+  ): Promise<ResponsePaginate<Enrollment>> {
+    return this.enrollmentService.findAllWithPaginationAndFilter(filterDto);
   }
 
   @Get(':id')
