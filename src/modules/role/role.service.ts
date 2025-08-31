@@ -39,6 +39,24 @@ export class RoleService {
     return this.roleRepository.save(role);
   }
 
+  async update(id: number, name: string): Promise<Role> {
+    const role = await this.roleRepository.findOne({
+      where: { id },
+      relations: ['permissions'],
+    });
+    if (!role) throw new NotFoundException(`Role with ID ${id} not found`);
+
+    const existingRole = await this.roleRepository.findOne({
+      where: { name, id: { not: id } as any },
+    });
+    if (existingRole) {
+      throw new BadRequestException('Role name already exists');
+    }
+
+    role.name = name;
+    return this.roleRepository.save(role);
+  }
+
   async delete(id: number): Promise<void> {
     const result = await this.roleRepository.delete(id);
     if (result.affected === 0) throw new NotFoundException(`Role not found`);

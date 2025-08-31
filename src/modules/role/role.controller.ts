@@ -6,11 +6,13 @@ import {
   Param,
   Body,
   Put,
+  Patch,
 } from '@nestjs/common';
 import { RoleService } from './role.service';
 import { Role } from 'src/entities/role.entity';
 import { ResponseMessage } from 'src/decorator/responseMessage.decorator';
 import { UpdateRolePermissionsDto } from './dto/updateRolePermission.dto';
+import { UpdateRoleDto } from './dto/update-role.dto';
 
 @Controller('roles')
 export class RoleController {
@@ -32,6 +34,12 @@ export class RoleController {
   @Post()
   async create(@Body('name') name: string): Promise<Role> {
     return this.roleService.create(name);
+  }
+
+  @ResponseMessage('Update Role')
+  @Patch(':id')
+  async update(@Param('id') id: number, @Body() updateRoleDto: UpdateRoleDto): Promise<Role> {
+    return this.roleService.update(id, updateRoleDto.name);
   }
 
   @ResponseMessage('Delete Role')
