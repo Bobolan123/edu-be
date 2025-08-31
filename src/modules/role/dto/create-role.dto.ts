@@ -1,6 +1,6 @@
 import { IsString, IsNotEmpty, IsOptional, IsBoolean } from 'class-validator';
 
-export class UpdateRoleDto {
+export class CreateRoleDto {
   @IsString()
   @IsNotEmpty()
   name: string;

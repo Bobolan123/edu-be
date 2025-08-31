@@ -6,7 +6,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Permission } from 'src/entities/permission.entity';
 import { Role } from 'src/entities/role.entity';
-import { Repository } from 'typeorm';
+import { Repository, Not } from 'typeorm';
 
 @Injectable()
 export class RoleService {
@@ -30,16 +30,16 @@ export class RoleService {
     return role;
   }
 
-  async create(name: string): Promise<Role> {
+  async create(name: string, description?: string, isActive: boolean = true): Promise<Role> {
     const isExist = await this.roleRepository.findOneBy({ name });
     if (isExist) {
       throw new BadRequestException('Role already exists');
     }
-    const role = this.roleRepository.create({ name });
+    const role = this.roleRepository.create({ name, description, isActive });
     return this.roleRepository.save(role);
   }
 
-  async update(id: number, name: string): Promise<Role> {
+  async update(id: number, name: string, description?: string, isActive?: boolean): Promise<Role> {
     const role = await this.roleRepository.findOne({
       where: { id },
       relations: ['permissions'],
@@ -47,13 +47,15 @@ export class RoleService {
     if (!role) throw new NotFoundException(`Role with ID ${id} not found`);
 
     const existingRole = await this.roleRepository.findOne({
-      where: { name, id: { not: id } as any },
+      where: { name, id: Not(id) },
     });
     if (existingRole) {
       throw new BadRequestException('Role name already exists');
     }
 
     role.name = name;
+    if (description !== undefined) role.description = description;
+    if (isActive !== undefined) role.isActive = isActive;
     return this.roleRepository.save(role);
   }
 

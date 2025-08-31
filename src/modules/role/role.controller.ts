@@ -13,6 +13,7 @@ import { Role } from 'src/entities/role.entity';
 import { ResponseMessage } from 'src/decorator/responseMessage.decorator';
 import { UpdateRolePermissionsDto } from './dto/updateRolePermission.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
+import { CreateRoleDto } from './dto/create-role.dto';
 
 @Controller('roles')
 export class RoleController {
@@ -32,14 +33,23 @@ export class RoleController {
 
   @ResponseMessage('Create new Role')
   @Post()
-  async create(@Body('name') name: string): Promise<Role> {
-    return this.roleService.create(name);
+  async create(@Body() createRoleDto: CreateRoleDto): Promise<Role> {
+    return this.roleService.create(
+      createRoleDto.name,
+      createRoleDto.description,
+      createRoleDto.isActive
+    );
   }
 
   @ResponseMessage('Update Role')
   @Patch(':id')
   async update(@Param('id') id: number, @Body() updateRoleDto: UpdateRoleDto): Promise<Role> {
-    return this.roleService.update(id, updateRoleDto.name);
+    return this.roleService.update(
+      id,
+      updateRoleDto.name,
+      updateRoleDto.description,
+      updateRoleDto.isActive
+    );
   }
 
   @ResponseMessage('Delete Role')
