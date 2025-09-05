@@ -109,7 +109,7 @@ export class CourseService {
       excludeEnrolled,
       status,
       includeDeleted,
-    } = filterDto; 
+    } = filterDto;
 
     const queryBuilder = this.courseRepository
       .createQueryBuilder('course')
@@ -315,8 +315,8 @@ export class CourseService {
   }
 
   async findOne(id: number, includeDeleted: boolean = false): Promise<Course> {
-    let whereCondition: any = { id };
-    
+    const whereCondition: any = { id };
+
     if (includeDeleted) {
       // Find only deleted courses - need to use query builder for this
       const course = await this.courseRepository
@@ -328,18 +328,22 @@ export class CourseService {
         .where('course.id = :id', { id })
         .andWhere('course.deleted_at IS NOT NULL')
         .getOne();
-        
+
       if (!course) {
-        throw new BadRequestException(`Deleted course with ID ${id} not found.`);
+        throw new BadRequestException(
+          `Deleted course with ID ${id} not found.`,
+        );
       }
-      
-      const averageRating = await this.reviewService.getAverageRating(course.id);
+
+      const averageRating = await this.reviewService.getAverageRating(
+        course.id,
+      );
       return {
         ...course,
         average_rating: averageRating,
       };
     }
-    
+
     const course = await this.courseRepository.findOne({
       where: whereCondition,
       relations: ['instructor', 'categories', 'reviews', 'reviews.user'],
@@ -414,32 +418,33 @@ export class CourseService {
   }
 
   async remove(id: number): Promise<any> {
-    const course = await this.courseRepository.findOne({ 
+    const course = await this.courseRepository.findOne({
       where: { id },
       withDeleted: false,
     });
     if (!course) {
       throw new BadRequestException(`Course with ID ${id} not found.`);
     }
-     
 
     return await this.courseRepository.softDelete(id);
   }
 
   async restore(id: number): Promise<void> {
-    const course = await this.courseRepository.findOne({ 
+    const course = await this.courseRepository.findOne({
       where: { id },
       withDeleted: true,
     });
     if (!course) {
-      throw new BadRequestException(`Course with ID ${id} not found or not deleted.`);
+      throw new BadRequestException(
+        `Course with ID ${id} not found or not deleted.`,
+      );
     }
 
     await this.courseRepository.restore(id);
   }
- 
+
   async forceRemove(id: number): Promise<void> {
-    const course = await this.courseRepository.findOne({ 
+    const course = await this.courseRepository.findOne({
       where: { id },
       withDeleted: true,
     });

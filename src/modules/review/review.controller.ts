@@ -77,20 +77,14 @@ export class ReviewController {
   @Post(':id/vote/up')
   @UseGuards(JwtAuthGuard)
   @ResponseMessage('Vote up on review')
-  async voteUp(
-    @Param('id', ParseIntPipe) id: number, 
-    @Request() req: any
-  ) {
+  async voteUp(@Param('id', ParseIntPipe) id: number, @Request() req: any) {
     return this.reviewService.voteOnReview(id, req.user.id, VoteType.UP);
   }
 
   @Post(':id/vote/down')
   @UseGuards(JwtAuthGuard)
   @ResponseMessage('Vote down on review')
-  async voteDown(
-    @Param('id', ParseIntPipe) id: number, 
-    @Request() req: any
-  ) {
+  async voteDown(@Param('id', ParseIntPipe) id: number, @Request() req: any) {
     return this.reviewService.voteOnReview(id, req.user.id, VoteType.DOWN);
   }
 
@@ -98,8 +92,8 @@ export class ReviewController {
   @UseGuards(JwtAuthGuard)
   @ResponseMessage('Get user vote on review')
   async getUserVote(
-    @Param('id', ParseIntPipe) id: number, 
-    @Request() req: any
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req: any,
   ) {
     return this.reviewService.getUserVoteOnReview(id, req.user.id);
   }

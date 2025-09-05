@@ -30,7 +30,11 @@ export class RoleService {
     return role;
   }
 
-  async create(name: string, description?: string, isActive: boolean = true): Promise<Role> {
+  async create(
+    name: string,
+    description?: string,
+    isActive: boolean = true,
+  ): Promise<Role> {
     const isExist = await this.roleRepository.findOneBy({ name });
     if (isExist) {
       throw new BadRequestException('Role already exists');
@@ -39,7 +43,12 @@ export class RoleService {
     return this.roleRepository.save(role);
   }
 
-  async update(id: number, name: string, description?: string, isActive?: boolean): Promise<Role> {
+  async update(
+    id: number,
+    name: string,
+    description?: string,
+    isActive?: boolean,
+  ): Promise<Role> {
     const role = await this.roleRepository.findOne({
       where: { id },
       relations: ['permissions'],
@@ -66,7 +75,7 @@ export class RoleService {
 
   async updateRolePermissions(
     roleId: number,
-    permissionIds: number[], 
+    permissionIds: number[],
   ): Promise<Role> {
     const role = await this.roleRepository.findOne({
       where: { id: roleId },

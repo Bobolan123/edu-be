@@ -1,8 +1,12 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Permission } from 'src/entities/permission.entity';
 import { Repository } from 'typeorm';
-import { CreatePermissionDto } from './dto/permission.dto';
+import { CreatePermissionDto, UpdatePermissionDto } from './dto/permission.dto';
 
 @Injectable()
 export class PermissionService {
@@ -25,13 +29,38 @@ export class PermissionService {
   }
 
   async create(data: CreatePermissionDto): Promise<Permission> {
-    const exestingPermission = await this.permissionRepository.findOne({
-      where: { action: data.action },
-    });
-    if (exestingPermission) {
-      throw new NotFoundException('Permission action existed');
+    if (data.api && data.method) {
+      const existingPermission = await this.permissionRepository.findOne({
+        where: { api: data.api, method: data.method },
+      });
+      if (existingPermission) {
+        throw new ConflictException(
+          'Permission with this API and method combination already exists',
+        );
+      }
     }
     const permission = this.permissionRepository.create(data);
+    return this.permissionRepository.save(permission);
+  }
+
+  async update(id: number, data: UpdatePermissionDto): Promise<Permission> {
+    const permission = await this.findOne(id);
+
+    if (data.api || data.method) {
+      const existingPermission = await this.permissionRepository.findOne({
+        where: {
+          api: data.api || permission.api,
+          method: data.method || permission.method,
+        },
+      });
+      if (existingPermission && existingPermission.id !== id) {
+        throw new ConflictException(
+          'Permission with this API and method combination already exists',
+        );
+      }
+    }
+
+    Object.assign(permission, data);
     return this.permissionRepository.save(permission);
   }
 

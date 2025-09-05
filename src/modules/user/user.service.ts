@@ -45,7 +45,7 @@ export class UserService {
   }
 
   async isActiveGmail(email: string): Promise<boolean> {
-    const user = await this.userRepository.findOne({ 
+    const user = await this.userRepository.findOne({
       where: { email },
       withDeleted: false,
     });
@@ -64,7 +64,7 @@ export class UserService {
     if (existingUser) {
       throw new BadRequestException('User already exists');
     }
-    
+
     let avatar_url: string | null = null;
     if (avatarFile) {
       avatar_url = await this.cloudinaryService.uploadImage(
@@ -178,7 +178,7 @@ export class UserService {
   }
 
   async resendOtp(email: string) {
-    const user = await this.userRepository.findOne({ 
+    const user = await this.userRepository.findOne({
       where: { email },
       withDeleted: false,
     });
@@ -232,7 +232,7 @@ export class UserService {
   }
 
   async updatePassword(id: number, updateUserDto: IUpdatePassword) {
-    const user = await this.userRepository.findOne({ 
+    const user = await this.userRepository.findOne({
       where: { id },
       withDeleted: false,
     });
@@ -264,7 +264,13 @@ export class UserService {
         .createQueryBuilder('user')
         .leftJoin('user.role', 'role')
         .leftJoin('role.permission', 'permission')
-        .select(['permission.action AS action', 'permission.module  AS module'])
+        .select([
+          'permission.id AS id',
+          'permission.api AS api', 
+          'permission.description AS description',
+          'permission.method AS method',
+          'permission.module AS module'
+        ])
         .where('user.id = :userId', { userId })
         .andWhere('user.deleted_at IS NULL')
         .getRawMany(); // Use getRawMany to fetch raw data for the APIs
@@ -277,7 +283,16 @@ export class UserService {
   async findAll(
     filterDto: UserSearchFilterDto,
   ): Promise<ResponsePaginate<User>> {
-    const { search, name, email, role, status, order, orderBy, includeDeleted } = filterDto;
+    const {
+      search,
+      name,
+      email,
+      role,
+      status,
+      order,
+      orderBy,
+      includeDeleted,
+    } = filterDto;
     const queryBuilder = this.userRepository
       .createQueryBuilder('user')
       .leftJoinAndSelect('user.role', 'role');
@@ -359,7 +374,7 @@ export class UserService {
         .andWhere('user.deleted_at IS NOT NULL')
         .getOne();
     }
-    
+
     return this.userRepository.findOne({
       where: { id },
       relations: ['role', 'courses'],
@@ -372,7 +387,7 @@ export class UserService {
   }
 
   async update(id: number, updateUserDto: UpdateUserDto): Promise<User> {
-    const user = await this.userRepository.findOne({ 
+    const user = await this.userRepository.findOne({
       where: { id },
       withDeleted: false,
     });
@@ -388,7 +403,7 @@ export class UserService {
   }
 
   async remove(id: number) {
-    const user = await this.userRepository.findOne({ 
+    const user = await this.userRepository.findOne({
       where: { id },
       withDeleted: false,
     });
@@ -401,7 +416,7 @@ export class UserService {
   }
 
   async restore(id: number) {
-    const user = await this.userRepository.findOne({ 
+    const user = await this.userRepository.findOne({
       where: { id },
       withDeleted: true,
     });
@@ -414,7 +429,7 @@ export class UserService {
   }
 
   async forceRemove(id: number) {
-    const user = await this.userRepository.findOne({ 
+    const user = await this.userRepository.findOne({
       where: { id },
       withDeleted: true,
     });

@@ -37,14 +37,27 @@ export class RolesGuard implements CanActivate {
 
     if (!user) throw new ForbiddenException('User not found');
 
-    const userPermissions = user.role.permissions.map((perm) => perm.action);
+    // Get current request API and method
+    const currentApi = request.route?.path || request.url;
+    const currentMethod = request.method;
 
-    // Check if user has at least one required permission
-    const hasPermission = requiredPermissions.some((permission) =>
-      userPermissions.includes(permission),
+    // Check if user has permission for current API and method
+    const hasPermission = user.role.permissions.some(
+      (perm) => perm.api && perm.method && perm.api === currentApi && perm.method === currentMethod,
     );
 
-    if (!hasPermission) throw new ForbiddenException('Access denied');
+    // Also check for legacy permission names if provided
+    if (!hasPermission && requiredPermissions) {
+      const userPermissionIds = user.role.permissions
+        .filter((perm) => perm.method && perm.api)
+        .map((perm) => `${perm.method}:${perm.api}`);
+      const hasLegacyPermission = requiredPermissions.some((permission) =>
+        userPermissionIds.includes(permission),
+      );
+      if (!hasLegacyPermission) throw new ForbiddenException('Access denied');
+    } else if (!hasPermission) {
+      throw new ForbiddenException('Access denied');
+    }
 
     return true;
   }

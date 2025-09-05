@@ -1,4 +1,10 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  OneToMany,
+} from 'typeorm';
 import { User } from './user.entity';
 import { Course } from './course.entity';
 import { ReviewVote } from './review-vote.entity';
@@ -8,7 +14,7 @@ export enum ReviewStatus {
   HIDDEN = 'hidden',
 }
 
-@Entity() 
+@Entity()
 export class Review {
   @PrimaryGeneratedColumn()
   id: number;

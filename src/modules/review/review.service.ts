@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Review } from 'src/entities/review.entity';
@@ -18,7 +22,8 @@ export class ReviewService {
     @InjectRepository(Review) private reviewRepo: Repository<Review>,
     @InjectRepository(Course) private courseRepo: Repository<Course>,
     @InjectRepository(User) private userRepo: Repository<User>,
-    @InjectRepository(ReviewVote) private reviewVoteRepo: Repository<ReviewVote>,
+    @InjectRepository(ReviewVote)
+    private reviewVoteRepo: Repository<ReviewVote>,
   ) {}
 
   private async paginateQuery(
@@ -205,7 +210,11 @@ export class ReviewService {
     return review;
   }
 
-  async voteOnReview(reviewId: number, userId: number, voteType: VoteType): Promise<{ review: Review; userVote: ReviewVote | null }> {
+  async voteOnReview(
+    reviewId: number,
+    userId: number,
+    voteType: VoteType,
+  ): Promise<{ review: Review; userVote: ReviewVote | null }> {
     const review = await this.findOne(reviewId);
     if (!review) {
       throw new NotFoundException('Review not found');
@@ -226,21 +235,21 @@ export class ReviewService {
       if (existingVote.voteType === voteType) {
         // Same vote type - remove vote (toggle off)
         await this.reviewVoteRepo.remove(existingVote);
-        
+
         // Update review vote counts
         if (voteType === VoteType.UP) {
           review.upVotes -= 1;
         } else {
           review.downVotes -= 1;
         }
-        
+
         await this.reviewRepo.save(review);
         return { review, userVote: null };
       } else {
         // Different vote type - update vote
         existingVote.voteType = voteType;
         await this.reviewVoteRepo.save(existingVote);
-        
+
         // Update review vote counts (swing by 1 each)
         if (voteType === VoteType.UP) {
           review.upVotes += 1;
@@ -249,7 +258,7 @@ export class ReviewService {
           review.upVotes -= 1;
           review.downVotes += 1;
         }
-        
+
         await this.reviewRepo.save(review);
         return { review, userVote: existingVote };
       }
@@ -260,22 +269,25 @@ export class ReviewService {
         review,
         voteType,
       });
-      
+
       await this.reviewVoteRepo.save(newVote);
-      
+
       // Update review vote counts
       if (voteType === VoteType.UP) {
         review.upVotes += 1;
       } else {
         review.downVotes += 1;
       }
-      
+
       await this.reviewRepo.save(review);
       return { review, userVote: newVote };
     }
   }
 
-  async getUserVoteOnReview(reviewId: number, userId: number): Promise<ReviewVote | null> {
+  async getUserVoteOnReview(
+    reviewId: number,
+    userId: number,
+  ): Promise<ReviewVote | null> {
     return this.reviewVoteRepo.findOne({
       where: { user: { id: userId }, review: { id: reviewId } },
     });

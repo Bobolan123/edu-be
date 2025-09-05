@@ -187,9 +187,10 @@ export class CourseProgressSyncService {
       .then((ids) => ids.length);
 
     // Calculate totalLectures from sections array
-    const totalLectures = courseContent.sections?.reduce((total, section) => {
-      return total + (section.lectures?.length || 0);
-    }, 0) || 0;
+    const totalLectures =
+      courseContent.sections?.reduce((total, section) => {
+        return total + (section.lectures?.length || 0);
+      }, 0) || 0;
 
     return {
       totalLectures,

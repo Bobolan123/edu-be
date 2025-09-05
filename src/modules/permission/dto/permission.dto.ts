@@ -1,29 +1,39 @@
-import { IsString, IsNotEmpty } from 'class-validator';
+import { IsString, IsNotEmpty, IsIn, IsOptional } from 'class-validator';
 
 export class CreatePermissionDto {
   @IsString()
-  @IsNotEmpty()
-  action: string;
+  @IsOptional()
+  api?: string;
 
   @IsString()
-  @IsNotEmpty()
-  module: string;
+  @IsOptional()
+  description?: string;
 
   @IsString()
-  @IsNotEmpty()
-  description: string;
+  @IsOptional()
+  @IsIn(['GET', 'POST', 'PUT', 'PATCH', 'DELETE'])
+  method?: string;
+
+  @IsString()
+  @IsOptional()
+  module?: string;
 }
 
 export class UpdatePermissionDto {
   @IsString()
-  @IsNotEmpty()
-  action?: string;
+  @IsOptional()
+  api?: string;
 
   @IsString()
-  @IsNotEmpty()
-  module?: string;
-
-  @IsString()
-  @IsNotEmpty()
+  @IsOptional()
   description?: string;
+
+  @IsString()
+  @IsOptional()
+  @IsIn(['GET', 'POST', 'PUT', 'PATCH', 'DELETE'])
+  method?: string;
+
+  @IsString()
+  @IsOptional()
+  module?: string;
 }

@@ -53,13 +53,17 @@ export class AuthService {
       throw new HttpException('Email is not verified', HttpStatus.FORBIDDEN);
     }
 
-    const permissions = user.role?.permissions?.map(permission => ({
-      action: permission.action,
-      module: permission.module
-    })) || [];
+    const permissions =
+      user.role?.permissions?.map((permission) => ({
+        id: permission.id,
+        api: permission.api,
+        description: permission.description,
+        method: permission.method,
+        module: permission.module,
+      })) || [];
 
     const payload = {
-      id: user.id,
+      id: user.id, 
       name: user.name,
       email: user.email,
       role: user.role?.name,
@@ -86,6 +90,7 @@ export class AuthService {
       id: user.id,
       role: user.role?.name,
       access_token,
+      permissions: permissions,
     };
   }
 

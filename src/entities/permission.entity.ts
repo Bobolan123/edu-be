@@ -1,21 +1,35 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToMany } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToMany,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 import { Role } from './role.entity';
-import { IsString } from 'class-validator';
 
 @Entity()
 export class Permission {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ unique: true })
-  action: string; // e.g., 'CREATE_USER', 'DELETE_POST'
+  @Column({ nullable: true })
+  api: string; // e.g., '/api/users', '/api/courses'
 
-  @Column()
-  module: string; // e.g., 'User', 'Auth'
+  @Column({ nullable: true })
+  description: string;
 
-  @IsString()
-  @Column()
-  description: string; // e.g., 'User', 'Auth'
+  @Column({ nullable: true })
+  method: string; // e.g., 'GET', 'POST', 'PUT', 'DELETE'
+
+  @Column({ nullable: true })
+  module: string; // e.g., 'User', 'Course', 'Auth'
+
+  @CreateDateColumn()
+  created: Date;
+
+  @UpdateDateColumn()
+  updated: Date;
 
   @ManyToMany(() => Role, (role) => role.permissions)
   roles: Role[];

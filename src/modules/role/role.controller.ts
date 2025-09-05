@@ -37,18 +37,21 @@ export class RoleController {
     return this.roleService.create(
       createRoleDto.name,
       createRoleDto.description,
-      createRoleDto.isActive
+      createRoleDto.isActive,
     );
   }
 
   @ResponseMessage('Update Role')
   @Patch(':id')
-  async update(@Param('id') id: number, @Body() updateRoleDto: UpdateRoleDto): Promise<Role> {
+  async update(
+    @Param('id') id: number,
+    @Body() updateRoleDto: UpdateRoleDto,
+  ): Promise<Role> {
     return this.roleService.update(
       id,
       updateRoleDto.name,
       updateRoleDto.description,
-      updateRoleDto.isActive
+      updateRoleDto.isActive,
     );
   }
 

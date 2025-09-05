@@ -136,7 +136,9 @@ export class OrderController {
 
   @Get()
   @ResponseMessage('Get all orders')
-  async findAll(@Query() filterDto: OrderSearchFilterDto): Promise<ResponsePaginate<Order>> {
+  async findAll(
+    @Query() filterDto: OrderSearchFilterDto,
+  ): Promise<ResponsePaginate<Order>> {
     return this.orderService.findAll(filterDto);
   }
 

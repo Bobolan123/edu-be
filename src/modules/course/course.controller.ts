@@ -55,7 +55,10 @@ export class CourseController {
       .map(Number);
 
     const includeDeletedBool = includeDeleted === 'true';
-    return this.courseService.findCoursesByCategory(categoryIds, includeDeletedBool);
+    return this.courseService.findCoursesByCategory(
+      categoryIds,
+      includeDeletedBool,
+    );
   }
 
   @Get(':id')

@@ -18,7 +18,8 @@ export class CategoryService {
     pageOptionsDto: PageOptionsDto,
   ): Promise<ResponsePaginate<CategoryWithCountDto>> {
     // First, get all categories with pagination
-    const categoryQuery = this.categoryRepository.createQueryBuilder('category');
+    const categoryQuery =
+      this.categoryRepository.createQueryBuilder('category');
 
     if (pageOptionsDto.search) {
       categoryQuery.where('category.name ILIKE :search', {
@@ -37,7 +38,7 @@ export class CategoryService {
     const [categories, totalCount] = await categoryQuery.getManyAndCount();
 
     // Get course counts for each category
-    const categoryIds = categories.map(cat => cat.id);
+    const categoryIds = categories.map((cat) => cat.id);
     let courseCounts: { [key: number]: number } = {};
 
     if (categoryIds.length > 0) {
@@ -57,13 +58,14 @@ export class CategoryService {
     }
 
     // Combine categories with their course counts
-    const items = categories.map(category => 
-      new CategoryWithCountDto({
-        id: category.id,
-        name: category.name,
-        description: category.description,
-        courseCount: courseCounts[category.id] || 0
-      })
+    const items = categories.map(
+      (category) =>
+        new CategoryWithCountDto({
+          id: category.id,
+          name: category.name,
+          description: category.description,
+          courseCount: courseCounts[category.id] || 0,
+        }),
     );
 
     const pageMetaDto = new PageMetaDto({
@@ -72,8 +74,8 @@ export class CategoryService {
     });
 
     return { result: items, meta: pageMetaDto };
-  } 
- 
+  }
+
   async findOne(id: number): Promise<Category> {
     return this.categoryRepository.findOne({ where: { id } });
   }
@@ -91,6 +93,4 @@ export class CategoryService {
   async delete(id: number): Promise<void> {
     await this.categoryRepository.delete(id);
   }
-
- 
 }

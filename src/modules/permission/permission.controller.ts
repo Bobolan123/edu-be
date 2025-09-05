@@ -1,7 +1,15 @@
-import { Controller, Get, Post, Delete, Param, Body } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Param,
+  Body,
+} from '@nestjs/common';
 import { PermissionService } from './permission.service';
 import { Permission } from 'src/entities/permission.entity';
-import { CreatePermissionDto } from './dto/permission.dto';
+import { CreatePermissionDto, UpdatePermissionDto } from './dto/permission.dto';
 import { ResponseMessage } from 'src/decorator/responseMessage.decorator';
 
 @Controller('permission')
@@ -24,6 +32,15 @@ export class PermissionController {
   @Post()
   async create(@Body() data: CreatePermissionDto): Promise<Permission> {
     return this.permissionService.create(data);
+  }
+
+  @ResponseMessage('Update permission')
+  @Put(':id')
+  async update(
+    @Param('id') id: number,
+    @Body() data: UpdatePermissionDto,
+  ): Promise<Permission> {
+    return this.permissionService.update(id, data);
   }
 
   @ResponseMessage('Delete permission')

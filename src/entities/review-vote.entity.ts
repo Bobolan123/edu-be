@@ -1,4 +1,10 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, Unique } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  Unique,
+} from 'typeorm';
 import { User } from './user.entity';
 import { Review } from './review.entity';
 
@@ -8,7 +14,7 @@ export enum VoteType {
 }
 
 @Entity()
-@Unique(['user', 'review'])   
+@Unique(['user', 'review'])
 export class ReviewVote {
   @PrimaryGeneratedColumn()
   id: number;

@@ -267,8 +267,9 @@ export class OrderService {
       'updatedAt',
       'transactionId',
     ];
-    const sortField = validOrderByFields.includes(orderBy) ? orderBy : 'createdAt';
-
+    const sortField = validOrderByFields.includes(orderBy)
+      ? orderBy
+      : 'createdAt';
 
     queryBuilder
       .orderBy(`order.${sortField}`, order || 'DESC')

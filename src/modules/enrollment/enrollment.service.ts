@@ -404,7 +404,7 @@ export class EnrollmentService {
 
     if (instructorId) {
       queryBuilder.andWhere('instructor.id = :instructorId', { instructorId });
-    } 
+    }
 
     if (courseName) {
       queryBuilder.andWhere('course.title ILIKE :courseName', {
@@ -488,16 +488,21 @@ export class EnrollmentService {
           progressData: {
             progressPercentage,
             completedLecturesCount,
-            totalLecturesCount: await this.getTotalLecturesCount(enrollment.course.id),
+            totalLecturesCount: await this.getTotalLecturesCount(
+              enrollment.course.id,
+            ),
             totalWatchTime,
-            lastActivity: await this.getLastActivity(enrollment.id, enrollment.course.id),
+            lastActivity: await this.getLastActivity(
+              enrollment.id,
+              enrollment.course.id,
+            ),
           },
         };
       }),
     );
 
-    const pageMetaDto = new PageMetaDto({ 
-      itemCount, 
+    const pageMetaDto = new PageMetaDto({
+      itemCount,
       pageOptionsDto: {
         page: filterDto.page,
         take: filterDto.take,
@@ -515,17 +520,22 @@ export class EnrollmentService {
     const progressRecords = await this.lectureProgressModel
       .find({ enrollmentId, courseId })
       .exec();
-    
-    return progressRecords.reduce((total, record) => total + (record.watchTime || 0), 0);
+
+    return progressRecords.reduce(
+      (total, record) => total + (record.watchTime || 0),
+      0,
+    );
   }
 
   private async getTotalLecturesCount(courseId: number): Promise<number> {
     const courseContent = await this.courseContentModel.findOne({ courseId });
     if (!courseContent) return 0;
 
-    return courseContent.sections?.reduce((total, section) => {
-      return total + (section.lectures?.length || 0);
-    }, 0) || 0;
+    return (
+      courseContent.sections?.reduce((total, section) => {
+        return total + (section.lectures?.length || 0);
+      }, 0) || 0
+    );
   }
 
   private async getLastActivity(
