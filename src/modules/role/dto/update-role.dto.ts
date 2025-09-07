@@ -1,9 +1,9 @@
-import { IsString, IsNotEmpty, IsOptional, IsBoolean } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsBoolean, IsArray, IsInt } from 'class-validator';
 
 export class UpdateRoleDto {
   @IsString()
-  @IsNotEmpty()
-  name: string;
+  @IsOptional()
+  name?: string;
 
   @IsString()
   @IsOptional()
@@ -12,4 +12,9 @@ export class UpdateRoleDto {
   @IsBoolean()
   @IsOptional()
   isActive?: boolean;
+
+  @IsArray()
+  @IsOptional()
+  @IsInt({ each: true })
+  permissionIds?: number[];
 }

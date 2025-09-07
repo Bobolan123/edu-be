@@ -7,6 +7,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Permission } from 'src/entities/permission.entity';
 import { Role } from 'src/entities/role.entity';
 import { Repository, Not } from 'typeorm';
+import { CreateRoleDto } from './dto/create-role.dto';
+import { UpdateRoleDto } from './dto/update-role.dto';
 
 @Injectable()
 export class RoleService {
@@ -30,41 +32,60 @@ export class RoleService {
     return role;
   }
 
-  async create(
-    name: string,
-    description?: string,
-    isActive: boolean = true,
-  ): Promise<Role> {
+  async create(createRoleDto: CreateRoleDto): Promise<Role> {
+    const { name, description, isActive = true, permissionIds } = createRoleDto;
+    
     const isExist = await this.roleRepository.findOneBy({ name });
     if (isExist) {
       throw new BadRequestException('Role already exists');
     }
+    
     const role = this.roleRepository.create({ name, description, isActive });
+    
+    if (permissionIds && permissionIds.length > 0) {
+      const permissions = await this.permissionRepository.findByIds(permissionIds);
+      if (permissions.length !== permissionIds.length) {
+        throw new NotFoundException('Some permissions not found');
+      }
+      role.permissions = permissions;
+    }
+    
     return this.roleRepository.save(role);
   }
 
-  async update(
-    id: number,
-    name: string,
-    description?: string,
-    isActive?: boolean,
-  ): Promise<Role> {
+  async update(id: number, updateRoleDto: UpdateRoleDto): Promise<Role> {
+    const { name, description, isActive, permissionIds } = updateRoleDto;
+    
     const role = await this.roleRepository.findOne({
       where: { id },
       relations: ['permissions'],
     });
     if (!role) throw new NotFoundException(`Role with ID ${id} not found`);
 
-    const existingRole = await this.roleRepository.findOne({
-      where: { name, id: Not(id) },
-    });
-    if (existingRole) {
-      throw new BadRequestException('Role name already exists');
+    if (name && name !== role.name) {
+      const existingRole = await this.roleRepository.findOne({
+        where: { name, id: Not(id) },
+      });
+      if (existingRole) {
+        throw new BadRequestException('Role name already exists');
+      }
+      role.name = name;
     }
-
-    role.name = name;
     if (description !== undefined) role.description = description;
     if (isActive !== undefined) role.isActive = isActive;
+    
+    if (permissionIds !== undefined) {
+      if (permissionIds && permissionIds.length > 0) {
+        const permissions = await this.permissionRepository.findByIds(permissionIds);
+        if (permissions.length !== permissionIds.length) {
+          throw new NotFoundException('Some permissions not found');
+        }
+        role.permissions = permissions;
+      } else {
+        role.permissions = [];
+      }
+    }
+    
     return this.roleRepository.save(role);
   }
 

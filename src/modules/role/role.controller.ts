@@ -11,7 +11,6 @@ import {
 import { RoleService } from './role.service';
 import { Role } from 'src/entities/role.entity';
 import { ResponseMessage } from 'src/decorator/responseMessage.decorator';
-import { UpdateRolePermissionsDto } from './dto/updateRolePermission.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
 import { CreateRoleDto } from './dto/create-role.dto';
 
@@ -34,11 +33,7 @@ export class RoleController {
   @ResponseMessage('Create new Role')
   @Post()
   async create(@Body() createRoleDto: CreateRoleDto): Promise<Role> {
-    return this.roleService.create(
-      createRoleDto.name,
-      createRoleDto.description,
-      createRoleDto.isActive,
-    );
+    return this.roleService.create(createRoleDto);
   }
 
   @ResponseMessage('Update Role')
@@ -47,12 +42,7 @@ export class RoleController {
     @Param('id') id: number,
     @Body() updateRoleDto: UpdateRoleDto,
   ): Promise<Role> {
-    return this.roleService.update(
-      id,
-      updateRoleDto.name,
-      updateRoleDto.description,
-      updateRoleDto.isActive,
-    );
+    return this.roleService.update(id, updateRoleDto);
   }
 
   @ResponseMessage('Delete Role')
@@ -61,12 +51,4 @@ export class RoleController {
     return this.roleService.delete(id);
   }
 
-  @ResponseMessage('Update role permissions')
-  @Put('permissions')
-  async updatePermissions(@Body() dto: UpdateRolePermissionsDto) {
-    return this.roleService.updateRolePermissions(
-      dto.roleId,
-      dto.permissionIds,
-    );
-  }
 }
