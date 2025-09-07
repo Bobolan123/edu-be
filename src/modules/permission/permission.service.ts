@@ -114,7 +114,7 @@ export class PermissionService {
     Object.assign(permission, data);
     return this.permissionRepository.save(permission);
   }
-
+ 
   async delete(id: number): Promise<void> {
     const permission = await this.findOne(id);
     
