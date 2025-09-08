@@ -7,12 +7,16 @@ import {
   Body,
   Put,
   Patch,
+  UseGuards,
 } from '@nestjs/common';
 import { RoleService } from './role.service';
 import { Role } from 'src/entities/role.entity';
 import { ResponseMessage } from 'src/decorator/responseMessage.decorator';
 import { UpdateRoleDto } from './dto/update-role.dto';
 import { CreateRoleDto } from './dto/create-role.dto';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { RolesGuard } from 'src/auth/guards/roles.guard';
+import { Permissions } from 'src/decorator/requirePermission.decorator';
 
 @Controller('roles')
 export class RoleController {

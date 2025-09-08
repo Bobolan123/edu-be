@@ -57,20 +57,14 @@ export class ReviewService {
       queryBuilder.orderBy(`review.${orderBy}`, pageOptionsDto.order);
     }
 
-    console.log(
-      'DEBUG PAGINATE - skip:',
-      pageOptionsDto.skip,
-      'take:',
-      pageOptionsDto.take,
-    );
     queryBuilder.skip(pageOptionsDto.skip).take(pageOptionsDto.take);
 
     const [items, itemCount] = await queryBuilder.getManyAndCount();
     const meta = new PageMetaDto({ itemCount, pageOptionsDto });
 
     return { result: items, meta };
-  }
-
+  } 
+ 
   private applyFilters(
     queryBuilder: ReturnType<Repository<Review>['createQueryBuilder']>,
     filterDto: ReviewFilterDto,
@@ -122,6 +116,17 @@ export class ReviewService {
     });
   }
 
+  async findAll(reviewFilterDto: ReviewFilterDto) {
+    const qb = this.reviewRepo
+      .createQueryBuilder('review')
+      .leftJoinAndSelect('review.user', 'user')
+      .leftJoinAndSelect('review.course', 'course');
+
+    this.applyFilters(qb, reviewFilterDto);
+
+    return this.paginateQuery(qb, reviewFilterDto);
+  }
+
   async createReview(createReviewDto: CreateReviewDto): Promise<Review> {
     const { userId, courseId, rating, comment } = createReviewDto;
 
@@ -167,6 +172,10 @@ export class ReviewService {
     if (updateReviewDto.comment !== undefined) {
       review.comment = updateReviewDto.comment;
       review.date_reviewed = new Date();
+    }
+
+    if (updateReviewDto.status !== undefined) {
+      review.status = updateReviewDto.status;
     }
 
     const updatedReview = await this.reviewRepo.save(review);

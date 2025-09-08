@@ -26,6 +26,12 @@ import { ResponseMessage } from 'src/decorator/responseMessage.decorator';
 export class ReviewController {
   constructor(private readonly reviewService: ReviewService) {}
 
+  @Get()
+  @ResponseMessage('Get all reviews')
+  async findAll(@Query() reviewFilterDto: ReviewFilterDto) {
+    return this.reviewService.findAll(reviewFilterDto);
+  }
+
   @Get('distribution')
   @ResponseMessage('Get review distribution')
   async getReviewDistribution(@Query('id') courseId: string) {
