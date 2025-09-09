@@ -93,22 +93,45 @@ export class CourseService {
   async findAll(
     filterDto: CourseSearchFilterDto,
   ): Promise<ResponsePaginate<Course>> {
+    const queryBuilder = this.buildCourseQuery(filterDto);
+    const allMatchingCourses = await queryBuilder.getMany();
+
+    const processedCourses = await this.processCoursesWithFilters(
+      allMatchingCourses,
+      filterDto,
+    );
+
+    const paginatedCourses = this.paginateCourses(processedCourses, filterDto);
+
+    const coursesWithEnrollmentStatus = await this.addEnrollmentStatus(
+      paginatedCourses,
+      filterDto.userId,
+      filterDto.excludeEnrolled,
+    );
+
+    const pageMetaDto = new PageMetaDto({
+      itemCount: processedCourses.length,
+      pageOptionsDto: filterDto,
+    });
+
+    return { result: coursesWithEnrollmentStatus, meta: pageMetaDto };
+  }
+
+  private buildCourseQuery(filterDto: CourseSearchFilterDto) {
     const {
       search,
       title,
       description,
-      order,
-      orderBy,
-      minRating,
-      maxRating,
       categoryIds,
       instructorId,
-      userId,
       minPrice,
       maxPrice,
       excludeEnrolled,
+      userId,
       status,
       includeDeleted,
+      order,
+      orderBy,
     } = filterDto;
 
     const queryBuilder = this.courseRepository
@@ -118,10 +141,8 @@ export class CourseService {
 
     // Handle soft delete filter
     if (includeDeleted) {
-      // Show only deleted courses - need to include deleted records first
       queryBuilder.withDeleted().where('course.deleted_at IS NOT NULL');
     } else {
-      // Show only active (non-deleted) courses (default behavior)
       queryBuilder.where('course.deleted_at IS NULL');
     }
 
@@ -132,7 +153,7 @@ export class CourseService {
       });
     }
 
-    // General search across title and description
+    // Search filters
     if (search) {
       queryBuilder.andWhere(
         '(course.title ILIKE :search OR course.description ILIKE :search)',
@@ -140,14 +161,12 @@ export class CourseService {
       );
     }
 
-    // Specific title search
     if (title) {
       queryBuilder.andWhere('course.title ILIKE :title', {
         title: `%${title}%`,
       });
     }
 
-    // Specific description search
     if (description) {
       queryBuilder.andWhere('course.description ILIKE :description', {
         description: `%${description}%`,
@@ -170,120 +189,82 @@ export class CourseService {
       });
     }
 
-    // Exclude enrolled courses filter
-    if (excludeEnrolled && userId) {
-      const enrolledCourseIds = await this.getEnrolledCourseIds(userId);
-
-      if (enrolledCourseIds.length > 0) {
-        queryBuilder.andWhere('course.id NOT IN (:...enrolledCourseIds)', {
-          enrolledCourseIds,
-        });
-      }
-    }
-
-    // Status filter (true = active, false = inactive)
+    // Status filter
     if (status !== undefined) {
       queryBuilder.andWhere('course.active = :status', { status });
     }
 
     // Sorting
-    const validOrderByFields = [
-      'title',
-      'date_created',
-      'last_updated',
-      'price',
-    ];
+    const validOrderByFields = ['title', 'date_created', 'last_updated', 'price'];
     const sortField = validOrderByFields.includes(orderBy) ? orderBy : 'title';
+    queryBuilder.orderBy(`course.${sortField}`, order || 'ASC');
 
-    // If rating filters are applied, we need to get all items first, filter by rating, then paginate
+    return queryBuilder;
+  }
+
+  private async processCoursesWithFilters(
+    courses: Course[],
+    filterDto: CourseSearchFilterDto,
+  ): Promise<Course[]> {
+    const { minRating, maxRating, excludeEnrolled, userId } = filterDto;
+
+    const coursesWithRatings = await Promise.all(
+      courses.map(async (course) => {
+        const averageRating = await this.reviewService.getAverageRating(course.id);
+        return {
+          ...course,
+          average_rating: averageRating,
+        };
+      }),
+    );
+
+    let filteredCourses = coursesWithRatings;
     if (minRating !== undefined || maxRating !== undefined) {
-      // Get all matching courses without pagination
-      const allItems = await queryBuilder
-        .orderBy(`course.${sortField}`, order || 'ASC')
-        .getMany();
-
-      // Calculate ratings and filter
-      const coursesWithRatings = await Promise.all(
-        allItems.map(async (course) => {
-          const averageRating = await this.reviewService.getAverageRating(
-            course.id,
-          );
-          return {
-            ...course,
-            average_rating: averageRating,
-          };
-        }),
-      );
-
-      const filteredCourses = coursesWithRatings.filter((course) => {
+      filteredCourses = coursesWithRatings.filter((course) => {
         const rating = course.average_rating || 0;
         const meetsMinRating = minRating === undefined || rating >= minRating;
         const meetsMaxRating = maxRating === undefined || rating <= maxRating;
         return meetsMinRating && meetsMaxRating;
       });
-
-      // Apply pagination to filtered results
-      const totalItemCount = filteredCourses.length;
-      const paginatedCourses = filteredCourses.slice(
-        filterDto.skip,
-        filterDto.skip + filterDto.take,
-      );
-
-      // Add enrollment status if userId provided
-      let coursesWithEnrollmentStatus = paginatedCourses;
-      if (userId) {
-        const enrolledCourseIds = await this.getEnrolledCourseIds(userId);
-        coursesWithEnrollmentStatus = paginatedCourses.map((course) => ({
-          ...course,
-          isPurchased: enrolledCourseIds.includes(course.id),
-        }));
-      }
-
-      const pageMetaDto = new PageMetaDto({
-        itemCount: totalItemCount,
-        pageOptionsDto: filterDto,
-      });
-
-      return { result: coursesWithEnrollmentStatus, meta: pageMetaDto };
-    } else {
-      // No rating filters, use normal pagination
-      queryBuilder
-        .orderBy(`course.${sortField}`, order || 'ASC')
-        .skip(filterDto.skip)
-        .take(filterDto.take);
-
-      const [items, itemCount] = await queryBuilder.getManyAndCount();
-
-      // Calculate average rating for each course
-      const coursesWithRatings = await Promise.all(
-        items.map(async (course) => {
-          const averageRating = await this.reviewService.getAverageRating(
-            course.id,
-          );
-          return {
-            ...course,
-            average_rating: averageRating,
-          };
-        }),
-      );
-
-      // Add enrollment status if userId provided
-      let coursesWithEnrollmentStatus = coursesWithRatings;
-      if (userId) {
-        const enrolledCourseIds = await this.getEnrolledCourseIds(userId);
-        coursesWithEnrollmentStatus = coursesWithRatings.map((course) => ({
-          ...course,
-          isPurchased: enrolledCourseIds.includes(course.id),
-        }));
-      }
-
-      const pageMetaDto = new PageMetaDto({
-        itemCount,
-        pageOptionsDto: filterDto,
-      });
-
-      return { result: coursesWithEnrollmentStatus, meta: pageMetaDto };
     }
+
+    if (excludeEnrolled && userId) {
+      const enrolledCourseIds = await this.getEnrolledCourseIds(userId);
+      filteredCourses = filteredCourses.filter(
+        (course) => !enrolledCourseIds.includes(course.id),
+      );
+    }
+
+    return filteredCourses;
+  }
+
+  private paginateCourses(courses: Course[], filterDto: CourseSearchFilterDto): Course[] {
+    return courses.slice(filterDto.skip, filterDto.skip + filterDto.take);
+  }
+
+  private async addEnrollmentStatus(
+    courses: Course[], 
+    userId?: number, 
+    excludeEnrolled?: boolean
+  ): Promise<Course[]> {
+    if (!userId) {
+      return courses;
+    }
+
+    // If we excluded enrolled courses, all remaining courses should have isPurchased: false
+    if (excludeEnrolled) {
+      return courses.map((course) => ({
+        ...course,
+        isPurchased: false,
+      }));
+    }
+
+    // Otherwise, check actual enrollment status
+    const enrolledCourseIds = await this.getEnrolledCourseIds(userId);
+    return courses.map((course) => ({
+      ...course,
+      isPurchased: enrolledCourseIds.includes(course.id),
+    }));
   }
 
   private async getEnrolledCourseIds(userId: number): Promise<number[]> {

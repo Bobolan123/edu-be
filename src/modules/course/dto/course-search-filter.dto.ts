@@ -49,7 +49,11 @@ export class CourseSearchFilterDto {
   @IsOptional()
   userId?: number;
 
-  @Transform(({ value }) => value === 'true')
+  @Transform(({ value }) => {
+    if (typeof value === 'boolean') return value;
+    return value === 'true';
+  })
+  @IsBoolean()
   @IsOptional()
   excludeEnrolled?: boolean;
 
