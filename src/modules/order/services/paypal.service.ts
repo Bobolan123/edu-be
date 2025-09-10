@@ -63,13 +63,45 @@ export class PaypalService {
   }
 
   async verifyPayment(params: any): Promise<boolean> {
-    const request = new paypal.orders.OrdersCaptureRequest(params.token);
-    request.requestBody({});
+    if (!params || !params.token) {
+      throw new Error('Missing PayPal token parameter');
+    }
 
     try {
-      const capture = await this.client.execute(request);
-      return capture.result.status === 'COMPLETED';
+      // First get the order to verify it exists and is valid
+      const getRequest = new paypal.orders.OrdersGetRequest(params.token);
+      const orderResponse = await this.client.execute(getRequest);
+      
+      if (orderResponse.result.status !== 'APPROVED') {
+        return false;
+      }
+
+      // Then capture the payment
+      const captureRequest = new paypal.orders.OrdersCaptureRequest(params.token);
+      captureRequest.requestBody({});
+
+      const capture = await this.client.execute(captureRequest);
+      
+      // Verify capture was successful
+      return (
+        capture.result.status === 'COMPLETED' &&
+        capture.result.purchase_units &&
+        capture.result.purchase_units.length > 0 &&
+        capture.result.purchase_units[0].payments &&
+        capture.result.purchase_units[0].payments.captures &&
+        capture.result.purchase_units[0].payments.captures[0].status === 'COMPLETED'
+      );
     } catch (err) {
+      // Check if it's already captured
+      if (err.message && err.message.includes('ORDER_ALREADY_CAPTURED')) {
+        try {
+          const getRequest = new paypal.orders.OrdersGetRequest(params.token);
+          const orderResponse = await this.client.execute(getRequest);
+          return orderResponse.result.status === 'COMPLETED';
+        } catch (getErr) {
+          throw new Error('Failed to verify PayPal payment: ' + getErr.message);
+        }
+      }
       throw new Error('Failed to verify PayPal payment: ' + err.message);
     }
   }

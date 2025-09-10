@@ -50,18 +50,31 @@ export class StripeService {
 
   async verifyPayment(params: any): Promise<boolean> {
     try {
+      // Verify webhook signature first
       const event = this.stripe.webhooks.constructEvent(
         params.body,
         params.signature,
         this.config.stripe.webhookSecret,
       );
 
-      if (event.type === 'checkout.session.completed') {
-        const session = event.data.object as Stripe.Checkout.Session;
-        return session.payment_status === 'paid';
+      // Handle different event types
+      switch (event.type) {
+        case 'checkout.session.completed':
+          const session = event.data.object as Stripe.Checkout.Session;
+          // Double-check payment status
+          const retrievedSession = await this.stripe.checkout.sessions.retrieve(
+            session.id,
+          );
+          return (
+            retrievedSession.payment_status === 'paid' &&
+            retrievedSession.status === 'complete'
+          );
+        case 'payment_intent.succeeded':
+          const paymentIntent = event.data.object as Stripe.PaymentIntent;
+          return paymentIntent.status === 'succeeded';
+        default:
+          return false;
       }
-
-      return false;
     } catch (err) {
       throw new Error('Failed to verify Stripe payment: ' + err.message);
     }

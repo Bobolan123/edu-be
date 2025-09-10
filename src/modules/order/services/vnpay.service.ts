@@ -76,16 +76,27 @@ export class VNPayService {
     isValid: boolean;
     isSuccess: boolean;
   } {
+    if (!params || typeof params !== 'object') {
+      return { isValid: false, isSuccess: false };
+    }
+
     const receivedSecureHash = params.vnp_SecureHash;
     const responseCode = params.vnp_ResponseCode;
     const transactionStatus = params.vnp_TransactionStatus;
+
+    // Validate required fields
+    if (!receivedSecureHash || !responseCode || !transactionStatus) {
+      return { isValid: false, isSuccess: false };
+    }
 
     // Create a copy for hash verification
     const paramsForHash = { ...params };
     delete paramsForHash.vnp_SecureHash;
     delete paramsForHash.vnp_SecureHashType;
 
-    const sortedParams = Object.keys(paramsForHash)
+    // Filter out empty or null values
+    const filteredParams = Object.keys(paramsForHash)
+      .filter((key) => paramsForHash[key] !== null && paramsForHash[key] !== '')
       .sort()
       .reduce(
         (acc, key) => {
@@ -96,7 +107,7 @@ export class VNPayService {
       );
 
     // Convert to query string WITHOUT encoding
-    const signData = new URLSearchParams(sortedParams).toString();
+    const signData = new URLSearchParams(filteredParams).toString();
 
     const secretKey = this.config.vnpay.hashSecret;
     const generatedHash = crypto
@@ -104,7 +115,12 @@ export class VNPayService {
       .update(signData, 'utf-8')
       .digest('hex');
 
-    const isValid = receivedSecureHash === generatedHash;
+    // Use constant time comparison to prevent timing attacks
+    const isValid = crypto.timingSafeEqual(
+      Buffer.from(receivedSecureHash, 'hex'),
+      Buffer.from(generatedHash, 'hex'),
+    );
+
     // VNPay response codes: 00 = success, 24 = cancelled by user, others = failed
     const isSuccess =
       isValid && responseCode === '00' && transactionStatus === '00';

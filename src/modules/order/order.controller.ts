@@ -183,4 +183,17 @@ export class OrderController {
   async deleteOrder(@Param('id') id: string) {
     return this.orderService.deleteOrder(id);
   }
+
+  @Post('admin/retry-failed-enrollments')
+  @ResponseMessage('Retry failed enrollments')
+  async retryFailedEnrollments() {
+    await this.orderService.retryFailedEnrollments();
+    return { message: 'Failed enrollments retry completed' };
+  }
+
+  @Get('admin/validate/:id')
+  @ResponseMessage('Validate order integrity')
+  async validateOrderIntegrity(@Param('id') id: string) {
+    return this.orderService.validateOrderIntegrity(id);
+  }
 }

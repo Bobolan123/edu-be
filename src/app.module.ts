@@ -6,6 +6,7 @@ import { ConfigModule } from '@nestjs/config';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { ScheduleModule } from '@nestjs/schedule';
 import { EmailModule } from './common/email/email.module';
 import { UserModule } from './modules/user/user.module';
 import { RoleModule } from './modules/role/role.module';
@@ -18,7 +19,7 @@ import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { TransformResInterceptor } from './core/transformRes.interceptor';
 import { PermissionModule } from './modules/permission/permission.module';
 import { CloudinaryModule } from './modules/cloudinary/cloudinary.module';
-import { PaymentModule } from './modules/payment/order.module';
+import { PaymentModule } from './modules/order/order.module';
 import { SubscriptionModule } from './modules/subscription/subscription.module';
 import { AuthModule } from './auth/auth.module';
 import { CategoryModule } from './modules/category/category.module';
@@ -32,6 +33,7 @@ import { AutoPermissionService } from './common/database/seeders/auto-permission
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+    ScheduleModule.forRoot(),
     DatabaseModule,
     UserModule,
     RoleModule,

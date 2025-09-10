@@ -1,21 +1,25 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Order } from '../../entities/order.entity';
+import { OrderCourse } from '../../entities/order-course.entity';
 import { VNPayService } from './services/vnpay.service';
 import { PaypalService } from './services/paypal.service';
 import { StripeService } from './services/stripe.service';
 import { ConfigService } from '@nestjs/config';
 import { OrderService } from './order.service';
 import { OrderController } from './order.controller';
+import { OrderRecoveryService } from './order-recovery.service';
 import { Cart } from 'src/entities/cart.entity';
+import { Enrollment } from 'src/entities/enrollment.entity';
 import { EnrollmentService } from '../enrollment/enrollment.service';
 import { EnrollmentModule } from '../enrollment/enrollment.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Order, Cart]), EnrollmentModule],
+  imports: [TypeOrmModule.forFeature([Order, OrderCourse, Cart, Enrollment]), EnrollmentModule],
   controllers: [OrderController],
   providers: [
     OrderService,
+    OrderRecoveryService,
     VNPayService,
     PaypalService,
     StripeService,

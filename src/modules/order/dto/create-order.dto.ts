@@ -14,11 +14,6 @@ export class CreateOrderDto {
   cartId: number;
 
   @IsNotEmpty()
-  @IsNumber()
-  @Min(0)
-  totalPrice: number;
-
-  @IsNotEmpty()
   @IsEnum(PaymentMethod)
   paymentMethod: PaymentMethod;
 
@@ -29,8 +24,4 @@ export class CreateOrderDto {
   @IsOptional()
   @IsString()
   paymentGatewayResponse?: string;
-
-  @IsNotEmpty()
-  @IsString()
-  userId: string;
 }

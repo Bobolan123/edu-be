@@ -3,12 +3,14 @@ import {
   PrimaryGeneratedColumn,
   Column,
   ManyToOne,
+  OneToMany,
   CreateDateColumn,
   UpdateDateColumn,
   JoinColumn,
 } from 'typeorm';
 import { User } from './user.entity';
 import { Cart } from './cart.entity';
+import { OrderCourse } from './order-course.entity';
 
 export enum OrderStatus {
   PENDING = 'PENDING',
@@ -50,8 +52,25 @@ export class Order {
   @Column({ type: 'text', nullable: true })
   paymentGatewayResponse: string;
 
+  @Column({ unique: true, nullable: true })
+  idempotencyKey: string;
+
+  @Column({ type: 'timestamp', nullable: true })
+  paymentInitiatedAt: Date;
+
+  @Column({ type: 'timestamp', nullable: true })
+  paymentCompletedAt: Date;
+
+  @Column({ type: 'json', nullable: true })
+  statusHistory: { status: OrderStatus; timestamp: Date; reason?: string }[];
+
   @ManyToOne(() => User, (user) => user.orders, { onDelete: 'CASCADE' })
   user: User;
+
+  @OneToMany(() => OrderCourse, (orderCourse) => orderCourse.order, {
+    cascade: true,
+  })
+  orderCourses: OrderCourse[];
 
   @CreateDateColumn()
   createdAt: Date;
