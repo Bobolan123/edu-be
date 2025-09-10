@@ -68,6 +68,7 @@ export class AuthService {
       email: user.email,
       role: user.role?.name,
       permissions: permissions,
+      avatar_url  : user.avatar_url,
     };
     const access_token = this.jwtService.sign(payload);
     const refresh_token = this.jwtService.sign(payload, {
@@ -91,6 +92,7 @@ export class AuthService {
       role: user.role?.name,
       access_token,
       permissions: permissions,
+      avatar_url: user.avatar_url,
     };
   }
 

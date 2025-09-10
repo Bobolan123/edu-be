@@ -6,6 +6,7 @@ export interface IUser {
     name: string;
   };
   name: string;
+  avatar_url?: string;
   permissions?: {
     id: number;
     action: string;
