@@ -68,6 +68,10 @@ import { AutoPermissionService } from './common/database/seeders/auto-permission
       provide: APP_INTERCEPTOR,
       useClass: TransformResInterceptor,
     },
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard,
+    },
   ],
 })
 export class AppModule {}

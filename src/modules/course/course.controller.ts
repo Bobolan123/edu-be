@@ -24,6 +24,7 @@ import { CourseSearchFilterDto } from './dto/course-search-filter.dto';
 import { Category } from 'src/entities/category.entity';
 import { UpsertCourseContentDto } from './dto/course-content.dto';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { Public } from 'src/auth/Public';
 
 @Controller('courses')
 export class CourseController {
@@ -35,6 +36,7 @@ export class CourseController {
     return this.courseService.create(createCourseDto);
   }
 
+  @Public()
   @Get()
   @ResponseMessage('Fetch all Courses')
   @UsePipes(new ValidationPipe({ transform: true }))
@@ -42,6 +44,7 @@ export class CourseController {
     return this.courseService.findAll(courseSearchFilterDto);
   }
 
+  @Public()
   @Get('by-category')
   @ResponseMessage('Fetch Courses by Category IDs')
   findCoursesByCategory(
@@ -61,6 +64,7 @@ export class CourseController {
     );
   }
 
+  @Public()
   @Get(':id')
   @ResponseMessage('Fetch a single Course')
   findOne(

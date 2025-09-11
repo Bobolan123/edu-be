@@ -28,6 +28,7 @@ export class AuthController {
     private jwtService: JwtService,
   ) {}
 
+  @Public()
   @UseGuards(LocalAuthGuard)
   @ResponseMessage('User Login')
   @Post('login')
@@ -67,25 +68,28 @@ export class AuthController {
     return this.authService.refreshToken(refresh_token, res);
   }
 
-  @UseGuards(JwtAuthGuard)
   @ResponseMessage('User information')
   @Get('profile')
   profile(@Request() req) {
+    console.log('req.user', req.user);
     return req.user;
   }
 
+  @Public()
   @ResponseMessage('Forget password')
   @Patch('forgetPassword')
   forgetPassword(@Body() data: AuthChangePassword) {
     return this.authService.forgetPassword(data);
   }
 
+  @Public()
   @Get('google')
   @UseGuards(AuthGuard('google'))
   async googleAuth() {
     // Redirects user to Google authentication
   }
 
+  @Public()
   @Post('google-login')
   async googleLogin(
     @Body() userData: { email: string; name: string; googleId: string },
@@ -93,6 +97,7 @@ export class AuthController {
     return this.authService.googleLogin(userData);
   }
 
+  @Public()
   @Get('google/callback')
   @UseGuards(AuthGuard('google'))
   async googleAuthRedirect(@Req() req, @Res() res) {

@@ -21,17 +21,20 @@ import { CreateReviewDto } from './dto/create-review.dto';
 import { UpdateReviewDto } from './dto/update-review.dto';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { ResponseMessage } from 'src/decorator/responseMessage.decorator';
+import { Public } from 'src/auth/Public';
 
 @Controller('reviews')
 export class ReviewController {
   constructor(private readonly reviewService: ReviewService) {}
 
+  @Public()
   @Get()
   @ResponseMessage('Get all reviews')
   async findAll(@Query() reviewFilterDto: ReviewFilterDto) {
     return this.reviewService.findAll(reviewFilterDto);
   }
 
+  @Public()
   @Get('distribution')
   @ResponseMessage('Get review distribution')
   async getReviewDistribution(@Query('id') courseId: string) {
@@ -62,6 +65,7 @@ export class ReviewController {
     return this.reviewService.delete(id);
   }
 
+  @Public()
   @Get('course/:courseId')
   @ResponseMessage('Get course reviews')
   async findByCourse(
@@ -71,6 +75,7 @@ export class ReviewController {
     return this.reviewService.findByCourse(courseId, reviewFilterDto);
   }
 
+  @Public()
   @Get('user/:userId/course/:courseId')
   @ResponseMessage('Get user course review')
   async getUserCourseReview(

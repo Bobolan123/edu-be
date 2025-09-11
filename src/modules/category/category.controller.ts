@@ -16,11 +16,13 @@ import { PageOptionsDto } from 'src/common/dtos/page-option.dto';
 import { ResponsePaginate } from 'src/common/dtos/response-paginate.dto';
 import { ResponseMessage } from 'src/decorator/responseMessage.decorator';
 import { CategoryWithCountDto } from './dto/category-with-count.dto';
+import { Public } from 'src/auth/Public';
 
 @Controller('categories')
 export class CategoryController {
   constructor(private readonly categoryService: CategoryService) {}
 
+  @Public()
   @Get()
   @ResponseMessage('Get all categories with course count')
   findAll(
@@ -29,6 +31,7 @@ export class CategoryController {
     return this.categoryService.findAll(pageOptionsDto);
   }
 
+  @Public()
   @Get(':id')
   @ResponseMessage('Get category by ID')
   findOne(@Param('id', ParseIntPipe) id: number): Promise<Category> {
