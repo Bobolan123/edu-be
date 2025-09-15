@@ -46,6 +46,12 @@ export class AuthVerifiedOtp {
   email?: string;
 }
 
+export class AuthResendOtp {
+  @IsEmail()
+  @IsNotEmpty()
+  email: string;
+}
+
 export class AuthChangePassword {
   otp: string;
 

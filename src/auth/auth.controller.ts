@@ -17,7 +17,7 @@ import { Public } from './Public';
 import { ResponseMessage } from 'src/decorator/responseMessage.decorator';
 import { CreateUserDto } from 'src/modules/user/dto/create-user.dto';
 import { Request as ReqExpress, Response } from 'express';
-import { AuthChangePassword, AuthVerifiedOtp } from './dto/auth.dto';
+import { AuthChangePassword, AuthVerifiedOtp, AuthResendOtp } from './dto/auth.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { JwtService } from '@nestjs/jwt';
 
@@ -46,14 +46,14 @@ export class AuthController {
   @Public()
   @ResponseMessage('Verify OTP vie email')
   @Post('verifyOtp')
-  async resendOtp(@Body() data: AuthVerifiedOtp) {
+  async verifyOtp(@Body() data: AuthVerifiedOtp) {
     return this.authService.verifyOtp(data);
   }
 
   @Public()
   @ResponseMessage('Resend OTP')
   @Post('resendOtp')
-  async verifyOtp(@Body() data: AuthVerifiedOtp) {
+  async resendOtp(@Body() data: AuthResendOtp) {
     return this.authService.resendOtp(data);
   }
 

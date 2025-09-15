@@ -14,7 +14,7 @@ import { UserService } from 'src/modules/user/user.service';
 import { Public } from './Public';
 import { ResponseMessage } from 'src/decorator/responseMessage.decorator';
 import { CreateUserDto } from 'src/modules/user/dto/create-user.dto';
-import { AuthChangePassword, AuthVerifiedOtp } from './dto/auth.dto';
+import { AuthChangePassword, AuthVerifiedOtp, AuthResendOtp } from './dto/auth.dto';
 import { Response } from 'express';
 
 @Injectable()
@@ -109,9 +109,9 @@ export class AuthService {
     return res;
   }
 
-  async resendOtp(data: AuthVerifiedOtp) {
+  async resendOtp(data: AuthResendOtp) {
     const res = await this.userService.resendOtp(data.email);
-    return res;
+    return res; 
   }
 
   async refreshToken(refresh_token: string, response: Response) {

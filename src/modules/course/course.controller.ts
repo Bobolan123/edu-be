@@ -122,6 +122,7 @@ export class CourseController {
     return res;
   }
 
+  @Public()
   @Get('content/:courseId')
   @ResponseMessage('Get course content')
   async getCourseContent(@Param('courseId') courseId: number) {

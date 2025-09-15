@@ -1,3 +1,4 @@
+import { Transform } from 'class-transformer';
 import {
   IsBoolean,
   IsDate,
@@ -56,12 +57,13 @@ export class CreateUserDto {
 
   @IsOptional()
   @IsBoolean()
+  @(Transform(({ value }) => value === 'true'))
   isActive?: boolean;
 
   @IsOptional()
   role?: Role;
 
   @IsOptional()
-  @IsInt()
-  roleId?: number;
+  @IsString()
+  roleId?: string;
 }

@@ -74,7 +74,7 @@ export class UserService {
     }
     let role = null;
     if (roleId) {
-      role = await this.roleRepository.findOne({ where: { id: roleId } });
+      role = await this.roleRepository.findOne({ where: { id: +roleId } });
     }
     const user = this.userRepository.create({
       email,
