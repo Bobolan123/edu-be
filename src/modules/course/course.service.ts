@@ -195,7 +195,12 @@ export class CourseService {
     }
 
     // Sorting
-    const validOrderByFields = ['title', 'date_created', 'last_updated', 'price'];
+    const validOrderByFields = [
+      'title',
+      'date_created',
+      'last_updated',
+      'price',
+    ];
     const sortField = validOrderByFields.includes(orderBy) ? orderBy : 'title';
     queryBuilder.orderBy(`course.${sortField}`, order || 'ASC');
 
@@ -210,7 +215,9 @@ export class CourseService {
 
     const coursesWithRatings = await Promise.all(
       courses.map(async (course) => {
-        const averageRating = await this.reviewService.getAverageRating(course.id);
+        const averageRating = await this.reviewService.getAverageRating(
+          course.id,
+        );
         return {
           ...course,
           average_rating: averageRating,
@@ -228,7 +235,7 @@ export class CourseService {
       });
     }
 
-    if (excludeEnrolled && userId) {
+    if (excludeEnrolled) {
       const enrolledCourseIds = await this.getEnrolledCourseIds(userId);
       filteredCourses = filteredCourses.filter(
         (course) => !enrolledCourseIds.includes(course.id),
@@ -238,14 +245,17 @@ export class CourseService {
     return filteredCourses;
   }
 
-  private paginateCourses(courses: Course[], filterDto: CourseSearchFilterDto): Course[] {
+  private paginateCourses(
+    courses: Course[],
+    filterDto: CourseSearchFilterDto,
+  ): Course[] {
     return courses.slice(filterDto.skip, filterDto.skip + filterDto.take);
   }
 
   private async addEnrollmentStatus(
-    courses: Course[], 
-    userId?: number, 
-    excludeEnrolled?: boolean
+    courses: Course[],
+    userId?: number,
+    excludeEnrolled?: boolean,
   ): Promise<Course[]> {
     if (!userId) {
       return courses;
@@ -299,7 +309,6 @@ export class CourseService {
     const whereCondition: any = { id };
 
     if (includeDeleted) {
-      // Find only deleted courses - need to use query builder for this
       const course = await this.courseRepository
         .createQueryBuilder('course')
         .leftJoinAndSelect('course.instructor', 'instructor')

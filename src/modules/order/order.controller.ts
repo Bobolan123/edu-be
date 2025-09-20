@@ -9,6 +9,7 @@ import {
   Req,
   Res,
   Delete,
+  BadRequestException,
 } from '@nestjs/common';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { OrderInfoDto } from './dto/order-info.dto';
@@ -42,6 +43,7 @@ export class OrderController {
     );
   }
 
+
   @Public()
   @Get('vnpay-return')
   async handleVnpayReturn(@Query() query: any, @Res() res: Response) {
@@ -49,35 +51,7 @@ export class OrderController {
       PaymentMethod.VNPAY,
       query,
     );
-
-    const params = new URLSearchParams({
-      orderId: result.id,
-      price: result.totalPrice.toString(),
-      status: result.status,
-      method: result.paymentMethod,
-      date: result.updatedAt.toISOString(),
-      ...(result.transactionId && { transactionId: result.transactionId }),
-    });
-
-    if (result.status === OrderStatus.COMPLETED) {
-      return res.redirect(
-        `${process.env.FRONTEND_URL}/payment/success?${params}`,
-      );
-    } else {
-      return res.redirect(
-        `${process.env.FRONTEND_URL}/payment/failed?${params}`,
-      );
-    }
-  }
-
-  @Public()
-  @Get('paypal-return')
-  async handlePaypalReturn(@Query() query: any, @Res() res: Response) {
-    const result = await this.orderService.handlePaymentCallback(
-      PaymentMethod.PAYPAL,
-      query,
-    );
-
+ 
     const params = new URLSearchParams({
       orderId: result.id,
       price: result.totalPrice.toString(),
@@ -128,12 +102,6 @@ export class OrderController {
     return res.redirect(`${process.env.FRONTEND_URL}/payment/failed?${params}`);
   }
 
-  @Public()
-  @Get('paypal-cancel')
-  async handlePaypalCancel(@Res() res: Response) {
-    return res.redirect(`${process.env.FRONTEND_URL}/payment/failed`);
-  }
-
   @Get()
   @ResponseMessage('Get all orders')
   async findAll(
@@ -169,6 +137,7 @@ export class OrderController {
   async findOne(@Param('id') id: string) {
     return this.orderService.findOne(id);
   }
+
 
   @Post('callback/:method')
   async handlePaymentCallback(

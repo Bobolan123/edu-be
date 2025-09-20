@@ -3,8 +3,6 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Order } from '../../entities/order.entity';
 import { OrderCourse } from '../../entities/order-course.entity';
 import { VNPayService } from './services/vnpay.service';
-import { PaypalService } from './services/paypal.service';
-import { StripeService } from './services/stripe.service';
 import { ConfigService } from '@nestjs/config';
 import { OrderService } from './order.service';
 import { OrderController } from './order.controller';
@@ -15,14 +13,15 @@ import { EnrollmentService } from '../enrollment/enrollment.service';
 import { EnrollmentModule } from '../enrollment/enrollment.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Order, OrderCourse, Cart, Enrollment]), EnrollmentModule],
+  imports: [
+    TypeOrmModule.forFeature([Order, OrderCourse, Cart, Enrollment]),
+    EnrollmentModule,
+  ],
   controllers: [OrderController],
   providers: [
     OrderService,
     OrderRecoveryService,
     VNPayService,
-    PaypalService,
-    StripeService,
     {
       provide: 'PAYMENT_CONFIG',
       useFactory: (configService: ConfigService) => ({
@@ -36,19 +35,10 @@ import { EnrollmentModule } from '../enrollment/enrollment.module';
             configService.get('VNPAY_RETURN_URL') ||
             'http://localhost:3000/payment/vnpay-return',
         },
-        paypal: {
-          clientId: configService.get('PAYPAL_CLIENT_ID'),
-          clientSecret: configService.get('PAYPAL_CLIENT_SECRET'),
-          mode: configService.get('PAYPAL_MODE') || 'sandbox',
-        },
-        stripe: {
-          secretKey: configService.get('STRIPE_SECRET_KEY'),
-          webhookSecret: configService.get('STRIPE_WEBHOOK_SECRET'),
-        },
       }),
       inject: [ConfigService],
     },
   ],
-  exports: [OrderService, VNPayService, PaypalService, StripeService],
+  exports: [OrderService, VNPayService],
 })
 export class PaymentModule {}

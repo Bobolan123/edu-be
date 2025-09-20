@@ -20,12 +20,13 @@ async function updateDatabase() {
     `);
 
     if (ordersWithoutCourses.length > 0) {
-      console.log(`Found ${ordersWithoutCourses.length} orders without course references`);
+      console.log(
+        `Found ${ordersWithoutCourses.length} orders without course references`,
+      );
       console.log('These orders may need manual review:', ordersWithoutCourses);
     } else {
       console.log('No orphaned orders found.');
     }
-
   } catch (error) {
     console.error('Database update failed:', error);
   } finally {

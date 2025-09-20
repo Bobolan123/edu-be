@@ -17,7 +17,11 @@ import { Public } from './Public';
 import { ResponseMessage } from 'src/decorator/responseMessage.decorator';
 import { CreateUserDto } from 'src/modules/user/dto/create-user.dto';
 import { Request as ReqExpress, Response } from 'express';
-import { AuthChangePassword, AuthVerifiedOtp, AuthResendOtp } from './dto/auth.dto';
+import {
+  AuthChangePassword,
+  AuthVerifiedOtp,
+  AuthResendOtp,
+} from './dto/auth.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { JwtService } from '@nestjs/jwt';
 

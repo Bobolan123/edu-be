@@ -1,4 +1,4 @@
-import { PageMetaDtoParameters } from "./page-meta-dto-parameters";
+import { PageMetaDtoParameters } from './page-meta-dto-parameters';
 
 export class PageMetaDto {
   readonly page: number;

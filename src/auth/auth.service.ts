@@ -14,7 +14,11 @@ import { UserService } from 'src/modules/user/user.service';
 import { Public } from './Public';
 import { ResponseMessage } from 'src/decorator/responseMessage.decorator';
 import { CreateUserDto } from 'src/modules/user/dto/create-user.dto';
-import { AuthChangePassword, AuthVerifiedOtp, AuthResendOtp } from './dto/auth.dto';
+import {
+  AuthChangePassword,
+  AuthVerifiedOtp,
+  AuthResendOtp,
+} from './dto/auth.dto';
 import { Response } from 'express';
 
 @Injectable()
@@ -63,12 +67,12 @@ export class AuthService {
       })) || [];
 
     const payload = {
-      id: user.id, 
+      id: user.id,
       name: user.name,
       email: user.email,
       role: user.role?.name,
       permissions: permissions,
-      avatar_url  : user.avatar_url,
+      avatar_url: user.avatar_url,
     };
     const access_token = this.jwtService.sign(payload);
     const refresh_token = this.jwtService.sign(payload, {
@@ -111,7 +115,7 @@ export class AuthService {
 
   async resendOtp(data: AuthResendOtp) {
     const res = await this.userService.resendOtp(data.email);
-    return res; 
+    return res;
   }
 
   async refreshToken(refresh_token: string, response: Response) {

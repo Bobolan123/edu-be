@@ -33,7 +33,7 @@ export interface IUpdatePassword {
 @Controller('users')
 export class UserController {
   constructor(private readonly userService: UserService) {}
-  
+
   @Get('me')
   @ResponseMessage('Get current user information')
   async getCurrentUser(@Request() req: any) {
@@ -91,7 +91,6 @@ export class UserController {
     return this.userService.updatePassword(+id, updatePassword);
   }
 
-
   @ResponseMessage('Soft delete user')
   @Delete(':id')
   remove(@Param('id') id: string) {
@@ -110,7 +109,6 @@ export class UserController {
     return this.userService.forceRemove(+id);
   }
 
- 
   @Post(':id/avatar')
   @UseGuards(JwtAuthGuard)
   @UseInterceptors(FileInterceptor('avatar'))

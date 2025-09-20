@@ -57,7 +57,7 @@ export class CreateUserDto {
 
   @IsOptional()
   @IsBoolean()
-  @(Transform(({ value }) => value === 'true'))
+  @Transform(({ value }) => value === 'true')
   isActive?: boolean;
 
   @IsOptional()

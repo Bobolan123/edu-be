@@ -9,8 +9,6 @@ import { Repository, DataSource } from 'typeorm';
 import { Order, OrderStatus, PaymentMethod } from '../../entities/order.entity';
 import { OrderCourse } from '../../entities/order-course.entity';
 import { VNPayService } from './services/vnpay.service';
-import { PaypalService } from './services/paypal.service';
-import { StripeService } from './services/stripe.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { PageMetaDto, PageOptionsDto, ResponsePaginate } from 'src/common/dtos';
 import { OrderSearchFilterDto } from './dto/order-search-filter.dto';
@@ -29,13 +27,12 @@ export class OrderService {
     @InjectRepository(Enrollment)
     private enrollmentRepository: Repository<Enrollment>,
     private vnpayService: VNPayService,
-    private paypalService: PaypalService,
-    private stripeService: StripeService,
     @InjectRepository(Cart)
     private cartRepository: Repository<Cart>,
     private enrollmentService: EnrollmentService,
     private dataSource: DataSource,
   ) {}
+
 
   async createOrder(
     createOrderDto: CreateOrderDto,
@@ -49,11 +46,11 @@ export class OrderService {
         where: { id: cartId, user: { id: userId }, isCheckedOut: false },
         lock: { mode: 'pessimistic_write' },
       });
-      
+
       if (!cart) {
         throw new NotFoundException('Cart not found or is empty.');
       }
-      
+
       // Load relations after locking
       const cartWithRelations = await manager.findOne(Cart, {
         where: { id: cartId },
@@ -70,7 +67,7 @@ export class OrderService {
       // Filter out already enrolled courses
       const validCartItems = [];
       const alreadyEnrolledCourses = [];
-      
+
       for (const item of cartWithRelations.cartItems) {
         const existingEnrollment = await manager.findOne(Enrollment, {
           where: { student: { id: userId }, course: { id: item.course.id } },
@@ -81,22 +78,30 @@ export class OrderService {
           validCartItems.push(item);
         }
       }
-      
+
       if (validCartItems.length === 0) {
         if (alreadyEnrolledCourses.length > 0) {
           throw new BadRequestException(
-            `You are already enrolled in all courses in your cart: ${alreadyEnrolledCourses.join(', ')}`
+            `You are already enrolled in all courses in your cart: ${alreadyEnrolledCourses.join(', ')}`,
           );
         }
         throw new BadRequestException('No valid courses found in cart');
       }
-      
+
       // Calculate total price from valid items only
       totalPrice = validCartItems.reduce((sum, item) => sum + item.price, 0);
-      
+
+      // Validate total price for payment processing
+      if (totalPrice <= 0) {
+        throw new BadRequestException('Total price must be greater than zero');
+      }
+
+
       // If some courses were already enrolled, we could optionally warn but continue
       if (alreadyEnrolledCourses.length > 0) {
-        console.log(`Skipping already enrolled courses: ${alreadyEnrolledCourses.join(', ')}`);
+        console.log(
+          `Skipping already enrolled courses: ${alreadyEnrolledCourses.join(', ')}`,
+        );
       }
 
       // Generate idempotency key
@@ -145,18 +150,6 @@ export class OrderService {
               totalPrice,
             );
             break;
-          case PaymentMethod.PAYPAL:
-            paymentUrl = await this.paypalService.createPaymentUrl(
-              savedOrder.id,
-              totalPrice,
-            );
-            break;
-          case PaymentMethod.CREDIT_CARD:
-            paymentUrl = await this.stripeService.createPaymentUrl(
-              savedOrder.id,
-              totalPrice,
-            );
-            break;
           default:
             throw new BadRequestException('Unsupported payment method');
         }
@@ -191,20 +184,6 @@ export class OrderService {
         transactionId = params.vnp_TransactionNo;
         status = isSuccess ? OrderStatus.COMPLETED : OrderStatus.FAILED;
         break;
-      case PaymentMethod.PAYPAL:
-        isValid = await this.paypalService.verifyPayment(params);
-        orderId = params.orderId;
-        transactionId = params.token;
-        status = isValid ? OrderStatus.COMPLETED : OrderStatus.FAILED;
-        isSuccess = isValid;
-        break;
-      case PaymentMethod.CREDIT_CARD:
-        isValid = await this.stripeService.verifyPayment(params);
-        orderId = params.metadata.orderId;
-        transactionId = params.id;
-        status = isValid ? OrderStatus.COMPLETED : OrderStatus.FAILED;
-        isSuccess = isValid;
-        break;
       default:
         throw new BadRequestException('Invalid payment method');
     }
@@ -220,11 +199,11 @@ export class OrderService {
           where: { id: orderId },
           lock: { mode: 'pessimistic_write' },
         });
-        
+
         if (!order) {
           throw new NotFoundException('Order not found');
         }
-        
+
         // Load relations after locking
         order = await manager.findOne(Order, {
           where: { id: orderId },
@@ -507,7 +486,7 @@ export class OrderService {
 
   async retryFailedEnrollments(): Promise<void> {
     const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
-    
+
     const stuckOrders = await this.orderRepository.find({
       where: {
         status: OrderStatus.COMPLETED,
@@ -520,7 +499,7 @@ export class OrderService {
       try {
         await this.dataSource.transaction(async (manager) => {
           const enrollmentsNeeded = [];
-          
+
           for (const orderCourse of order.orderCourses) {
             const existingEnrollment = await manager.findOne(Enrollment, {
               where: {
@@ -528,7 +507,7 @@ export class OrderService {
                 course: { id: orderCourse.course.id },
               },
             });
-            
+
             if (!existingEnrollment) {
               enrollmentsNeeded.push(
                 manager.create(Enrollment, {
@@ -539,23 +518,29 @@ export class OrderService {
               );
             }
           }
-          
+
           if (enrollmentsNeeded.length > 0) {
             await manager.save(Enrollment, enrollmentsNeeded);
-            
+
             // Update status history
             const statusUpdate = {
               status: OrderStatus.COMPLETED,
               timestamp: new Date(),
               reason: 'Enrollments retried and completed',
             };
-            
-            order.statusHistory = [...(order.statusHistory || []), statusUpdate];
+
+            order.statusHistory = [
+              ...(order.statusHistory || []),
+              statusUpdate,
+            ];
             await manager.save(Order, order);
           }
         });
       } catch (error) {
-        console.error(`Failed to retry enrollments for order ${order.id}:`, error);
+        console.error(
+          `Failed to retry enrollments for order ${order.id}:`,
+          error,
+        );
       }
     }
   }
@@ -565,9 +550,9 @@ export class OrderService {
     issues: string[];
   }> {
     const issues: string[] = [];
-    
+
     const order = await this.findOne(orderId);
-    
+
     if (!order) {
       return { isValid: false, issues: ['Order not found'] };
     }
@@ -582,7 +567,7 @@ export class OrderService {
       (sum, oc) => sum + Number(oc.price),
       0,
     );
-    
+
     if (Math.abs(totalFromCourses - Number(order.totalPrice)) > 0.01) {
       issues.push('Price mismatch between order total and course prices');
     }
@@ -596,9 +581,11 @@ export class OrderService {
             course: { id: orderCourse.course.id },
           },
         });
-        
+
         if (!enrollment) {
-          issues.push(`Missing enrollment for course: ${orderCourse.course.title}`);
+          issues.push(
+            `Missing enrollment for course: ${orderCourse.course.title}`,
+          );
         }
       }
     }

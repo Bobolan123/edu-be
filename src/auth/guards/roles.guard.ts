@@ -43,7 +43,11 @@ export class RolesGuard implements CanActivate {
 
     // Check if user has permission for current API and method
     const hasPermission = user.role.permissions.some(
-      (perm) => perm.api && perm.method && perm.api === currentApi && perm.method === currentMethod,
+      (perm) =>
+        perm.api &&
+        perm.method &&
+        perm.api === currentApi &&
+        perm.method === currentMethod,
     );
 
     // Also check for legacy permission names if provided

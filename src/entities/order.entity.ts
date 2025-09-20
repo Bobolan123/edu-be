@@ -20,8 +20,6 @@ export enum OrderStatus {
 
 export enum PaymentMethod {
   VNPAY = 'VNPAY',
-  PAYPAL = 'PAYPAL',
-  CREDIT_CARD = 'CREDIT_CARD',
 }
 
 @Entity()
@@ -42,7 +40,7 @@ export class Order {
   @Column({
     type: 'enum',
     enum: PaymentMethod,
-    default: PaymentMethod.CREDIT_CARD,
+    default: PaymentMethod.VNPAY,
   })
   paymentMethod: PaymentMethod;
 

@@ -21,7 +21,9 @@ export class PermissionController {
 
   @ResponseMessage('Get permissions')
   @Get()
-  async findAll(@Query() filterDto: PermissionFilterDto): Promise<ResponsePaginate<Permission>> {
+  async findAll(
+    @Query() filterDto: PermissionFilterDto,
+  ): Promise<ResponsePaginate<Permission>> {
     return this.permissionService.findAllPaginated(filterDto);
   }
 

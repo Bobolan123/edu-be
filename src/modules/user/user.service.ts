@@ -266,10 +266,10 @@ export class UserService {
         .leftJoin('role.permission', 'permission')
         .select([
           'permission.id AS id',
-          'permission.api AS api', 
+          'permission.api AS api',
           'permission.description AS description',
           'permission.method AS method',
-          'permission.module AS module'
+          'permission.module AS module',
         ])
         .where('user.id = :userId', { userId })
         .andWhere('user.deleted_at IS NULL')

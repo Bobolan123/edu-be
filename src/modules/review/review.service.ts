@@ -63,8 +63,8 @@ export class ReviewService {
     const meta = new PageMetaDto({ itemCount, pageOptionsDto });
 
     return { result: items, meta };
-  } 
- 
+  }
+
   private applyFilters(
     queryBuilder: ReturnType<Repository<Review>['createQueryBuilder']>,
     filterDto: ReviewFilterDto,

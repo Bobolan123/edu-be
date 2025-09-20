@@ -659,7 +659,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"courseId\": 1,\n    \"userId\": 1,\n    \"amount\": 99.99,\n    \"paymentMethod\": \"credit_card\"\n}",
+							"raw": "{\n    \"courseId\": 1,\n    \"userId\": 1,\n    \"amount\": 99.99,\n    \"paymentMethod\": \"VNPAY\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
