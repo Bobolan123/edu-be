@@ -27,6 +27,10 @@ import { ReviewModule } from './modules/review/review.module';
 import { CartModule } from './modules/cart/cart.module';
 import { GeminiModule } from './modules/gemini/gemini.module';
 import { AutoPermissionService } from './common/database/seeders/auto-permission.service';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { User } from './entities/user.entity';
+import { Role } from './entities/role.entity';
+import { SeedUsersService } from './common/database/seeders/seed-users.service';
 
 @Module({
   imports: [
@@ -35,6 +39,7 @@ import { AutoPermissionService } from './common/database/seeders/auto-permission
     }),
     ScheduleModule.forRoot(),
     DatabaseModule,
+    TypeOrmModule.forFeature([User, Role]),
     UserModule,
     RoleModule,
     PermissionModule,
@@ -64,6 +69,7 @@ import { AutoPermissionService } from './common/database/seeders/auto-permission
   providers: [
     AppService,
     AutoPermissionService,
+    SeedUsersService,
     {
       provide: APP_INTERCEPTOR,
       useClass: TransformResInterceptor,
