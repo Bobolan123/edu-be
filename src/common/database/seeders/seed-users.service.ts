@@ -26,11 +26,47 @@ export class SeedUsersService implements OnApplicationBootstrap {
     }
 
     this.logger.log('Starting development seed process...');
+    await this.seedDefaultRoles();
     await this.seedDefaultUsers();
   }
 
   private async hashPassword(password: string): Promise<string> {
     return await bcrypt.hash(password, 12);
+  }
+
+  private async seedDefaultRoles(): Promise<void> {
+    const defaultRoles = [
+      {
+        name: 'admin',
+        description: 'System administrator with full access',
+        isActive: true,
+      },
+      {
+        name: 'instructor',
+        description: 'Course instructor who can create and manage courses',
+        isActive: true,
+      },
+      {
+        name: 'student',
+        description: 'Student who can enroll in courses',
+        isActive: true,
+      },
+    ];
+
+    for (const roleData of defaultRoles) {
+      const existingRole = await this.roleRepository.findOne({
+        where: { name: roleData.name },
+      });
+
+      if (existingRole) {
+        this.logger.log(`Role ${roleData.name} already exists, skipping...`);
+        continue;
+      }
+
+      const role = this.roleRepository.create(roleData);
+      await this.roleRepository.save(role);
+      this.logger.log(`Created default role: ${roleData.name}`);
+    }
   }
 
   private async seedDefaultUsers(): Promise<void> {

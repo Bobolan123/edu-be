@@ -396,7 +396,20 @@ export class UserService {
       throw new BadRequestException('Invalid user');
     }
 
-    Object.assign(user, updateUserDto);
+    const { roleId, ...otherFields } = updateUserDto;
+
+    Object.assign(user, otherFields);
+
+    if (roleId !== undefined) {
+      const role = await this.roleRepository.findOne({
+        where: { id: +roleId }
+      });
+      if (!role) {
+        throw new BadRequestException('Invalid role');
+      }
+      user.role = role;
+    }
+
     await this.userRepository.save(user);
 
     return user;

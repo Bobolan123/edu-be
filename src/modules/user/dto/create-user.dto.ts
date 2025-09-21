@@ -57,13 +57,17 @@ export class CreateUserDto {
 
   @IsOptional()
   @IsBoolean()
-  @Transform(({ value }) => value === 'true')
+  @Transform(({ value }) => {
+    if (typeof value === 'boolean') return value;
+    return value === 'true' || value === true;
+  })
   isActive?: boolean;
 
   @IsOptional()
   role?: Role;
 
   @IsOptional()
-  @IsString()
-  roleId?: string;
+  @IsInt()
+  @Transform(({ value }) => parseInt(value))
+  roleId?: number;
 }
