@@ -18,6 +18,10 @@ import {
   LectureProgress,
   LectureProgressSchema,
 } from 'src/schemas/lecture-progress.schema';
+import {
+  LectureCaption,
+  LectureCaptionSchema,
+} from 'src/schemas/lecture-caption.schema';
 import { Enrollment } from 'src/entities/enrollment.entity';
 import { ReviewModule } from '../review/review.module';
 import { CourseProgressSyncService } from './course-progress-sync.service';
@@ -37,6 +41,7 @@ import { CourseProgressSyncService } from './course-progress-sync.service';
     MongooseModule.forFeature([
       { name: CourseContent.name, schema: CourseContentSchema },
       { name: LectureProgress.name, schema: LectureProgressSchema },
+      { name: LectureCaption.name, schema: LectureCaptionSchema },
     ]),
     ReviewModule,
   ],

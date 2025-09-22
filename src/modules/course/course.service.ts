@@ -20,6 +20,12 @@ import {
   LectureProgress,
   LectureProgressDocument,
 } from 'src/schemas/lecture-progress.schema';
+import {
+  LectureCaption,
+  LectureCaptionDocument,
+  CaptionStatus,
+  CaptionFormat,
+} from 'src/schemas/lecture-caption.schema';
 import { ReviewService } from '../review/review.service';
 import { CourseProgressSyncService } from './course-progress-sync.service';
 
@@ -45,6 +51,9 @@ export class CourseService {
 
     @InjectModel(LectureProgress.name)
     private readonly lectureProgressModel: Model<LectureProgressDocument>,
+
+    @InjectModel(LectureCaption.name)
+    private readonly lectureCaptionModel: Model<LectureCaptionDocument>,
 
     private readonly reviewService: ReviewService,
 
@@ -191,7 +200,7 @@ export class CourseService {
 
     // Status filter
     if (status !== undefined) {
-      queryBuilder.andWhere('course.active = :status', { status });
+      queryBuilder.andWhere('course.isActive = :status', { status });
     }
 
     // Sorting
@@ -508,13 +517,27 @@ export class CourseService {
       await this.cloudinaryService.deleteFile(publicId);
     }
 
-    const { url } = await this.cloudinaryService.uploadVideo(
+    const { url, publicId } = await this.cloudinaryService.uploadVideo(
       file,
       'course-lectures',
     );
 
     lecture.videoUrl = url;
     await courseContent.save();
+
+    // Auto-generate captions
+    const caption = new this.lectureCaptionModel({
+      lectureId,
+      courseId,
+      videoPublicId: publicId,
+      status: CaptionStatus.COMPLETED,
+      cloudinaryFiles: new Map([
+        ['srt', this.cloudinaryService.getCaptionUrl(publicId, 'srt')],
+        ['vtt', this.cloudinaryService.getCaptionUrl(publicId, 'vtt')],
+        ['transcript', this.cloudinaryService.getCaptionUrl(publicId, 'transcript')],
+      ]),
+    });
+    await caption.save();
 
     // Synchronize progress after lecture upload
     await this.courseProgressSyncService.synchronizeProgressWithContent(
@@ -523,8 +546,6 @@ export class CourseService {
 
     return url;
   }
-
-  // Upload video to Cloudinary
 
   async getCourseContent(courseId: number) {
     const content = await this.courseContentModel.findOne({ courseId }).lean();
@@ -617,5 +638,34 @@ export class CourseService {
     });
 
     return { result: studentsWithProgress, meta: pageMetaDto };
+  }
+
+
+  async getCaptions(lectureId: string, format: CaptionFormat) {
+    const caption = await this.lectureCaptionModel.findOne({ lectureId });
+    if (!caption || caption.status !== CaptionStatus.COMPLETED) {
+      throw new BadRequestException('Captions not available');
+    }
+
+    const captionUrl = caption.cloudinaryFiles?.get(format);
+    if (!captionUrl) {
+      throw new BadRequestException(`Caption format ${format} not available`);
+    }
+
+    return { url: captionUrl, format };
+  }
+
+  async getCaptionStatus(lectureId: string) {
+    const caption = await this.lectureCaptionModel.findOne({ lectureId });
+    if (!caption) {
+      return { status: CaptionStatus.PENDING, available: false };
+    }
+
+    return {
+      status: caption.status,
+      available: caption.status === CaptionStatus.COMPLETED,
+      error: caption.processingError,
+      formats: caption.cloudinaryFiles ? Object.keys(caption.cloudinaryFiles) : [],
+    };
   }
 }

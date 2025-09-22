@@ -8,6 +8,7 @@ import {
   Min,
   IsArray,
   ArrayNotEmpty,
+  IsBoolean,
 } from 'class-validator';
 import { Category } from 'src/entities/category.entity';
 
@@ -35,9 +36,12 @@ export class CreateCourseDto {
   @Min(0)
   price: number;
 
-  @IsNotEmpty()
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
+
   @IsInt()
-  instructorId: number;
+  instructorId?: number;
 
   @IsOptional()
   @IsArray()

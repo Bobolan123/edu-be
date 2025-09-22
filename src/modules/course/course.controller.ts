@@ -25,6 +25,7 @@ import { Category } from 'src/entities/category.entity';
 import { UpsertCourseContentDto } from './dto/course-content.dto';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { Public } from 'src/auth/Public';
+import { GetCaptionDto } from './dto/caption.dto';
 
 @Controller('courses')
 export class CourseController {
@@ -170,5 +171,23 @@ export class CourseController {
       body.lectureId,
       file,
     );
+  }
+
+
+  @Public()
+  @Get('lecture/:lectureId/captions')
+  @ResponseMessage('Get lecture captions')
+  async getCaptions(
+    @Param('lectureId') lectureId: string,
+    @Query() getCaptionDto: GetCaptionDto,
+  ) {
+    return this.courseService.getCaptions(lectureId, getCaptionDto.format);
+  }
+
+  @Public()
+  @Get('lecture/:lectureId/captions/status')
+  @ResponseMessage('Get caption generation status')
+  async getCaptionStatus(@Param('lectureId') lectureId: string) {
+    return this.courseService.getCaptionStatus(lectureId);
   }
 }

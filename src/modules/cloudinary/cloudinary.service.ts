@@ -33,13 +33,14 @@ export class CloudinaryService {
   async uploadVideo(
     file: Express.Multer.File,
     folder: string,
-  ): Promise<{ url: string; duration: number }> {
+  ): Promise<{ url: string; duration: number; publicId: string }> {
     try {
       const result = await new Promise<any>((resolve, reject) => {
         const uploadStream = cloudinary.uploader.upload_stream(
           {
             folder,
             resource_type: 'video',
+            raw_convert: 'google_speech:srt:vtt',
           },
           (error, result) => {
             if (error) return reject(error);
@@ -52,6 +53,7 @@ export class CloudinaryService {
       return {
         url: result.secure_url,
         duration: result.duration,
+        publicId: result.public_id,
       };
     } catch (error) {
       throw new BadRequestException('Failed to upload video');
@@ -84,5 +86,23 @@ export class CloudinaryService {
     const parts = url.split('/');
     const fileName = parts[parts.length - 1];
     return fileName.split('.')[0]; // Remove .jpg or .mp4
+  }
+
+
+  getCaptionUrl(videoPublicId: string, format: 'srt' | 'vtt' | 'transcript'): string {
+    return cloudinary.url(`${videoPublicId}.${format}`, {
+      resource_type: 'raw',
+      type: 'upload',
+    });
+  }
+
+  getVideoWithSubtitles(videoPublicId: string, subtitleFormat: 'srt' | 'vtt' = 'srt'): string {
+    return cloudinary.url(videoPublicId, {
+      resource_type: 'video',
+      transformation: [
+        { overlay: `subtitles:${videoPublicId}.${subtitleFormat}` },
+        { flags: 'layer_apply' }
+      ]
+    });
   }
 }

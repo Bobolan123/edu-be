@@ -7,7 +7,7 @@ export type CourseContentDocument = CourseContent & Document;
 export class Lecture {
   _id?: string;
   @Prop({ required: true }) title: string;
-  @Prop({ required: true }) videoUrl: string;
+  @Prop({ required: false }) videoUrl: string;
   @Prop({ required: false }) description: string;
 }
 

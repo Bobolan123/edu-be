@@ -32,7 +32,7 @@ export class Course {
   preview_url: string;
 
   @Column({ type: 'boolean', nullable: true })
-  active: boolean;
+  isActive: boolean;
 
   @Column({ type: 'text' })
   description: string;

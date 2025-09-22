@@ -22,6 +22,16 @@ export class CourseProgressSyncService {
     private readonly lectureProgressModel: Model<LectureProgressDocument>,
   ) {}
 
+  private getAllLectureIds(courseContent: CourseContentDocument): string[] {
+    if (!courseContent.sections) return [];
+    return courseContent.sections.flatMap(
+      (section) =>
+        section.lectures
+          ?.map((lecture) => lecture._id?.toString())
+          .filter(Boolean) || [],
+    );
+  }
+
   /**
    * Synchronizes lecture progress with current course content
    * Removes orphaned progress records for deleted lectures
@@ -37,7 +47,7 @@ export class CourseProgressSyncService {
       }
 
       // Get all valid lecture IDs from course content
-      const validLectureIds = courseContent.getAllLectureIds();
+      const validLectureIds = this.getAllLectureIds(courseContent);
       this.logger.debug(
         `Found ${validLectureIds.length} valid lectures in course ${courseId}`,
       );
@@ -97,7 +107,7 @@ export class CourseProgressSyncService {
       };
     }
 
-    const validLectureIds = courseContent.getAllLectureIds();
+    const validLectureIds = this.getAllLectureIds(courseContent);
     const allProgress = await this.lectureProgressModel.find({
       enrollmentId,
       courseId,
@@ -173,7 +183,7 @@ export class CourseProgressSyncService {
       };
     }
 
-    const validLectureIds = courseContent.getAllLectureIds();
+    const validLectureIds = this.getAllLectureIds(courseContent);
     const totalProgressRecords = await this.lectureProgressModel.countDocuments(
       { courseId },
     );
