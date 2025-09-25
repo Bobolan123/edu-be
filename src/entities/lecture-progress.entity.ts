@@ -1,0 +1,64 @@
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  ManyToOne,
+  JoinColumn,
+  Index,
+  Unique,
+} from 'typeorm';
+import { Enrollment } from './enrollment.entity';
+import { CourseLecture } from './course-lecture.entity';
+
+@Entity('lecture_progress')
+@Unique(['enrollmentId', 'lectureId'])
+@Index(['enrollmentId', 'isCompleted'])
+@Index(['enrollmentId', 'lectureId'])
+export class LectureProgress {
+  @PrimaryGeneratedColumn()
+  id: number;
+
+  @Column()
+  enrollmentId: number;
+
+  @ManyToOne(() => Enrollment, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'enrollmentId' })
+  enrollment: Enrollment;
+
+  @Column()
+  courseId: number;
+
+  @Column('uuid')
+  lectureId: string;
+
+  @Column({ default: false })
+  isCompleted: boolean;
+
+  @Column({ nullable: true })
+  completedAt: Date;
+
+  @Column('int', { default: 0 })
+  watchTimeSeconds: number;
+
+  @Column('int', { nullable: true })
+  lastPositionSeconds: number;
+
+  @Column('jsonb', { nullable: true })
+  submissionData: {
+    attempts: number;
+    score?: number;
+    lastSubmission?: any;
+    completedAt?: Date;
+  };
+
+  @CreateDateColumn()
+  createdAt: Date;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
+
+  @ManyToOne(() => CourseLecture, { onDelete: 'CASCADE' })
+  lecture: CourseLecture;
+}

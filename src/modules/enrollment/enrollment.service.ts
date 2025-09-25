@@ -1,24 +1,14 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
 import { Course } from 'src/entities/course.entity';
 import { Enrollment } from 'src/entities/enrollment.entity';
 import { User } from 'src/entities/user.entity';
+import { LectureProgress } from 'src/entities/lecture-progress.entity';
 import { Repository } from 'typeorm';
 import { CreateEnrollmentDto } from './dto/create-enrollment.dto';
 import { UpdateEnrollmentDto } from './dto/update-enrollment.dto';
 import { PageMetaDto, PageOptionsDto, ResponsePaginate } from 'src/common/dtos';
 import { EnrollmentFilterDto } from './dto/enrollment-filter.dto';
-import {
-  LectureProgress,
-  LectureProgressDocument,
-} from 'src/schemas/lecture-progress.schema';
-import {
-  CourseContent,
-  CourseContentDocument,
-} from 'src/schemas/course-content.schema';
-import { CourseProgressSyncService } from '../course/course-progress-sync.service';
 
 @Injectable()
 export class EnrollmentService {
@@ -32,13 +22,8 @@ export class EnrollmentService {
     @InjectRepository(User)
     private userRepository: Repository<User>,
 
-    @InjectModel(LectureProgress.name)
-    private lectureProgressModel: Model<LectureProgressDocument>,
-
-    @InjectModel(CourseContent.name)
-    private courseContentModel: Model<CourseContentDocument>,
-
-    private readonly courseProgressSyncService: CourseProgressSyncService,
+    @InjectRepository(LectureProgress)
+    private lectureProgressRepository: Repository<LectureProgress>,
   ) {}
 
   async getCoursesByUser(userId: number): Promise<Course[]> {
@@ -138,22 +123,28 @@ export class EnrollmentService {
     enrollmentId: number,
     courseId: number,
     lectureId: string,
-  ): Promise<void> {
-    const existingProgress = await this.lectureProgressModel.findOne({
-      enrollmentId,
-      courseId,
-      lectureId,
+  ): Promise<LectureProgress> {
+    let existingProgress = await this.lectureProgressRepository.findOne({
+      where: { enrollmentId, courseId, lectureId },
     });
 
-    const currentCompletionStatus = existingProgress?.isCompleted || false;
-    return await this.lectureProgressModel.findOneAndUpdate(
-      { enrollmentId, courseId, lectureId },
-      {
-        isCompleted: !currentCompletionStatus,
-        completedAt: new Date(),
-      },
-      { upsert: true, new: true },
-    );
+    if (!existingProgress) {
+      existingProgress = this.lectureProgressRepository.create({
+        enrollmentId,
+        courseId,
+        lectureId,
+        isCompleted: false,
+      });
+    }
+
+    existingProgress.isCompleted = !existingProgress.isCompleted;
+    if (existingProgress.isCompleted) {
+      existingProgress.completedAt = new Date();
+    } else {
+      existingProgress.completedAt = null;
+    }
+
+    return await this.lectureProgressRepository.save(existingProgress);
   }
 
   async updateWatchTime(
@@ -161,21 +152,32 @@ export class EnrollmentService {
     courseId: number,
     lectureId: string,
     watchTime: number,
-  ): Promise<void> {
-    return await this.lectureProgressModel.findOneAndUpdate(
-      { enrollmentId, courseId, lectureId },
-      { watchTime },
-      { upsert: true, new: true },
-    );
+  ): Promise<LectureProgress> {
+    let existingProgress = await this.lectureProgressRepository.findOne({
+      where: { enrollmentId, courseId, lectureId },
+    });
+
+    if (!existingProgress) {
+      existingProgress = this.lectureProgressRepository.create({
+        enrollmentId,
+        courseId,
+        lectureId,
+        watchTimeSeconds: watchTime,
+      });
+    } else {
+      existingProgress.watchTimeSeconds = watchTime;
+    }
+
+    return await this.lectureProgressRepository.save(existingProgress);
   }
 
   async getLectureProgress(
     enrollmentId: number,
     courseId: number,
   ): Promise<LectureProgress[]> {
-    return this.lectureProgressModel
-      .find({ enrollmentId, courseId, isCompleted: true })
-      .exec();
+    return this.lectureProgressRepository.find({
+      where: { enrollmentId, courseId, isCompleted: true },
+    });
   }
 
   async getEnrollmentWithProgress(enrollmentId: number): Promise<{
@@ -229,21 +231,11 @@ export class EnrollmentService {
     enrollmentId: number,
     courseId: number,
   ): Promise<number> {
-    const courseContent = await this.courseContentModel.findOne({ courseId });
-    if (!courseContent) return 0;
-
-    // Calculate totalLectures from sections array
-    const totalLectures =
-      courseContent.sections?.reduce((total, section) => {
-        return total + (section.lectures?.length || 0);
-      }, 0) || 0;
-
+    const totalLectures = await this.getTotalLecturesCount(courseId);
     if (totalLectures === 0) return 0;
 
-    const completedLectures = await this.lectureProgressModel.countDocuments({
-      enrollmentId,
-      courseId,
-      isCompleted: true,
+    const completedLectures = await this.lectureProgressRepository.count({
+      where: { enrollmentId, courseId, isCompleted: true },
     });
 
     const progressPercentage = Math.round(
@@ -517,35 +509,36 @@ export class EnrollmentService {
     enrollmentId: number,
     courseId: number,
   ): Promise<number> {
-    const progressRecords = await this.lectureProgressModel
-      .find({ enrollmentId, courseId })
-      .exec();
+    const progressRecords = await this.lectureProgressRepository.find({
+      where: { enrollmentId, courseId },
+    });
 
     return progressRecords.reduce(
-      (total, record) => total + (record.watchTime || 0),
+      (total, record) => total + (record.watchTimeSeconds || 0),
       0,
     );
   }
 
   private async getTotalLecturesCount(courseId: number): Promise<number> {
-    const courseContent = await this.courseContentModel.findOne({ courseId });
-    if (!courseContent) return 0;
+    const course = await this.courseRepository.findOne({
+      where: { id: courseId },
+      relations: ['sections', 'sections.lectures'],
+    });
+    if (!course || !course.sections) return 0;
 
-    return (
-      courseContent.sections?.reduce((total, section) => {
-        return total + (section.lectures?.length || 0);
-      }, 0) || 0
-    );
+    return course.sections.reduce((total, section) => {
+      return total + (section.lectures?.length || 0);
+    }, 0);
   }
 
   private async getLastActivity(
     enrollmentId: number,
     courseId: number,
   ): Promise<Date | null> {
-    const lastProgress = await this.lectureProgressModel
-      .findOne({ enrollmentId, courseId })
-      .sort({ completedAt: -1 })
-      .exec();
+    const lastProgress = await this.lectureProgressRepository.findOne({
+      where: { enrollmentId, courseId },
+      order: { updatedAt: 'DESC' },
+    });
 
     return lastProgress?.completedAt || null;
   }

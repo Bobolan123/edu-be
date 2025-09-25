@@ -1,30 +1,16 @@
-import { IsString, IsOptional, IsArray, IsNumber } from 'class-validator';
+import { IsString, IsOptional, IsArray } from 'class-validator';
 
-export class CreateLectureDto {
+export class UpsertCourseContentDto {
+  @IsOptional()
   @IsString()
-  title: string;
+  language?: string;
 
   @IsOptional()
   @IsString()
-  videoUrl?: string;
-}
+  level?: string;
 
-export class CreateSectionDto {
-  @IsString()
-  title: string;
-
-  @IsArray()
-  lectures: CreateLectureDto[];
-}
-
-export class UpsertCourseContentDto {
-  @IsArray()
-  sections: CreateSectionDto[];
-
-  @IsNumber()
-  totalLength: number;
-
+  @IsOptional()
   @IsArray()
   @IsString({ each: true })
-  whatYoullLearn: string[];
+  whatYoullLearn?: string[];
 }

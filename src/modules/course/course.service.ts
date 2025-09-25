@@ -4,22 +4,16 @@ import { Repository } from 'typeorm';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Course } from '../../entities/course.entity';
+import { CourseLecture } from '../../entities/course-lecture.entity';
 import { User } from 'src/entities/user.entity';
 import { Category } from 'src/entities/category.entity';
 import { Enrollment } from 'src/entities/enrollment.entity';
+import { LectureProgress } from 'src/entities/lecture-progress.entity';
 import { CreateCourseDto } from './dto/create-course.dto';
 import { UpdateCourseDto } from './dto/update-course.dto';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { PageMetaDto, PageOptionsDto, ResponsePaginate } from 'src/common/dtos';
 import { CourseSearchFilterDto } from './dto/course-search-filter.dto';
-import {
-  CourseContent,
-  CourseContentDocument,
-} from 'src/schemas/course-content.schema';
-import {
-  LectureProgress,
-  LectureProgressDocument,
-} from 'src/schemas/lecture-progress.schema';
 import {
   LectureCaption,
   LectureCaptionDocument,
@@ -27,13 +21,15 @@ import {
   CaptionFormat,
 } from 'src/schemas/lecture-caption.schema';
 import { ReviewService } from '../review/review.service';
-import { CourseProgressSyncService } from './course-progress-sync.service';
 
 @Injectable()
 export class CourseService {
   constructor(
     @InjectRepository(Course)
     private readonly courseRepository: Repository<Course>,
+
+    @InjectRepository(CourseLecture)
+    private readonly lectureRepository: Repository<CourseLecture>,
 
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
@@ -44,20 +40,15 @@ export class CourseService {
     @InjectRepository(Enrollment)
     private readonly enrollmentRepository: Repository<Enrollment>,
 
+    @InjectRepository(LectureProgress)
+    private readonly lectureProgressRepository: Repository<LectureProgress>,
+
     private cloudinaryService: CloudinaryService,
-
-    @InjectModel(CourseContent.name)
-    private readonly courseContentModel: Model<CourseContentDocument>,
-
-    @InjectModel(LectureProgress.name)
-    private readonly lectureProgressModel: Model<LectureProgressDocument>,
 
     @InjectModel(LectureCaption.name)
     private readonly lectureCaptionModel: Model<LectureCaptionDocument>,
 
     private readonly reviewService: ReviewService,
-
-    private readonly courseProgressSyncService: CourseProgressSyncService,
   ) {}
 
   async create(createCourseDto: CreateCourseDto) {
@@ -219,7 +210,7 @@ export class CourseService {
   private async processCoursesWithFilters(
     courses: Course[],
     filterDto: CourseSearchFilterDto,
-  ): Promise<Course[]> {
+  ): Promise<any[]> {
     const { minRating, maxRating, excludeEnrolled, userId } = filterDto;
 
     const coursesWithRatings = await Promise.all(
@@ -255,17 +246,17 @@ export class CourseService {
   }
 
   private paginateCourses(
-    courses: Course[],
+    courses: any[],
     filterDto: CourseSearchFilterDto,
-  ): Course[] {
+  ): any[] {
     return courses.slice(filterDto.skip, filterDto.skip + filterDto.take);
   }
 
   private async addEnrollmentStatus(
-    courses: Course[],
+    courses: any[],
     userId?: number,
     excludeEnrolled?: boolean,
-  ): Promise<Course[]> {
+  ): Promise<any[]> {
     if (!userId) {
       return courses;
     }
@@ -314,7 +305,7 @@ export class CourseService {
     return await queryBuilder.getMany();
   }
 
-  async findOne(id: number, includeDeleted: boolean = false): Promise<Course> {
+  async findOne(id: number, includeDeleted: boolean = false): Promise<any> {
     const whereCondition: any = { id };
 
     if (includeDeleted) {
@@ -451,11 +442,11 @@ export class CourseService {
       throw new BadRequestException(`Course with ID ${id} not found.`);
     }
 
-    // Clean up progress records before permanently deleting course content
-    await this.lectureProgressModel.deleteMany({ courseId: id });
+    // Clean up progress records before permanently deleting course
+    await this.lectureProgressRepository.delete({ courseId: id });
 
     await this.courseRepository.delete(id);
-    await this.courseContentModel.deleteOne({ courseId: id });
+    // Note: With JSONB approach, course content is deleted with the course entity
   }
 
   async uploadThumbnail(
@@ -490,84 +481,171 @@ export class CourseService {
     lectureId: string,
     file: Express.Multer.File,
   ) {
-    const course = await this.courseRepository.findOne({
-      where: { id: courseId },
-      withDeleted: false,
-    });
-    if (!course) {
-      throw new BadRequestException('Course not found');
-    }
-
-    const courseContent = await this.courseContentModel.findOne({ courseId });
-    if (!courseContent)
-      throw new BadRequestException('Course content not found');
-
-    const section = courseContent.sections.find(
-      (s) => s._id.toString() === sectionId,
-    );
-    if (!section) throw new BadRequestException('Section not found');
-
-    const lecture = section.lectures.find(
-      (l) => l._id.toString() === lectureId,
-    );
-    if (!lecture) throw new BadRequestException('Lecture not found');
-
-    if (lecture.videoUrl) {
-      const publicId = this.cloudinaryService.extractPublicId(lecture.videoUrl);
-      await this.cloudinaryService.deleteFile(publicId);
-    }
-
-    const { url, publicId } = await this.cloudinaryService.uploadVideo(
-      file,
-      'course-lectures',
-    );
-
-    lecture.videoUrl = url;
-    await courseContent.save();
-
-    // Auto-generate captions
-    const caption = new this.lectureCaptionModel({
+    console.log('uploadLecture service called:', {
+      courseId,
+      sectionId,
       lectureId,
-      courseId,
-      videoPublicId: publicId,
-      status: CaptionStatus.COMPLETED,
-      cloudinaryFiles: new Map([
-        ['srt', this.cloudinaryService.getCaptionUrl(publicId, 'srt')],
-        ['vtt', this.cloudinaryService.getCaptionUrl(publicId, 'vtt')],
-        ['transcript', this.cloudinaryService.getCaptionUrl(publicId, 'transcript')],
-      ]),
+      fileExists: !!file,
+      fileName: file?.originalname
     });
-    await caption.save();
 
-    // Synchronize progress after lecture upload
-    await this.courseProgressSyncService.synchronizeProgressWithContent(
-      courseId,
-    );
+    // Find the lecture using the relational structure
+    const lecture = await this.lectureRepository.findOne({
+      where: { id: lectureId },
+      relations: ['section'],
+    });
+
+    console.log('Lecture found:', {
+      lectureExists: !!lecture,
+      lectureId: lecture?.id,
+      sectionId: lecture?.section?.id,
+      expectedSectionId: sectionId
+    });
+
+    if (!lecture) {
+      throw new BadRequestException('Lecture not found');
+    }
+
+    if (lecture.section.id !== sectionId) {
+      throw new BadRequestException('Lecture does not belong to the specified section');
+    }
+
+    // Check if lecture already has video content and delete old video
+    if (lecture.contentType === 'video' && lecture.content) {
+      const videoContent = lecture.content as any;
+      if (videoContent.videoUrl) {
+        const publicId = this.cloudinaryService.extractPublicId(videoContent.videoUrl);
+        await this.cloudinaryService.deleteFile(publicId);
+      }
+    }
+
+    // Upload new video
+    console.log('Starting Cloudinary upload...');
+    let url: string, publicId: string, duration: number, qualities: any[];
+    try {
+      const uploadResult = await this.cloudinaryService.uploadVideo(
+        file,
+        'course-lectures',
+      );
+      url = uploadResult.url;
+      publicId = uploadResult.publicId;
+      duration = uploadResult.duration;
+      qualities = uploadResult.qualities;
+      console.log('Cloudinary upload successful:', { url, publicId, duration, qualitiesCount: qualities?.length });
+    } catch (error) {
+      console.error('Cloudinary upload failed:', error);
+      throw new BadRequestException(`Video upload failed: ${error.message}`);
+    }
+
+    // Update lecture content (no captions in JSONB)
+    lecture.contentType = 'video';
+    lecture.content = {
+      videoUrl: url,
+      cloudinaryPublicId: publicId,
+      quality: qualities.length > 0 ? qualities : [{ resolution: 'auto', url }],
+    };
+
+    // Update lecture duration
+    if (duration) {
+      lecture.durationSeconds = Math.round(duration);
+    }
+
+    await this.lectureRepository.save(lecture);
+
+    // Create caption processing job (async)
+    await this.createCaptionJob(lectureId, courseId, publicId);
 
     return url;
   }
 
-  async getCourseContent(courseId: number) {
-    const content = await this.courseContentModel.findOne({ courseId }).lean();
-    if (!content) {
-      throw new BadRequestException('No content found for this course');
-    }
-    return content;
+  private async createCaptionJob(lectureId: string, courseId: number, videoPublicId: string) {
+    // Create caption processing job in MongoDB
+    const caption = new this.lectureCaptionModel({
+      lectureId,
+      courseId,
+      videoPublicId,
+      language: 'en', // Default language
+      status: CaptionStatus.PENDING,
+      files: new Map([
+        ['srt', this.cloudinaryService.getCaptionUrl(videoPublicId, 'srt')],
+      ]),
+    });
+
+    await caption.save();
+
+    // In a real implementation, you might:
+    // 1. Queue a background job to check Cloudinary processing status
+    // 2. Update status to COMPLETED when ready
+    // For now, we'll set it as COMPLETED since Cloudinary handles it automatically
+    setTimeout(async () => {
+      caption.status = CaptionStatus.COMPLETED;
+      await caption.save();
+    }, 1000);
+
+    return caption;
   }
 
-  async upsertCourseContent(courseId: number, content: any) {
-    const result = await this.courseContentModel.findOneAndUpdate(
-      { courseId },
-      { $set: { ...content } },
-      { upsert: true, new: true },
-    );
+  async getCourseContent(courseId: number) {
+    const course = await this.courseRepository.findOne({
+      where: { id: courseId },
+      relations: ['sections', 'sections.lectures'],
+      order: {
+        sections: {
+          orderIndex: 'ASC',
+          lectures: { orderIndex: 'ASC' }
+        }
+      }
+    });
 
-    // Synchronize progress after content update
-    await this.courseProgressSyncService.synchronizeProgressWithContent(
-      courseId,
-    );
+    if (!course) {
+      throw new BadRequestException('Course not found');
+    }
 
-    return result;
+    if (!course.sections || course.sections.length === 0) {
+      throw new BadRequestException('No content found for this course');
+    }
+
+    return {
+      sections: course.sections,
+      metadata: course.metadata
+    };
+  }
+
+  async upsertCourseContent(courseId: number, contentData: {
+    language?: string;
+    level?: string;
+    whatYoullLearn?: string[];
+  }) {
+    const course = await this.courseRepository.findOne({
+      where: { id: courseId },
+    });
+
+    if (!course) {
+      throw new BadRequestException('Course not found');
+    }
+
+    // Initialize metadata if it doesn't exist
+    if (!course.metadata) {
+      course.metadata = {
+        language: course.language || 'en',
+        level: 'beginner',
+        whatYoullLearn: [],
+      };
+    }
+
+    // Update metadata fields
+    if (contentData.language !== undefined) {
+      course.metadata.language = contentData.language;
+    }
+    if (contentData.level !== undefined) {
+      course.metadata.level = contentData.level;
+    }
+    if (contentData.whatYoullLearn !== undefined) {
+      course.metadata.whatYoullLearn = contentData.whatYoullLearn;
+    }
+
+    const result = await this.courseRepository.save(course);
+    return result.metadata;
   }
 
   async getCourseStudentsWithProgress(
@@ -576,22 +654,20 @@ export class CourseService {
   ): Promise<ResponsePaginate<any>> {
     const course = await this.courseRepository.findOne({
       where: { id: courseId },
+      relations: ['sections', 'sections.lectures'],
       withDeleted: false,
     });
     if (!course) {
       throw new BadRequestException(`Course with ID ${courseId} not found.`);
     }
 
-    const courseContent = await this.courseContentModel.findOne({ courseId });
-    if (!courseContent) {
+    if (!course.sections || course.sections.length === 0) {
       throw new BadRequestException('Course content not found');
     }
 
-    // Calculate totalLectures from sections array
-    const totalLectures =
-      courseContent.sections?.reduce((total, section) => {
-        return total + (section.lectures?.length || 0);
-      }, 0) || 0;
+    const totalLectures = course.sections.reduce((total, section) => {
+      return total + (section.lectures?.length || 0);
+    }, 0);
 
     const enrollmentsQuery = this.enrollmentRepository
       .createQueryBuilder('enrollment')
@@ -604,12 +680,13 @@ export class CourseService {
 
     const studentsWithProgress = await Promise.all(
       enrollments.map(async (enrollment) => {
-        const completedLectures =
-          await this.lectureProgressModel.countDocuments({
+        const completedLectures = await this.lectureProgressRepository.count({
+          where: {
             enrollmentId: enrollment.id,
             courseId: courseId,
             isCompleted: true,
-          });
+          },
+        });
 
         const progressPercentage =
           totalLectures > 0
@@ -641,31 +718,13 @@ export class CourseService {
   }
 
 
-  async getCaptions(lectureId: string, format: CaptionFormat) {
+  async getCaptions(lectureId: string) {
     const caption = await this.lectureCaptionModel.findOne({ lectureId });
     if (!caption || caption.status !== CaptionStatus.COMPLETED) {
       throw new BadRequestException('Captions not available');
     }
 
-    const captionUrl = caption.cloudinaryFiles?.get(format);
-    if (!captionUrl) {
-      throw new BadRequestException(`Caption format ${format} not available`);
-    }
-
-    return { url: captionUrl, format };
+    return { cues: caption.cues, files: caption.files };
   }
 
-  async getCaptionStatus(lectureId: string) {
-    const caption = await this.lectureCaptionModel.findOne({ lectureId });
-    if (!caption) {
-      return { status: CaptionStatus.PENDING, available: false };
-    }
-
-    return {
-      status: caption.status,
-      available: caption.status === CaptionStatus.COMPLETED,
-      error: caption.processingError,
-      formats: caption.cloudinaryFiles ? Object.keys(caption.cloudinaryFiles) : [],
-    };
-  }
 }

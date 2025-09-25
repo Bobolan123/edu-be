@@ -16,6 +16,13 @@ import { Enrollment } from './enrollment.entity';
 import { Review } from './review.entity';
 import { Certification } from './certification.entity';
 import { Category } from './category.entity';
+import { CourseSection } from './course-section.entity';
+
+export interface CourseMetadata {
+  language: string;
+  level: string;
+  whatYoullLearn: string[];
+}
 
 @Entity()
 export class Course {
@@ -79,4 +86,10 @@ export class Course {
 
   @Column({ nullable: true })
   thumbnail_url: string;
+
+  @Column('jsonb', { nullable: true })
+  metadata: CourseMetadata;
+
+  @OneToMany(() => CourseSection, (section) => section.course)
+  sections: CourseSection[];
 }

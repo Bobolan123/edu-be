@@ -41,7 +41,3 @@ export class UpdateCaptionDto {
   processingError?: string;
 }
 
-export class GetCaptionDto {
-  @IsEnum(CaptionFormat)
-  format: CaptionFormat;
-}

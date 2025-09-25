@@ -13,6 +13,7 @@ import {
   ValidationPipe,
   Put,
   UseGuards,
+  BadRequestException,
 } from '@nestjs/common';
 import { CourseService } from './course.service';
 import { CreateCourseDto } from './dto/create-course.dto';
@@ -25,7 +26,6 @@ import { Category } from 'src/entities/category.entity';
 import { UpsertCourseContentDto } from './dto/course-content.dto';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { Public } from 'src/auth/Public';
-import { GetCaptionDto } from './dto/caption.dto';
 
 @Controller('courses')
 export class CourseController {
@@ -165,6 +165,23 @@ export class CourseController {
     @Body()
     body: { sectionId: string; lectureId: string },
   ) {
+    console.log('Upload lecture endpoint called:', {
+      courseId: id,
+      sectionId: body.sectionId,
+      lectureId: body.lectureId,
+      fileExists: !!file,
+      fileName: file?.originalname,
+      fileSize: file?.size
+    });
+
+    if (!file) {
+      throw new BadRequestException('No file uploaded');
+    }
+
+    if (!body.sectionId || !body.lectureId) {
+      throw new BadRequestException('sectionId and lectureId are required');
+    }
+
     return this.courseService.uploadLecture(
       +id,
       body.sectionId,
@@ -179,15 +196,8 @@ export class CourseController {
   @ResponseMessage('Get lecture captions')
   async getCaptions(
     @Param('lectureId') lectureId: string,
-    @Query() getCaptionDto: GetCaptionDto,
   ) {
-    return this.courseService.getCaptions(lectureId, getCaptionDto.format);
+    return this.courseService.getCaptions(lectureId);
   }
 
-  @Public()
-  @Get('lecture/:lectureId/captions/status')
-  @ResponseMessage('Get caption generation status')
-  async getCaptionStatus(@Param('lectureId') lectureId: string) {
-    return this.courseService.getCaptionStatus(lectureId);
-  }
 }

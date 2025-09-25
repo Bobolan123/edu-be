@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 import { EnrollmentService } from './enrollment.service';
 import { Enrollment } from 'src/entities/enrollment.entity';
+import { LectureProgress } from 'src/entities/lecture-progress.entity';
 import { CreateEnrollmentDto } from './dto/create-enrollment.dto';
 import { UpdateEnrollmentDto } from './dto/update-enrollment.dto';
 import { PageOptionsDto, ResponsePaginate } from 'src/common/dtos';
@@ -90,7 +91,7 @@ export class EnrollmentController {
     @Param('enrollmentId') enrollmentId: string,
     @Param('lectureId') lectureId: string,
     @Body('courseId') courseId: number,
-  ): Promise<void> {
+  ): Promise<LectureProgress> {
     return this.enrollmentService.markLectureAsCompleted(
       +enrollmentId,
       courseId,
@@ -103,7 +104,7 @@ export class EnrollmentController {
     @Param('enrollmentId') enrollmentId: string,
     @Param('lectureId') lectureId: string,
     @Body() body: { courseId: number; watchTime: number },
-  ): Promise<void> {
+  ): Promise<LectureProgress> {
     return this.enrollmentService.updateWatchTime(
       +enrollmentId,
       body.courseId,

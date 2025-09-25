@@ -21,6 +21,10 @@ export class CreateCourseDto {
 
   @IsNotEmpty()
   @IsString()
+  language: string;
+
+  @IsNotEmpty()
+  @IsString()
   description: string;
 
   @IsOptional()
@@ -40,11 +44,12 @@ export class CreateCourseDto {
   @IsBoolean()
   isActive?: boolean;
 
-  @IsInt()
+  @IsOptional()
+  @IsNumber()
   instructorId?: number;
 
   @IsOptional()
   @IsArray()
-  @IsInt({ each: true })
+  @IsInt({ each: true }) 
   categoryIds?: number[];
 }

@@ -1,8 +1,12 @@
 import { Module } from '@nestjs/common';
 import { CourseService } from './course.service';
 import { CourseController } from './course.controller';
+import { CourseContentService } from './course-content.service';
+import { CourseContentController } from './course-content.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Course } from 'src/entities/course.entity';
+import { CourseSection } from 'src/entities/course-section.entity';
+import { CourseLecture } from 'src/entities/course-lecture.entity';
 import { Review } from 'src/entities/review.entity';
 import { Certification } from 'src/entities/certification.entity';
 import { Order } from 'src/entities/order.entity';
@@ -11,42 +15,35 @@ import { CloudinaryModule } from '../cloudinary/cloudinary.module';
 import { User } from 'src/entities/user.entity';
 import { MongooseModule } from '@nestjs/mongoose';
 import {
-  CourseContent,
-  CourseContentSchema,
-} from 'src/schemas/course-content.schema';
-import {
-  LectureProgress,
-  LectureProgressSchema,
-} from 'src/schemas/lecture-progress.schema';
-import {
   LectureCaption,
   LectureCaptionSchema,
 } from 'src/schemas/lecture-caption.schema';
 import { Enrollment } from 'src/entities/enrollment.entity';
+import { LectureProgress } from 'src/entities/lecture-progress.entity';
 import { ReviewModule } from '../review/review.module';
-import { CourseProgressSyncService } from './course-progress-sync.service';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([
       Course,
+      CourseSection,
+      CourseLecture,
       Review,
       Certification,
       Order,
       Category,
       User,
       Enrollment,
+      LectureProgress,
     ]),
     CloudinaryModule,
     MongooseModule.forFeature([
-      { name: CourseContent.name, schema: CourseContentSchema },
-      { name: LectureProgress.name, schema: LectureProgressSchema },
       { name: LectureCaption.name, schema: LectureCaptionSchema },
     ]),
     ReviewModule,
   ],
-  exports: [CourseService, CourseProgressSyncService],
-  controllers: [CourseController],
-  providers: [CourseService, CourseProgressSyncService],
+  exports: [CourseService, CourseContentService],
+  controllers: [CourseController, CourseContentController],
+  providers: [CourseService, CourseContentService],
 })
 export class CourseModule {}
