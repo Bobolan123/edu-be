@@ -8,21 +8,50 @@ import {
   Delete,
   UseGuards,
   Put,
+  UseInterceptors,
+  UploadedFile,
+  BadRequestException,
 } from '@nestjs/common';
 import { CourseContentService } from './course-content.service';
 import { CreateSectionDto } from './dto/create-section.dto';
 import { UpdateSectionDto } from './dto/update-section.dto';
 import { CreateLectureDto } from './dto/create-lecture.dto';
 import { UpdateLectureDto } from './dto/update-lecture.dto';
+import { UpsertCourseContentDto } from './dto/course-content.dto';
 import { ResponseMessage } from 'src/decorator/responseMessage.decorator';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { Public } from 'src/auth/Public';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @Controller('course-content')
 export class CourseContentController {
   constructor(private readonly courseContentService: CourseContentService) {}
 
-  // Course Structure
+  // ========================
+  // COURSE CONTENT MANAGEMENT
+  // ========================
+
+  @Public()
+  @Get(':courseId/content')
+  @ResponseMessage('Get course content')
+  async getCourseContent(@Param('courseId') courseId: number) {
+    return this.courseContentService.getCourseContent(courseId);
+  }
+
+  @Patch(':courseId/content')
+  @UseGuards(JwtAuthGuard)
+  @ResponseMessage('Update course content')
+  async updateCourseContent(
+    @Param('courseId') courseId: number,
+    @Body() contentDto: UpsertCourseContentDto,
+  ) {
+    const res = await this.courseContentService.upsertCourseContent(
+      courseId,
+      contentDto,
+    );
+    return res;
+  }
+
   @Public()
   @Get('course/:courseId/structure')
   @ResponseMessage('Get course structure')
@@ -30,7 +59,10 @@ export class CourseContentController {
     return this.courseContentService.getCourseStructure(+courseId);
   }
 
-  // Section Management
+  // ========================
+  // SECTION MANAGEMENT
+  // ========================
+
   @Post('course/:courseId/sections')
   @UseGuards(JwtAuthGuard)
   @ResponseMessage('Create course section')
@@ -70,7 +102,10 @@ export class CourseContentController {
     return { message: 'Sections reordered successfully' };
   }
 
-  // Lecture Management
+  // ========================
+  // LECTURE MANAGEMENT
+  // ========================
+
   @Post('sections/:sectionId/lectures')
   @UseGuards(JwtAuthGuard)
   @ResponseMessage('Create lecture')
@@ -117,7 +152,58 @@ export class CourseContentController {
     return { message: 'Lectures reordered successfully' };
   }
 
-  // Progress Tracking
+  // ========================
+  // MEDIA & FILE MANAGEMENT
+  // ========================
+
+  @Post(':courseId/lecture')
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(FileInterceptor('lecture'))
+  @ResponseMessage('Upload course lecture')
+  async uploadLecture(
+    @Param('courseId') courseId: string,
+    @UploadedFile() file: Express.Multer.File,
+    @Body()
+    body: { sectionId: string; lectureId: string },
+  ) {
+    console.log('Upload lecture endpoint called:', {
+      courseId: courseId,
+      sectionId: body.sectionId,
+      lectureId: body.lectureId,
+      fileExists: !!file,
+      fileName: file?.originalname,
+      fileSize: file?.size
+    });
+
+    if (!file) {
+      throw new BadRequestException('No file uploaded');
+    }
+
+    if (!body.sectionId || !body.lectureId) {
+      throw new BadRequestException('sectionId and lectureId are required');
+    }
+
+    return this.courseContentService.uploadLecture(
+      +courseId,
+      body.sectionId,
+      body.lectureId,
+      file,
+    );
+  }
+
+  @Public()
+  @Get('lecture/:lectureId/captions')
+  @ResponseMessage('Get lecture captions')
+  async getCaptions(
+    @Param('lectureId') lectureId: string,
+  ) {
+    return this.courseContentService.getCaptions(lectureId);
+  }
+
+  // ========================
+  // PROGRESS TRACKING
+  // ========================
+
   @Post('progress/:enrollmentId/lectures/:lectureId')
   @UseGuards(JwtAuthGuard)
   @ResponseMessage('Update lecture progress')

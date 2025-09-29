@@ -23,7 +23,6 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { PageOptionsDto } from 'src/common/dtos';
 import { CourseSearchFilterDto } from './dto/course-search-filter.dto';
 import { Category } from 'src/entities/category.entity';
-import { UpsertCourseContentDto } from './dto/course-content.dto';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { Public } from 'src/auth/Public';
 
@@ -101,6 +100,7 @@ export class CourseController {
   }
 
   @Post(':id/thumbnail')
+  @UseGuards(JwtAuthGuard)
   @UseInterceptors(FileInterceptor('thumbnail'))
   @ResponseMessage('Upload course thumbnail')
   async uploadThumbnail(
@@ -110,25 +110,6 @@ export class CourseController {
     return this.courseService.uploadThumbnail(+id, file);
   }
 
-  @Patch('content/:courseId')
-  @ResponseMessage('Update course content')
-  async updateContent(
-    @Param('courseId') courseId: number,
-    @Body() contentDto: UpsertCourseContentDto,
-  ) {
-    const res = await this.courseService.upsertCourseContent(
-      courseId,
-      contentDto,
-    );
-    return res;
-  }
-
-  @Public()
-  @Get('content/:courseId')
-  @ResponseMessage('Get course content')
-  async getCourseContent(@Param('courseId') courseId: number) {
-    return this.courseService.getCourseContent(courseId);
-  }
 
   @Get(':id/students')
   @UseGuards(JwtAuthGuard)
@@ -144,60 +125,6 @@ export class CourseController {
     );
   }
 
-  @Post(':id/thumbnail')
-  @UseGuards(JwtAuthGuard)
-  @UseInterceptors(FileInterceptor('thumbnail'))
-  @ResponseMessage('Upload course thumbnail')
-  async uploadAvatar(
-    @Param('id') id: string,
-    @UploadedFile() file: Express.Multer.File,
-  ) {
-    return this.courseService.uploadThumbnail(+id, file);
-  }
 
-  @Post(':id/lecture')
-  @UseGuards(JwtAuthGuard)
-  @UseInterceptors(FileInterceptor('lecture'))
-  @ResponseMessage('Upload course lecture')
-  async uploadLecture(
-    @Param('id') id: string,
-    @UploadedFile() file: Express.Multer.File,
-    @Body()
-    body: { sectionId: string; lectureId: string },
-  ) {
-    console.log('Upload lecture endpoint called:', {
-      courseId: id,
-      sectionId: body.sectionId,
-      lectureId: body.lectureId,
-      fileExists: !!file,
-      fileName: file?.originalname,
-      fileSize: file?.size
-    });
-
-    if (!file) {
-      throw new BadRequestException('No file uploaded');
-    }
-
-    if (!body.sectionId || !body.lectureId) {
-      throw new BadRequestException('sectionId and lectureId are required');
-    }
-
-    return this.courseService.uploadLecture(
-      +id,
-      body.sectionId,
-      body.lectureId,
-      file,
-    );
-  }
-
-
-  @Public()
-  @Get('lecture/:lectureId/captions')
-  @ResponseMessage('Get lecture captions')
-  async getCaptions(
-    @Param('lectureId') lectureId: string,
-  ) {
-    return this.courseService.getCaptions(lectureId);
-  }
 
 }

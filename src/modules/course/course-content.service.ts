@@ -1,6 +1,8 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 import { Course } from '../../entities/course.entity';
 import { CourseSection } from '../../entities/course-section.entity';
 import { CourseLecture } from '../../entities/course-lecture.entity';
@@ -9,6 +11,14 @@ import { CreateSectionDto } from './dto/create-section.dto';
 import { UpdateSectionDto } from './dto/update-section.dto';
 import { CreateLectureDto } from './dto/create-lecture.dto';
 import { UpdateLectureDto } from './dto/update-lecture.dto';
+import { UpsertCourseContentDto } from './dto/course-content.dto';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
+import {
+  LectureCaption,
+  LectureCaptionDocument,
+  CaptionStatus,
+  CaptionFormat,
+} from 'src/schemas/lecture-caption.schema';
 
 @Injectable()
 export class CourseContentService {
@@ -24,6 +34,11 @@ export class CourseContentService {
 
     @InjectRepository(LectureProgress)
     private readonly progressRepository: Repository<LectureProgress>,
+
+    private cloudinaryService: CloudinaryService,
+
+    @InjectModel(LectureCaption.name)
+    private readonly lectureCaptionModel: Model<LectureCaptionDocument>,
   ) {}
 
   // Course Structure Methods
@@ -265,5 +280,170 @@ export class CourseContentService {
         { orderIndex: i }
       );
     }
+  }
+
+  async getCourseContent(courseId: number) {
+    const course = await this.courseRepository.findOne({
+      where: { id: courseId },
+      relations: ['sections', 'sections.lectures'],
+      order: {
+        sections: {
+          orderIndex: 'ASC',
+          lectures: { orderIndex: 'ASC' }
+        }
+      }
+    });
+
+    if (!course) {
+      throw new BadRequestException('Course not found');
+    }
+
+    if (!course.sections || course.sections.length === 0) {
+      throw new BadRequestException('No content found for this course');
+    }
+
+    return {
+      sections: course.sections,
+      metadata: course.metadata
+    };
+  }
+
+  async upsertCourseContent(courseId: number, contentData: UpsertCourseContentDto) {
+    const course = await this.courseRepository.findOne({
+      where: { id: courseId },
+    });
+
+    if (!course) {
+      throw new BadRequestException('Course not found');
+    }
+
+    if (!course.metadata) {
+      course.metadata = {
+        language: course.language || 'en',
+        level: 'beginner',
+        whatYoullLearn: [],
+      };
+    }
+
+    if (contentData.language !== undefined) {
+      course.metadata.language = contentData.language;
+    }
+    if (contentData.level !== undefined) {
+      course.metadata.level = contentData.level;
+    }
+    if (contentData.whatYoullLearn !== undefined) {
+      course.metadata.whatYoullLearn = contentData.whatYoullLearn;
+    }
+
+    const result = await this.courseRepository.save(course);
+    return result.metadata;
+  }
+
+  async uploadLecture(
+    courseId: number,
+    sectionId: string,
+    lectureId: string,
+    file: Express.Multer.File,
+  ) {
+    console.log('uploadLecture service called:', {
+      courseId,
+      sectionId,
+      lectureId,
+      fileExists: !!file,
+      fileName: file?.originalname
+    });
+
+    const lecture = await this.lectureRepository.findOne({
+      where: { id: lectureId },
+      relations: ['section'],
+    });
+
+    console.log('Lecture found:', {
+      lectureExists: !!lecture,
+      lectureId: lecture?.id,
+      sectionId: lecture?.section?.id,
+      expectedSectionId: sectionId
+    });
+
+    if (!lecture) {
+      throw new BadRequestException('Lecture not found');
+    }
+
+    if (lecture.section.id !== sectionId) {
+      throw new BadRequestException('Lecture does not belong to the specified section');
+    }
+
+    if (lecture.contentType === 'video' && lecture.content) {
+      const videoContent = lecture.content as any;
+      if (videoContent.videoUrl) {
+        const publicId = this.cloudinaryService.extractPublicId(videoContent.videoUrl);
+        await this.cloudinaryService.deleteFile(publicId);
+      }
+    }
+
+    console.log('Starting Cloudinary upload...');
+    let url: string, publicId: string, duration: number, qualities: any[];
+    try {
+      const uploadResult = await this.cloudinaryService.uploadVideo(
+        file,
+        'course-lectures',
+      );
+      url = uploadResult.url;
+      publicId = uploadResult.publicId;
+      duration = uploadResult.duration;
+      qualities = uploadResult.qualities;
+      console.log('Cloudinary upload successful:', { url, publicId, duration, qualitiesCount: qualities?.length });
+    } catch (error) {
+      console.error('Cloudinary upload failed:', error);
+      throw new BadRequestException(`Video upload failed: ${error.message}`);
+    }
+
+    lecture.contentType = 'video';
+    lecture.content = {
+      videoUrl: url,
+      cloudinaryPublicId: publicId,
+      quality: qualities.length > 0 ? qualities : [{ resolution: 'auto', url }],
+    };
+
+    if (duration) {
+      lecture.durationSeconds = Math.round(duration);
+    }
+
+    await this.lectureRepository.save(lecture);
+
+    await this.createCaptionJob(lectureId, courseId, publicId);
+
+    return url;
+  }
+
+  private async createCaptionJob(lectureId: string, courseId: number, videoPublicId: string) {
+    const caption = new this.lectureCaptionModel({
+      lectureId,
+      courseId,
+      videoPublicId,
+      language: 'en',
+      status: CaptionStatus.PENDING,
+      files: new Map([
+        ['srt', this.cloudinaryService.getCaptionUrl(videoPublicId, 'srt')],
+      ]),
+    });
+
+    await caption.save();
+
+    setTimeout(async () => {
+      caption.status = CaptionStatus.COMPLETED;
+      await caption.save();
+    }, 1000);
+
+    return caption;
+  }
+
+  async getCaptions(lectureId: string) {
+    const caption = await this.lectureCaptionModel.findOne({ lectureId });
+    if (!caption || caption.status !== CaptionStatus.COMPLETED) {
+      throw new BadRequestException('Captions not available');
+    }
+
+    return { cues: caption.cues, files: caption.files };
   }
 }

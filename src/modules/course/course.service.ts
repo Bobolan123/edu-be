@@ -14,12 +14,6 @@ import { UpdateCourseDto } from './dto/update-course.dto';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { PageMetaDto, PageOptionsDto, ResponsePaginate } from 'src/common/dtos';
 import { CourseSearchFilterDto } from './dto/course-search-filter.dto';
-import {
-  LectureCaption,
-  LectureCaptionDocument,
-  CaptionStatus,
-  CaptionFormat,
-} from 'src/schemas/lecture-caption.schema';
 import { ReviewService } from '../review/review.service';
 
 @Injectable()
@@ -28,8 +22,6 @@ export class CourseService {
     @InjectRepository(Course)
     private readonly courseRepository: Repository<Course>,
 
-    @InjectRepository(CourseLecture)
-    private readonly lectureRepository: Repository<CourseLecture>,
 
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
@@ -45,8 +37,6 @@ export class CourseService {
 
     private cloudinaryService: CloudinaryService,
 
-    @InjectModel(LectureCaption.name)
-    private readonly lectureCaptionModel: Model<LectureCaptionDocument>,
 
     private readonly reviewService: ReviewService,
   ) {}
@@ -474,179 +464,6 @@ export class CourseService {
     return this.courseRepository.save(course);
   }
 
-  // upload new video lecture when it uploaded
-  async uploadLecture(
-    courseId: number,
-    sectionId: string,
-    lectureId: string,
-    file: Express.Multer.File,
-  ) {
-    console.log('uploadLecture service called:', {
-      courseId,
-      sectionId,
-      lectureId,
-      fileExists: !!file,
-      fileName: file?.originalname
-    });
-
-    // Find the lecture using the relational structure
-    const lecture = await this.lectureRepository.findOne({
-      where: { id: lectureId },
-      relations: ['section'],
-    });
-
-    console.log('Lecture found:', {
-      lectureExists: !!lecture,
-      lectureId: lecture?.id,
-      sectionId: lecture?.section?.id,
-      expectedSectionId: sectionId
-    });
-
-    if (!lecture) {
-      throw new BadRequestException('Lecture not found');
-    }
-
-    if (lecture.section.id !== sectionId) {
-      throw new BadRequestException('Lecture does not belong to the specified section');
-    }
-
-    // Check if lecture already has video content and delete old video
-    if (lecture.contentType === 'video' && lecture.content) {
-      const videoContent = lecture.content as any;
-      if (videoContent.videoUrl) {
-        const publicId = this.cloudinaryService.extractPublicId(videoContent.videoUrl);
-        await this.cloudinaryService.deleteFile(publicId);
-      }
-    }
-
-    // Upload new video
-    console.log('Starting Cloudinary upload...');
-    let url: string, publicId: string, duration: number, qualities: any[];
-    try {
-      const uploadResult = await this.cloudinaryService.uploadVideo(
-        file,
-        'course-lectures',
-      );
-      url = uploadResult.url;
-      publicId = uploadResult.publicId;
-      duration = uploadResult.duration;
-      qualities = uploadResult.qualities;
-      console.log('Cloudinary upload successful:', { url, publicId, duration, qualitiesCount: qualities?.length });
-    } catch (error) {
-      console.error('Cloudinary upload failed:', error);
-      throw new BadRequestException(`Video upload failed: ${error.message}`);
-    }
-
-    // Update lecture content (no captions in JSONB)
-    lecture.contentType = 'video';
-    lecture.content = {
-      videoUrl: url,
-      cloudinaryPublicId: publicId,
-      quality: qualities.length > 0 ? qualities : [{ resolution: 'auto', url }],
-    };
-
-    // Update lecture duration
-    if (duration) {
-      lecture.durationSeconds = Math.round(duration);
-    }
-
-    await this.lectureRepository.save(lecture);
-
-    // Create caption processing job (async)
-    await this.createCaptionJob(lectureId, courseId, publicId);
-
-    return url;
-  }
-
-  private async createCaptionJob(lectureId: string, courseId: number, videoPublicId: string) {
-    // Create caption processing job in MongoDB
-    const caption = new this.lectureCaptionModel({
-      lectureId,
-      courseId,
-      videoPublicId,
-      language: 'en', // Default language
-      status: CaptionStatus.PENDING,
-      files: new Map([
-        ['srt', this.cloudinaryService.getCaptionUrl(videoPublicId, 'srt')],
-      ]),
-    });
-
-    await caption.save();
-
-    // In a real implementation, you might:
-    // 1. Queue a background job to check Cloudinary processing status
-    // 2. Update status to COMPLETED when ready
-    // For now, we'll set it as COMPLETED since Cloudinary handles it automatically
-    setTimeout(async () => {
-      caption.status = CaptionStatus.COMPLETED;
-      await caption.save();
-    }, 1000);
-
-    return caption;
-  }
-
-  async getCourseContent(courseId: number) {
-    const course = await this.courseRepository.findOne({
-      where: { id: courseId },
-      relations: ['sections', 'sections.lectures'],
-      order: {
-        sections: {
-          orderIndex: 'ASC',
-          lectures: { orderIndex: 'ASC' }
-        }
-      }
-    });
-
-    if (!course) {
-      throw new BadRequestException('Course not found');
-    }
-
-    if (!course.sections || course.sections.length === 0) {
-      throw new BadRequestException('No content found for this course');
-    }
-
-    return {
-      sections: course.sections,
-      metadata: course.metadata
-    };
-  }
-
-  async upsertCourseContent(courseId: number, contentData: {
-    language?: string;
-    level?: string;
-    whatYoullLearn?: string[];
-  }) {
-    const course = await this.courseRepository.findOne({
-      where: { id: courseId },
-    });
-
-    if (!course) {
-      throw new BadRequestException('Course not found');
-    }
-
-    // Initialize metadata if it doesn't exist
-    if (!course.metadata) {
-      course.metadata = {
-        language: course.language || 'en',
-        level: 'beginner',
-        whatYoullLearn: [],
-      };
-    }
-
-    // Update metadata fields
-    if (contentData.language !== undefined) {
-      course.metadata.language = contentData.language;
-    }
-    if (contentData.level !== undefined) {
-      course.metadata.level = contentData.level;
-    }
-    if (contentData.whatYoullLearn !== undefined) {
-      course.metadata.whatYoullLearn = contentData.whatYoullLearn;
-    }
-
-    const result = await this.courseRepository.save(course);
-    return result.metadata;
-  }
 
   async getCourseStudentsWithProgress(
     courseId: number,
@@ -718,13 +535,5 @@ export class CourseService {
   }
 
 
-  async getCaptions(lectureId: string) {
-    const caption = await this.lectureCaptionModel.findOne({ lectureId });
-    if (!caption || caption.status !== CaptionStatus.COMPLETED) {
-      throw new BadRequestException('Captions not available');
-    }
-
-    return { cues: caption.cues, files: caption.files };
-  }
 
 }
