@@ -69,10 +69,10 @@ export class CourseController {
   @ResponseMessage('Fetch a single Course')
   findOne(
     @Param('id') id: string,
-    @Query('includeDeleted') includeDeleted?: string,
-  ) {
-    const includeDeletedBool = includeDeleted === 'true';
-    return this.courseService.findOne(+id, includeDeletedBool);
+    @Query() query: CourseSearchFilterDto,
+  ) { 
+    const { includeDeleted } = query;
+    return this.courseService.findOne(+id, includeDeleted);
   }
 
   @Patch(':id')

@@ -23,6 +23,7 @@ export class CartService {
     let cart = await this.cartRepo.findOne({
       where: { user: { id: userId }, isCheckedOut: false },
       relations: ['cartItems', 'cartItems.course'],
+      withDeleted: false,
     });
 
     if (!cart) {
@@ -31,6 +32,27 @@ export class CartService {
 
       cart = this.cartRepo.create({ user, cartItems: [] });
       await this.cartRepo.save(cart);
+    }
+
+    // Filter out cart items with deleted courses
+    if (cart.cartItems) {
+      const validItems = [];
+      const itemsToRemove = [];
+
+      for (const item of cart.cartItems) {
+        if (!item.course || item.course.deleted_at) {
+          itemsToRemove.push(item);
+        } else {
+          validItems.push(item);
+        }
+      }
+
+      // Remove invalid items from database
+      if (itemsToRemove.length > 0) {
+        await this.cartItemRepo.remove(itemsToRemove);
+      }
+
+      cart.cartItems = validItems;
     }
 
     return cart;

@@ -89,10 +89,14 @@ export class CourseSearchFilterDto {
   @IsOptional()
   status?: boolean;
 
-  @Transform(({ value }) => value === 'true')
+  @Transform(({ value }) => {
+    if (value === undefined || value === null || value === '') return undefined;
+    if (typeof value === 'boolean') return value;
+    return value === 'true';
+  })
   @IsBoolean()
   @IsOptional()
-  includeDeleted?: boolean = false; // true = show only deleted courses, false = show only active courses
+  includeDeleted?: boolean; // true = only deleted, false = only active, undefined = all (both)
 
   @Type(() => Number)
   @IsInt()

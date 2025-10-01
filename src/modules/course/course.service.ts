@@ -130,10 +130,15 @@ export class CourseService {
       .leftJoinAndSelect('course.instructor', 'instructor');
 
     // Handle soft delete filter
-    if (includeDeleted) {
+    if (includeDeleted === true) {
+      // Only deleted courses
       queryBuilder.withDeleted().where('course.deleted_at IS NOT NULL');
-    } else {
+    } else if (includeDeleted === false) {
+      // Only active courses
       queryBuilder.where('course.deleted_at IS NULL');
+    } else {
+      // All courses (both active and deleted)
+      queryBuilder.withDeleted();
     }
 
     // Instructor filter
@@ -295,51 +300,31 @@ export class CourseService {
     return await queryBuilder.getMany();
   }
 
-  async findOne(id: number, includeDeleted: boolean = false): Promise<any> {
-    const whereCondition: any = { id };
+  async findOne(id: number, includeDeleted?: boolean): Promise<any> {
+    const filterDto = new CourseSearchFilterDto();
+    filterDto.includeDeleted = includeDeleted;
 
-    if (includeDeleted) {
-      const course = await this.courseRepository
-        .createQueryBuilder('course')
-        .leftJoinAndSelect('course.instructor', 'instructor')
-        .leftJoinAndSelect('course.categories', 'categories')
-        .leftJoinAndSelect('course.reviews', 'reviews')
-        .leftJoinAndSelect('reviews.user', 'user')
-        .where('course.id = :id', { id })
-        .andWhere('course.deleted_at IS NOT NULL')
-        .getOne();
+    const queryBuilder = this.buildCourseQuery(filterDto);
+    queryBuilder
+      .andWhere('course.id = :id', { id })
+      .leftJoinAndSelect('course.reviews', 'reviews')
+      .leftJoinAndSelect('reviews.user', 'user');
 
-      if (!course) {
-        throw new BadRequestException(
-          `Deleted course with ID ${id} not found.`,
-        );
-      }
-
-      const averageRating = await this.reviewService.getAverageRating(
-        course.id,
-      );
-      return {
-        ...course,
-        average_rating: averageRating,
-      };
-    }
-
-    const course = await this.courseRepository.findOne({
-      where: whereCondition,
-      relations: ['instructor', 'categories', 'reviews', 'reviews.user'],
-      withDeleted: false,
-    });
+    const course = await queryBuilder.getOne();
 
     if (!course) {
-      throw new BadRequestException(`Course with ID ${id} not found.`);
+      const errorMessage = includeDeleted
+        ? `Deleted course with ID ${id} not found.`
+        : `Course with ID ${id} not found.`;
+      throw new BadRequestException(errorMessage);
     }
 
-    // Calculate and add average rating
     const averageRating = await this.reviewService.getAverageRating(course.id);
 
     return {
       ...course,
       average_rating: averageRating,
+      isDeleted: course.deleted_at !== null,
     };
   }
 
