@@ -470,4 +470,149 @@ export class CourseContentService {
 
     return { cues: caption.cues, files: caption.files };
   }
+
+  async submitQuiz(
+    enrollmentId: number,
+    lectureId: string,
+    answers: Array<{ questionId: string; answer: string | number | boolean }>
+  ): Promise<{
+    score: number;
+    totalPoints: number;
+    percentage: number;
+    passed: boolean;
+    correctAnswers: number;
+    totalQuestions: number;
+    results: Array<{
+      questionId: string;
+      isCorrect: boolean;
+      correctAnswer: string | number;
+      explanation?: string;
+      points: number;
+    }>;
+  }> {
+    const lecture = await this.lectureRepository.findOne({
+      where: { id: lectureId },
+      relations: ['section', 'section.course']
+    });
+
+    if (!lecture) {
+      throw new NotFoundException(`Lecture with ID ${lectureId} not found`);
+    }
+
+    if (lecture.contentType !== 'quiz') {
+      throw new BadRequestException('This lecture is not a quiz');
+    }
+
+    const quizContent = lecture.content as any;
+    if (!quizContent || !quizContent.questions) {
+      throw new BadRequestException('Quiz content not found');
+    }
+
+    let progress = await this.progressRepository.findOne({
+      where: { enrollmentId, lectureId }
+    });
+
+    if (!progress) {
+      progress = this.progressRepository.create({
+        enrollmentId,
+        lectureId,
+        courseId: lecture.section.course?.id || 0,
+        submissionData: { attempts: 0 }
+      });
+    }
+
+    if (!progress.submissionData) {
+      progress.submissionData = { attempts: 0 };
+    }
+
+    const allowMultipleAttempts = quizContent.allowMultipleAttempts ?? true;
+    if (!allowMultipleAttempts && progress.submissionData.attempts > 0) {
+      throw new BadRequestException('Multiple attempts not allowed for this quiz');
+    }
+
+    const answerMap = new Map(
+      answers.map(a => [a.questionId, a.answer])
+    );
+
+    let totalScore = 0;
+    let totalPoints = 0;
+    let correctAnswers = 0;
+    const results = [];
+
+    for (const question of quizContent.questions) {
+      const studentAnswer = answerMap.get(question.id);
+      const correctAnswer = question.correctAnswer;
+
+      // Skip fill_blank questions from scoring
+      if (question.type === 'fill_blank') {
+        continue;
+      }
+
+      let isCorrect = false;
+      if (studentAnswer !== undefined && studentAnswer !== null) {
+        if (question.type === 'multiple_choice') {
+          // Multiple choice: compare as numbers (option index)
+          isCorrect = Number(studentAnswer) === Number(correctAnswer);
+        } else if (question.type === 'true_false') {
+          // True/false: normalize both to boolean
+          const studentBool = studentAnswer === true || studentAnswer === 'true';
+          const correctBool = correctAnswer === true || correctAnswer === 'true';
+          isCorrect = studentBool === correctBool;
+        } else {
+          // Fallback: string comparison
+          isCorrect = String(studentAnswer).trim().toLowerCase() ===
+                     String(correctAnswer).trim().toLowerCase();
+        }
+      }
+
+      if (isCorrect) {
+        totalScore += question.points;
+        correctAnswers++;
+      }
+
+      totalPoints += question.points;
+
+      results.push({
+        questionId: question.id,
+        isCorrect,
+        correctAnswer: question.correctAnswer,
+        explanation: question.explanation,
+        points: question.points
+      });
+    }
+
+    const percentage = totalPoints > 0 ? Math.round((totalScore / totalPoints) * 100) : 0;
+    const passingScore = quizContent.passingScore || 70;
+    const passed = percentage >= passingScore;
+
+    progress.submissionData = {
+      attempts: (progress.submissionData.attempts || 0) + 1,
+      score: totalScore,
+      percentage,
+      passed,
+      lastSubmission: {
+        answers: answers,
+        submittedAt: new Date(),
+        results: results
+      },
+      completedAt: passed ? new Date() : progress.submissionData.completedAt
+    };
+
+    progress.isCompleted = passed;
+    if (passed) {
+      progress.completedAt = new Date();
+    }
+
+    await this.progressRepository.save(progress);
+
+    return {
+      score: totalScore,
+      totalPoints,
+      percentage,
+      passed,
+      correctAnswers,
+      totalQuestions: quizContent.questions.length,
+      results
+    };
+  }
 }

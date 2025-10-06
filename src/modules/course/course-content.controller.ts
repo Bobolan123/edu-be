@@ -18,6 +18,7 @@ import { UpdateSectionDto } from './dto/update-section.dto';
 import { CreateLectureDto } from './dto/create-lecture.dto';
 import { UpdateLectureDto } from './dto/update-lecture.dto';
 import { UpsertCourseContentDto } from './dto/course-content.dto';
+import { SubmitQuizDto } from './dto/submit-quiz.dto';
 import { ResponseMessage } from 'src/decorator/responseMessage.decorator';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { Public } from 'src/auth/Public';
@@ -232,5 +233,20 @@ export class CourseContentController {
     @Param('courseId') courseId: string,
   ) {
     return this.courseContentService.getCourseProgress(+enrollmentId, +courseId);
+  }
+
+  // ========================
+  // QUIZ SUBMISSION
+  // ========================
+
+  @Post('quiz/submit')
+  @UseGuards(JwtAuthGuard)
+  @ResponseMessage('Submit quiz answers')
+  async submitQuiz(@Body() submitQuizDto: SubmitQuizDto) {
+    return this.courseContentService.submitQuiz(
+      submitQuizDto.enrollmentId,
+      submitQuizDto.lectureId,
+      submitQuizDto.answers,
+    );
   }
 }

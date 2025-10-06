@@ -6,7 +6,6 @@ import { VNPayService } from './services/vnpay.service';
 import { ConfigService } from '@nestjs/config';
 import { OrderService } from './order.service';
 import { OrderController } from './order.controller';
-import { OrderRecoveryService } from './order-recovery.service';
 import { Cart } from 'src/entities/cart.entity';
 import { Enrollment } from 'src/entities/enrollment.entity';
 import { EnrollmentService } from '../enrollment/enrollment.service';
@@ -20,7 +19,6 @@ import { EnrollmentModule } from '../enrollment/enrollment.module';
   controllers: [OrderController],
   providers: [
     OrderService,
-    OrderRecoveryService,
     VNPayService,
     {
       provide: 'PAYMENT_CONFIG',

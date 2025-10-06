@@ -49,6 +49,8 @@ export class LectureProgress {
   submissionData: {
     attempts: number;
     score?: number;
+    percentage?: number;
+    passed?: boolean;
     lastSubmission?: any;
     completedAt?: Date;
   };

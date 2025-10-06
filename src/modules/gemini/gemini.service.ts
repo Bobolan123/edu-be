@@ -55,8 +55,14 @@ export class GeminiService {
       }
 
       augmentedPrompt += `User question: ${prompt}\n\n`;
-      augmentedPrompt +=
-        'Answer the question based on the context provided above. If the context does not contain relevant information, say so.';
+      augmentedPrompt += `Instructions:
+- Answer the question naturally as if you're having a conversation with a student
+- Use the context provided above to give accurate, specific information
+- Keep the tone friendly, clear, and educational
+- Don't mention "based on the context" or "according to the materials" - just answer directly
+- If the context doesn't contain the answer, politely say you don't have that information in this course's materials
+- Use examples from the context when helpful
+- Break down complex topics into simple explanations`;
 
       this.logger.log('Generated augmented prompt');
 
