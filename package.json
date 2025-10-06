@@ -17,7 +17,8 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "ingest:courses": "ts-node -r tsconfig-paths/register src/scripts/ingest-courses.ts"
   },
   "dependencies": {
     "@google/genai": "^1.4.0",
@@ -36,6 +37,7 @@
     "@nestjs/serve-static": "^4.0.2",
     "@nestjs/throttler": "^6.2.1",
     "@nestjs/typeorm": "^10.0.2",
+    "@qdrant/js-client-rest": "^1.15.1",
     "bcrypt": "^5.1.1",
     "bcryptjs": "^2.4.3",
     "class-transformer": "^0.5.1",
