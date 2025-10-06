@@ -106,6 +106,19 @@ export class QdrantService implements OnModuleInit {
     }
   }
 
+  async deleteVector(id: string): Promise<void> {
+    try {
+      await this.client.delete(this.collectionName, {
+        wait: true,
+        points: [id],
+      });
+      this.logger.log(`Vector ${id} deleted from collection '${this.collectionName}'`);
+    } catch (error) {
+      this.logger.error(`Error deleting vector ${id}:`, error);
+      throw error;
+    }
+  }
+
   async deleteCollection(): Promise<void> {
     try {
       await this.client.deleteCollection(this.collectionName);

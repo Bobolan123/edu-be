@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Course } from '../../entities/course.entity';
 import { CourseSection } from '../../entities/course-section.entity';
 import { CourseLecture } from '../../entities/course-lecture.entity';
@@ -39,6 +40,8 @@ export class CourseContentService {
 
     @InjectModel(LectureCaption.name)
     private readonly lectureCaptionModel: Model<LectureCaptionDocument>,
+
+    private eventEmitter: EventEmitter2,
   ) {}
 
   // Course Structure Methods
@@ -101,7 +104,12 @@ export class CourseContentService {
     }
 
     Object.assign(section, updateSectionDto);
-    return this.sectionRepository.save(section);
+    const savedSection = await this.sectionRepository.save(section);
+
+    // Emit event for RAG sync (re-sync all lectures in section)
+    this.eventEmitter.emit('section.updated', savedSection);
+
+    return savedSection;
   }
 
   async deleteSection(sectionId: string): Promise<void> {
@@ -137,7 +145,12 @@ export class CourseContentService {
       orderIndex
     });
 
-    return this.lectureRepository.save(lecture);
+    const savedLecture = await this.lectureRepository.save(lecture);
+
+    // Emit event for RAG sync
+    this.eventEmitter.emit('lecture.created', savedLecture);
+
+    return savedLecture;
   }
 
   async updateLecture(lectureId: string, updateLectureDto: UpdateLectureDto): Promise<CourseLecture> {
@@ -151,7 +164,12 @@ export class CourseContentService {
     }
 
     Object.assign(lecture, updateLectureDto);
-    return this.lectureRepository.save(lecture);
+    const savedLecture = await this.lectureRepository.save(lecture);
+
+    // Emit event for RAG sync
+    this.eventEmitter.emit('lecture.updated', savedLecture);
+
+    return savedLecture;
   }
 
   async deleteLecture(lectureId: string): Promise<void> {
@@ -159,6 +177,9 @@ export class CourseContentService {
     if (result.affected === 0) {
       throw new NotFoundException(`Lecture with ID ${lectureId} not found`);
     }
+
+    // Emit event for RAG sync
+    this.eventEmitter.emit('lecture.deleted', lectureId);
   }
 
   async getLecture(lectureId: string): Promise<CourseLecture> {
@@ -409,7 +430,10 @@ export class CourseContentService {
       lecture.durationSeconds = Math.round(duration);
     }
 
-    await this.lectureRepository.save(lecture);
+    const savedLecture = await this.lectureRepository.save(lecture);
+
+    // Emit event for RAG sync (video content changed)
+    this.eventEmitter.emit('lecture.updated', savedLecture);
 
     await this.createCaptionJob(lectureId, courseId, publicId);
 

@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Course } from '../../entities/course.entity';
 import { CourseLecture } from '../../entities/course-lecture.entity';
 import { User } from 'src/entities/user.entity';
@@ -39,6 +40,8 @@ export class CourseService {
 
 
     private readonly reviewService: ReviewService,
+
+    private eventEmitter: EventEmitter2,
   ) {}
 
   async create(createCourseDto: CreateCourseDto) {
@@ -379,7 +382,12 @@ export class CourseService {
     }
 
     Object.assign(course, updateFields);
-    return await this.courseRepository.save(course);
+    const savedCourse = await this.courseRepository.save(course);
+
+    // Emit event for RAG sync (re-sync all lectures in course)
+    this.eventEmitter.emit('course.updated', savedCourse);
+
+    return savedCourse;
   }
 
   async remove(id: number): Promise<any> {

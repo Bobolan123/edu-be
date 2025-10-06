@@ -4,6 +4,20 @@ import { config } from 'dotenv';
 import { Course } from '../entities/course.entity';
 import { CourseSection } from '../entities/course-section.entity';
 import { CourseLecture } from '../entities/course-lecture.entity';
+import { User } from '../entities/user.entity';
+import { Category } from '../entities/category.entity';
+import { Enrollment } from '../entities/enrollment.entity';
+import { Review } from '../entities/review.entity';
+import { ReviewVote } from '../entities/review-vote.entity';
+import { Certification } from '../entities/certification.entity';
+import { Role } from '../entities/role.entity';
+import { Permission } from '../entities/permission.entity';
+import { Order } from '../entities/order.entity';
+import { OrderCourse } from '../entities/order-course.entity';
+import { Cart } from '../entities/cart.entity';
+import { CartItem } from '../entities/cartItem.entity';
+import { LectureProgress } from '../entities/lecture-progress.entity';
+import { Subscription } from '../entities/subscription.entity';
 import { QdrantService } from '../modules/qdrant/qdrant.service';
 import { GeminiService } from '../modules/gemini/gemini.service';
 import { QuizContent } from '../interfaces/course-content.interface';
@@ -56,7 +70,25 @@ async function main() {
     username: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
-    entities: [Course, CourseSection, CourseLecture],
+    entities: [
+      Course,
+      CourseSection,
+      CourseLecture,
+      User,
+      Category,
+      Enrollment,
+      Review,
+      ReviewVote,
+      Certification,
+      Role,
+      Permission,
+      Order,
+      OrderCourse,
+      Cart,
+      CartItem,
+      LectureProgress,
+      Subscription,
+    ],
     synchronize: false,
     logging: false,
     ssl:
