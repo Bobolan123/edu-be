@@ -8,17 +8,11 @@ import { Course } from '../../entities/course.entity';
 import { CourseSection } from '../../entities/course-section.entity';
 import { CourseLecture } from '../../entities/course-lecture.entity';
 import { LectureProgress } from '../../entities/lecture-progress.entity';
-import { CreateSectionDto } from './dto/create-section.dto';
-import { UpdateSectionDto } from './dto/update-section.dto';
-import { CreateLectureDto } from './dto/create-lecture.dto';
-import { UpdateLectureDto } from './dto/update-lecture.dto';
-import { UpsertCourseContentDto } from './dto/course-content.dto';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import {
   LectureCaption,
   LectureCaptionDocument,
   CaptionStatus,
-  CaptionFormat,
 } from 'src/schemas/lecture-caption.schema';
 
 @Injectable()
@@ -64,112 +58,12 @@ export class CourseContentService {
     return course;
   }
 
-  // Section Methods
-  async createSection(courseId: number, createSectionDto: CreateSectionDto): Promise<CourseSection> {
-    const course = await this.courseRepository.findOne({
-      where: { id: courseId }
-    });
-
-    if (!course) {
-      throw new NotFoundException(`Course with ID ${courseId} not found`);
-    }
-
-    let orderIndex = createSectionDto.orderIndex;
-    if (orderIndex === undefined) {
-      const maxOrder = await this.sectionRepository
-        .createQueryBuilder('section')
-        .select('MAX(section.orderIndex)', 'max')
-        .where('section.course = :courseId', { courseId })
-        .getRawOne();
-      orderIndex = (maxOrder?.max || -1) + 1;
-    }
-
-    const section = this.sectionRepository.create({
-      ...createSectionDto,
-      course,
-      orderIndex
-    });
-
-    return this.sectionRepository.save(section);
-  }
-
-  async updateSection(sectionId: string, updateSectionDto: UpdateSectionDto): Promise<CourseSection> {
-    const section = await this.sectionRepository.findOne({
-      where: { id: sectionId },
-      relations: ['course']
-    });
-
-    if (!section) {
-      throw new NotFoundException(`Section with ID ${sectionId} not found`);
-    }
-
-    Object.assign(section, updateSectionDto);
-    const savedSection = await this.sectionRepository.save(section);
-
-    // Emit event for RAG sync (re-sync all lectures in section)
-    this.eventEmitter.emit('section.updated', savedSection);
-
-    return savedSection;
-  }
-
+  // Delete Methods
   async deleteSection(sectionId: string): Promise<void> {
     const result = await this.sectionRepository.delete(sectionId);
     if (result.affected === 0) {
       throw new NotFoundException(`Section with ID ${sectionId} not found`);
     }
-  }
-
-  // Lecture Methods
-  async createLecture(sectionId: string, createLectureDto: CreateLectureDto): Promise<CourseLecture> {
-    const section = await this.sectionRepository.findOne({
-      where: { id: sectionId }
-    });
-
-    if (!section) {
-      throw new NotFoundException(`Section with ID ${sectionId} not found`);
-    }
-
-    let orderIndex = createLectureDto.orderIndex;
-    if (orderIndex === undefined) {
-      const maxOrder = await this.lectureRepository
-        .createQueryBuilder('lecture')
-        .select('MAX(lecture.orderIndex)', 'max')
-        .where('lecture.section = :sectionId', { sectionId })
-        .getRawOne();
-      orderIndex = (maxOrder?.max || -1) + 1;
-    }
-
-    const lecture = this.lectureRepository.create({
-      ...createLectureDto,
-      section,
-      orderIndex
-    });
-
-    const savedLecture = await this.lectureRepository.save(lecture);
-
-    // Emit event for RAG sync
-    this.eventEmitter.emit('lecture.created', savedLecture);
-
-    return savedLecture;
-  }
-
-  async updateLecture(lectureId: string, updateLectureDto: UpdateLectureDto): Promise<CourseLecture> {
-    const lecture = await this.lectureRepository.findOne({
-      where: { id: lectureId },
-      relations: ['section']
-    });
-
-    if (!lecture) {
-      throw new NotFoundException(`Lecture with ID ${lectureId} not found`);
-    }
-
-    Object.assign(lecture, updateLectureDto);
-    const savedLecture = await this.lectureRepository.save(lecture);
-
-    // Emit event for RAG sync
-    this.eventEmitter.emit('lecture.updated', savedLecture);
-
-    return savedLecture;
   }
 
   async deleteLecture(lectureId: string): Promise<void> {
@@ -249,7 +143,7 @@ export class CourseContentService {
     progressPercentage: number;
     totalDuration: number;
     watchedDuration: number;
-  }> {
+  }> { 
     const totals = await this.lectureRepository
       .createQueryBuilder('lecture')
       .innerJoin('lecture.section', 'section')
@@ -284,25 +178,6 @@ export class CourseContentService {
     };
   }
 
-  // Reorder Methods
-  async reorderSections(courseId: number, sectionIds: string[]): Promise<void> {
-    for (let i = 0; i < sectionIds.length; i++) {
-      await this.sectionRepository.update(
-        { id: sectionIds[i], course: { id: courseId } },
-        { orderIndex: i }
-      );
-    }
-  }
-
-  async reorderLectures(sectionId: string, lectureIds: string[]): Promise<void> {
-    for (let i = 0; i < lectureIds.length; i++) {
-      await this.lectureRepository.update(
-        { id: lectureIds[i], section: { id: sectionId } },
-        { orderIndex: i }
-      );
-    }
-  }
-
   async getCourseContent(courseId: number) {
     const course = await this.courseRepository.findOne({
       where: { id: courseId },
@@ -327,37 +202,6 @@ export class CourseContentService {
       sections: course.sections,
       metadata: course.metadata
     };
-  }
-
-  async upsertCourseContent(courseId: number, contentData: UpsertCourseContentDto) {
-    const course = await this.courseRepository.findOne({
-      where: { id: courseId },
-    });
-
-    if (!course) {
-      throw new BadRequestException('Course not found');
-    }
-
-    if (!course.metadata) {
-      course.metadata = {
-        language: course.language || 'en',
-        level: 'beginner',
-        whatYoullLearn: [],
-      };
-    }
-
-    if (contentData.language !== undefined) {
-      course.metadata.language = contentData.language;
-    }
-    if (contentData.level !== undefined) {
-      course.metadata.level = contentData.level;
-    }
-    if (contentData.whatYoullLearn !== undefined) {
-      course.metadata.whatYoullLearn = contentData.whatYoullLearn;
-    }
-
-    const result = await this.courseRepository.save(course);
-    return result.metadata;
   }
 
   async uploadLecture(
@@ -469,6 +313,131 @@ export class CourseContentService {
     }
 
     return { cues: caption.cues, files: caption.files };
+  }
+
+  async batchSaveCourseContent(
+    courseId: number,
+    sections: Array<{
+      id?: string;
+      title: string;
+      description?: string;
+      orderIndex?: number;
+      lectures: Array<{
+        id?: string;
+        title: string;
+        description?: string;
+        contentType: 'video' | 'quiz';
+        orderIndex?: number;
+        durationSeconds?: number;
+        isPreview?: boolean;
+        content: any;
+      }>;
+    }>,
+  ) {
+    const course = await this.courseRepository.findOne({
+      where: { id: courseId },
+    });
+
+    if (!course) {
+      throw new NotFoundException(`Course with ID ${courseId} not found`);
+    }
+
+    const savedSections = [];
+
+    for (let i = 0; i < sections.length; i++) {
+      const sectionData = sections[i];
+      let section: CourseSection;
+
+      // Check if this is a new section or update
+      const isNewSection = !sectionData.id || sectionData.id.startsWith('temp-');
+
+      if (isNewSection) {
+        // CREATE new section (temp ID is discarded, database generates real UUID)
+        section = this.sectionRepository.create({
+          title: sectionData.title,
+          description: sectionData.description,
+          orderIndex: sectionData.orderIndex ?? i,
+          course,
+        });
+        section = await this.sectionRepository.save(section);
+      } else {
+        // UPDATE existing section
+        section = await this.sectionRepository.findOne({
+          where: { id: sectionData.id },
+        });
+
+        if (!section) {
+          throw new NotFoundException(`Section with ID ${sectionData.id} not found`);
+        }
+
+        Object.assign(section, {
+          title: sectionData.title,
+          description: sectionData.description,
+          orderIndex: sectionData.orderIndex ?? i,
+        });
+        section = await this.sectionRepository.save(section);
+
+        // Emit event for RAG sync
+        this.eventEmitter.emit('section.updated', section);
+      }
+
+      const savedLectures = [];
+      for (let j = 0; j < sectionData.lectures.length; j++) {
+        const lectureData = sectionData.lectures[j];
+        let lecture: CourseLecture;
+
+        // Check if this is a new lecture or update
+        const isNewLecture = !lectureData.id || lectureData.id.startsWith('temp-');
+
+        if (isNewLecture) {
+          // CREATE new lecture (temp ID is discarded, database generates real UUID)
+          lecture = this.lectureRepository.create({
+            title: lectureData.title,
+            description: lectureData.description,
+            contentType: lectureData.contentType,
+            orderIndex: lectureData.orderIndex ?? j,
+            durationSeconds: lectureData.durationSeconds ?? 0,
+            isPreview: lectureData.isPreview ?? false,
+            content: lectureData.content,
+            section: section,
+          });
+          lecture = await this.lectureRepository.save(lecture);
+
+          this.eventEmitter.emit('lecture.created', lecture);
+        } else {
+          // UPDATE existing lecture
+          lecture = await this.lectureRepository.findOne({
+            where: { id: lectureData.id },
+          });
+
+          if (!lecture) {
+            throw new NotFoundException(`Lecture with ID ${lectureData.id} not found`);
+          }
+
+          Object.assign(lecture, {
+            title: lectureData.title,
+            description: lectureData.description,
+            contentType: lectureData.contentType,
+            orderIndex: lectureData.orderIndex ?? j,
+            durationSeconds: lectureData.durationSeconds,
+            isPreview: lectureData.isPreview,
+            content: lectureData.content,
+          });
+          lecture = await this.lectureRepository.save(lecture);
+
+          this.eventEmitter.emit('lecture.updated', lecture);
+        }
+
+        savedLectures.push(lecture);
+      }
+
+      savedSections.push({
+        ...section,
+        lectures: savedLectures,
+      });
+    }
+
+    return savedSections;
   }
 
   async submitQuiz(

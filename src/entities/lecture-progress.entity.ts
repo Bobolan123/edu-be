@@ -12,6 +12,21 @@ import {
 import { Enrollment } from './enrollment.entity';
 import { CourseLecture } from './course-lecture.entity';
 
+export interface QuizSubmission {
+  answers: Array<{
+    questionId: string;
+    answer: string | number | boolean;
+  }>;
+  submittedAt: Date;
+  results: Array<{
+    questionId: string;
+    isCorrect: boolean;
+    correctAnswer: string | number;
+    explanation?: string;
+    points: number;
+  }>;
+}
+
 @Entity('lecture_progress')
 @Unique(['enrollmentId', 'lectureId'])
 @Index(['enrollmentId', 'isCompleted'])
@@ -51,7 +66,7 @@ export class LectureProgress {
     score?: number;
     percentage?: number;
     passed?: boolean;
-    lastSubmission?: any;
+    lastSubmission?: QuizSubmission;
     completedAt?: Date;
   };
 

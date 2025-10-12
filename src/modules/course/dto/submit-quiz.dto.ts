@@ -9,9 +9,9 @@ export class QuizAnswerDto {
   answer: string | number | boolean;
 }
 
-export class SubmitQuizDto {
+export class SubmitQuizDto { 
   @IsNotEmpty()
-  lectureId: string;
+  lectureId: string; 
 
   @IsNotEmpty()
   enrollmentId: number;

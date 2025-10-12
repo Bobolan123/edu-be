@@ -111,7 +111,6 @@ export class RagSyncService {
         `✗ Failed to sync lecture ${lectureId}: ${error.message}`,
         error.stack,
       );
-      // Don't throw - we don't want to break the main operation
     }
   }
 

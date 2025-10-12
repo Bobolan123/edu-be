@@ -3,22 +3,16 @@ import {
   Get,
   Post,
   Body,
-  Patch,
   Param,
   Delete,
   UseGuards,
-  Put,
   UseInterceptors,
   UploadedFile,
   BadRequestException,
 } from '@nestjs/common';
 import { CourseContentService } from './course-content.service';
-import { CreateSectionDto } from './dto/create-section.dto';
-import { UpdateSectionDto } from './dto/update-section.dto';
-import { CreateLectureDto } from './dto/create-lecture.dto';
-import { UpdateLectureDto } from './dto/update-lecture.dto';
-import { UpsertCourseContentDto } from './dto/course-content.dto';
 import { SubmitQuizDto } from './dto/submit-quiz.dto';
+import { BatchSaveContentDto } from './dto/batch-save-content.dto';
 import { ResponseMessage } from 'src/decorator/responseMessage.decorator';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { Public } from 'src/auth/Public';
@@ -39,18 +33,17 @@ export class CourseContentController {
     return this.courseContentService.getCourseContent(courseId);
   }
 
-  @Patch(':courseId/content')
+  @Post('course/:courseId/batch-content')
   @UseGuards(JwtAuthGuard)
-  @ResponseMessage('Update course content')
-  async updateCourseContent(
+  @ResponseMessage('Batch save course content')
+  async batchSaveCourseContent(
     @Param('courseId') courseId: number,
-    @Body() contentDto: UpsertCourseContentDto,
+    @Body() batchDto: BatchSaveContentDto,
   ) {
-    const res = await this.courseContentService.upsertCourseContent(
+    return this.courseContentService.batchSaveCourseContent(
       courseId,
-      contentDto,
+      batchDto.sections,
     );
-    return res;
   }
 
   @Public()
@@ -61,28 +54,8 @@ export class CourseContentController {
   }
 
   // ========================
-  // SECTION MANAGEMENT
+  // DELETE OPERATIONS
   // ========================
-
-  @Post('course/:courseId/sections')
-  @UseGuards(JwtAuthGuard)
-  @ResponseMessage('Create course section')
-  async createSection(
-    @Param('courseId') courseId: string,
-    @Body() createSectionDto: CreateSectionDto,
-  ) {
-    return this.courseContentService.createSection(+courseId, createSectionDto);
-  }
-
-  @Patch('sections/:sectionId')
-  @UseGuards(JwtAuthGuard)
-  @ResponseMessage('Update course section')
-  async updateSection(
-    @Param('sectionId') sectionId: string,
-    @Body() updateSectionDto: UpdateSectionDto,
-  ) {
-    return this.courseContentService.updateSection(sectionId, updateSectionDto);
-  }
 
   @Delete('sections/:sectionId')
   @UseGuards(JwtAuthGuard)
@@ -90,48 +63,6 @@ export class CourseContentController {
   async deleteSection(@Param('sectionId') sectionId: string) {
     await this.courseContentService.deleteSection(sectionId);
     return { message: 'Section deleted successfully' };
-  }
-
-  @Put('course/:courseId/sections/reorder')
-  @UseGuards(JwtAuthGuard)
-  @ResponseMessage('Reorder course sections')
-  async reorderSections(
-    @Param('courseId') courseId: string,
-    @Body() body: { sectionIds: string[] },
-  ) {
-    await this.courseContentService.reorderSections(+courseId, body.sectionIds);
-    return { message: 'Sections reordered successfully' };
-  }
-
-  // ========================
-  // LECTURE MANAGEMENT
-  // ========================
-
-  @Post('sections/:sectionId/lectures')
-  @UseGuards(JwtAuthGuard)
-  @ResponseMessage('Create lecture')
-  async createLecture(
-    @Param('sectionId') sectionId: string,
-    @Body() createLectureDto: CreateLectureDto,
-  ) {
-    return this.courseContentService.createLecture(sectionId, createLectureDto);
-  }
-
-  @Public()
-  @Get('lectures/:lectureId')
-  @ResponseMessage('Get lecture details')
-  async getLecture(@Param('lectureId') lectureId: string) {
-    return this.courseContentService.getLecture(lectureId);
-  }
-
-  @Patch('lectures/:lectureId')
-  @UseGuards(JwtAuthGuard)
-  @ResponseMessage('Update lecture')
-  async updateLecture(
-    @Param('lectureId') lectureId: string,
-    @Body() updateLectureDto: UpdateLectureDto,
-  ) {
-    return this.courseContentService.updateLecture(lectureId, updateLectureDto);
   }
 
   @Delete('lectures/:lectureId')
@@ -142,15 +73,15 @@ export class CourseContentController {
     return { message: 'Lecture deleted successfully' };
   }
 
-  @Put('sections/:sectionId/lectures/reorder')
-  @UseGuards(JwtAuthGuard)
-  @ResponseMessage('Reorder section lectures')
-  async reorderLectures(
-    @Param('sectionId') sectionId: string,
-    @Body() body: { lectureIds: string[] },
-  ) {
-    await this.courseContentService.reorderLectures(sectionId, body.lectureIds);
-    return { message: 'Lectures reordered successfully' };
+  // ========================
+  // LECTURE DETAILS
+  // ========================
+
+  @Public()
+  @Get('lectures/:lectureId')
+  @ResponseMessage('Get lecture details')
+  async getLecture(@Param('lectureId') lectureId: string) {
+    return this.courseContentService.getLecture(lectureId);
   }
 
   // ========================
