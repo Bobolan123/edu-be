@@ -314,9 +314,8 @@ export class CourseContentService {
     }
 
     return {
-      srtUrl: this.cloudinaryService.getCaptionUrl(publicId, 'srt'),
-      vttUrl: this.cloudinaryService.getCaptionUrl(publicId, 'vtt'),
-      transcriptUrl: this.cloudinaryService.getCaptionUrl(
+      srt: this.cloudinaryService.getCaptionUrl(publicId, 'srt'),
+      transcript: this.cloudinaryService.getCaptionUrl(
         publicId,
         'transcript',
       ),
