@@ -50,6 +50,6 @@ export class CreateCourseDto {
 
   @IsOptional()
   @IsArray()
-  @IsInt({ each: true }) 
+  @IsInt({ each: true })
   categoryIds?: number[];
 }

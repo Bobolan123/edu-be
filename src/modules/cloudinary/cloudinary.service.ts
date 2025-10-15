@@ -33,7 +33,12 @@ export class CloudinaryService {
   async uploadVideo(
     file: Express.Multer.File,
     folder: string,
-  ): Promise<{ url: string; duration: number; publicId: string; qualities: { resolution: string; url: string }[] }> {
+  ): Promise<{
+    url: string;
+    duration: number;
+    publicId: string;
+    qualities: { resolution: string; url: string }[];
+  }> {
     try {
       console.log('Cloudinary upload starting with simplified options...');
 
@@ -61,8 +66,8 @@ export class CloudinaryService {
       const qualities = [
         {
           resolution: 'auto',
-          url: result.secure_url
-        }
+          url: result.secure_url,
+        },
       ];
 
       return {
@@ -105,21 +110,26 @@ export class CloudinaryService {
     return fileName.split('.')[0]; // Remove .jpg or .mp4
   }
 
-
-  getCaptionUrl(videoPublicId: string, format: 'srt' | 'vtt' | 'transcript'): string {
+  getCaptionUrl(
+    videoPublicId: string,
+    format: 'srt' | 'vtt' | 'transcript',
+  ): string {
     return cloudinary.url(`${videoPublicId}.${format}`, {
       resource_type: 'raw',
       type: 'upload',
     });
   }
 
-  getVideoWithSubtitles(videoPublicId: string, subtitleFormat: 'srt' | 'vtt' = 'srt'): string {
+  getVideoWithSubtitles(
+    videoPublicId: string,
+    subtitleFormat: 'srt' | 'vtt' = 'srt',
+  ): string {
     return cloudinary.url(videoPublicId, {
       resource_type: 'video',
       transformation: [
         { overlay: `subtitles:${videoPublicId}.${subtitleFormat}` },
-        { flags: 'layer_apply' }
-      ]
+        { flags: 'layer_apply' },
+      ],
     });
   }
 }

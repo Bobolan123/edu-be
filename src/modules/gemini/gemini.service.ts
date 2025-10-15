@@ -41,19 +41,18 @@ export class GeminiService {
     try {
       this.logger.log(`RAG query for course ${courseId}: ${prompt}`);
 
-      // Step 1: Detect language
       const isVietnamese = this.isVietnamese(prompt);
-      this.logger.log(`Detected language: ${isVietnamese ? 'Vietnamese' : 'English'}`);
+      this.logger.log(
+        `Detected language: ${isVietnamese ? 'Vietnamese' : 'English'}`,
+      );
 
-      // Step 2: Generate embedding from user prompt
       const queryEmbedding = await this.generateEmbedding(prompt);
       this.logger.log('Generated query embedding');
 
-      // Step 3: Search Qdrant for relevant context
       const searchResults = await this.qdrantService.searchByCourse(
         courseId,
         queryEmbedding,
-        5, // top 5 results
+        5,
       );
 
       this.logger.log(`Found ${searchResults.length} relevant chunks`);

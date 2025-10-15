@@ -43,7 +43,6 @@ export class OrderController {
     );
   }
 
-
   @Public()
   @Get('vnpay-return')
   async handleVnpayReturn(@Query() query: any, @Res() res: Response) {
@@ -51,7 +50,7 @@ export class OrderController {
       PaymentMethod.VNPAY,
       query,
     );
- 
+
     const params = new URLSearchParams({
       orderId: result.id,
       price: result.totalPrice.toString(),
@@ -137,7 +136,6 @@ export class OrderController {
   async findOne(@Param('id') id: string) {
     return this.orderService.findOne(id);
   }
-
 
   @Post('callback/:method')
   async handlePaymentCallback(

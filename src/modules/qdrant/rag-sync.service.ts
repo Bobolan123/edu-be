@@ -92,7 +92,9 @@ export class RagSyncService {
 
       // Generate embedding
       const embedding = await this.geminiService.generateEmbedding(text);
-      this.logger.debug(`Generated embedding with ${embedding.length} dimensions`);
+      this.logger.debug(
+        `Generated embedding with ${embedding.length} dimensions`,
+      );
 
       // Upsert to Qdrant
       await this.qdrantService.upsertVector(lecture.id, embedding, {
@@ -151,7 +153,9 @@ export class RagSyncService {
         await this.syncLecture(lecture.id);
       }
 
-      this.logger.log(`✓ Synced ${section.lectures.length} lectures from section ${sectionId}`);
+      this.logger.log(
+        `✓ Synced ${section.lectures.length} lectures from section ${sectionId}`,
+      );
     } catch (error) {
       this.logger.error(
         `✗ Failed to sync section ${sectionId}: ${error.message}`,
@@ -187,7 +191,9 @@ export class RagSyncService {
         }
       }
 
-      this.logger.log(`✓ Synced ${totalLectures} lectures from course ${courseId}`);
+      this.logger.log(
+        `✓ Synced ${totalLectures} lectures from course ${courseId}`,
+      );
     } catch (error) {
       this.logger.error(
         `✗ Failed to sync course ${courseId}: ${error.message}`,

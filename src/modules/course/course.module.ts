@@ -13,11 +13,6 @@ import { Order } from 'src/entities/order.entity';
 import { Category } from 'src/entities/category.entity';
 import { CloudinaryModule } from '../cloudinary/cloudinary.module';
 import { User } from 'src/entities/user.entity';
-import { MongooseModule } from '@nestjs/mongoose';
-import {
-  LectureCaption,
-  LectureCaptionSchema,
-} from 'src/schemas/lecture-caption.schema';
 import { Enrollment } from 'src/entities/enrollment.entity';
 import { LectureProgress } from 'src/entities/lecture-progress.entity';
 import { ReviewModule } from '../review/review.module';
@@ -37,9 +32,6 @@ import { ReviewModule } from '../review/review.module';
       LectureProgress,
     ]),
     CloudinaryModule,
-    MongooseModule.forFeature([
-      { name: LectureCaption.name, schema: LectureCaptionSchema },
-    ]),
     ReviewModule,
   ],
   exports: [CourseService, CourseContentService],

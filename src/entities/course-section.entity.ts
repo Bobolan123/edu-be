@@ -4,7 +4,7 @@ import {
   Column,
   ManyToOne,
   OneToMany,
-  CreateDateColumn, 
+  CreateDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { Course } from './course.entity';

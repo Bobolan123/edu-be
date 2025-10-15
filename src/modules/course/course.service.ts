@@ -23,7 +23,6 @@ export class CourseService {
     @InjectRepository(Course)
     private readonly courseRepository: Repository<Course>,
 
-
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
 
@@ -37,7 +36,6 @@ export class CourseService {
     private readonly lectureProgressRepository: Repository<LectureProgress>,
 
     private cloudinaryService: CloudinaryService,
-
 
     private readonly reviewService: ReviewService,
 
@@ -457,7 +455,6 @@ export class CourseService {
     return this.courseRepository.save(course);
   }
 
-
   async getCourseStudentsWithProgress(
     courseId: number,
     pageOptionsDto: PageOptionsDto,
@@ -526,7 +523,4 @@ export class CourseService {
 
     return { result: studentsWithProgress, meta: pageMetaDto };
   }
-
-
-
 }

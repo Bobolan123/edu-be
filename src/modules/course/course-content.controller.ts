@@ -104,7 +104,7 @@ export class CourseContentController {
       lectureId: body.lectureId,
       fileExists: !!file,
       fileName: file?.originalname,
-      fileSize: file?.size
+      fileSize: file?.size,
     });
 
     if (!file) {
@@ -126,9 +126,7 @@ export class CourseContentController {
   @Public()
   @Get('lecture/:lectureId/captions')
   @ResponseMessage('Get lecture captions')
-  async getCaptions(
-    @Param('lectureId') lectureId: string,
-  ) {
+  async getCaptions(@Param('lectureId') lectureId: string) {
     return this.courseContentService.getCaptions(lectureId);
   }
 
@@ -142,7 +140,8 @@ export class CourseContentController {
   async updateProgress(
     @Param('enrollmentId') enrollmentId: string,
     @Param('lectureId') lectureId: string,
-    @Body() progressData: {
+    @Body()
+    progressData: {
       watchTimeSeconds?: number;
       lastPositionSeconds?: number;
       isCompleted?: boolean;
@@ -163,7 +162,10 @@ export class CourseContentController {
     @Param('enrollmentId') enrollmentId: string,
     @Param('courseId') courseId: string,
   ) {
-    return this.courseContentService.getCourseProgress(+enrollmentId, +courseId);
+    return this.courseContentService.getCourseProgress(
+      +enrollmentId,
+      +courseId,
+    );
   }
 
   // ========================

@@ -33,7 +33,6 @@ export class OrderService {
     private dataSource: DataSource,
   ) {}
 
-
   async createOrder(
     createOrderDto: CreateOrderDto,
     userId: number,
@@ -95,7 +94,6 @@ export class OrderService {
       if (totalPrice <= 0) {
         throw new BadRequestException('Total price must be greater than zero');
       }
-
 
       // If some courses were already enrolled, we could optionally warn but continue
       if (alreadyEnrolledCourses.length > 0) {

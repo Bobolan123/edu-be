@@ -7,7 +7,10 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { CourseSection } from './course-section.entity';
-import { VideoContent, QuizContent } from '../interfaces/course-content.interface';
+import {
+  VideoContent,
+  QuizContent,
+} from '../interfaces/course-content.interface';
 
 @Entity()
 export class CourseLecture {
@@ -32,7 +35,9 @@ export class CourseLecture {
   @Column('boolean', { default: false })
   isPreview: boolean;
 
-  @ManyToOne(() => CourseSection, (section) => section.lectures, { onDelete: 'CASCADE' })
+  @ManyToOne(() => CourseSection, (section) => section.lectures, {
+    onDelete: 'CASCADE',
+  })
   section: CourseSection;
 
   @Column('jsonb')

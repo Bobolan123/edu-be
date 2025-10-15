@@ -1,5 +1,16 @@
-import { IsString, IsOptional, IsEnum, IsInt, Min, IsBoolean, IsObject } from 'class-validator';
-import { VideoContent, QuizContent } from '../../../interfaces/course-content.interface';
+import {
+  IsString,
+  IsOptional,
+  IsEnum,
+  IsInt,
+  Min,
+  IsBoolean,
+  IsObject,
+} from 'class-validator';
+import {
+  VideoContent,
+  QuizContent,
+} from '../../../interfaces/course-content.interface';
 
 export class CreateLectureDto {
   @IsString()

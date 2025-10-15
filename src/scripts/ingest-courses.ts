@@ -145,13 +145,17 @@ async function main() {
       for (const lecture of section.lectures) {
         totalLectures++;
         try {
-          console.log(`    Processing lecture: ${lecture.title} (${lecture.contentType})`);
+          console.log(
+            `    Processing lecture: ${lecture.title} (${lecture.contentType})`,
+          );
 
           const text = extractLectureText(lecture, section, course);
           console.log(`      Extracted ${text.length} characters`);
 
           const embedding = await geminiService.generateEmbedding(text);
-          console.log(`      Generated embedding with ${embedding.length} dimensions`);
+          console.log(
+            `      Generated embedding with ${embedding.length} dimensions`,
+          );
 
           await qdrantService.upsertVector(lecture.id, embedding, {
             lectureId: lecture.id,
@@ -165,7 +169,10 @@ async function main() {
           processedLectures++;
           console.log(`      ✓ Stored in Qdrant`);
         } catch (error) {
-          console.error(`      ✗ Error processing lecture ${lecture.id}:`, error.message);
+          console.error(
+            `      ✗ Error processing lecture ${lecture.id}:`,
+            error.message,
+          );
         }
       }
     }

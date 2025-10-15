@@ -67,10 +67,7 @@ export class CourseController {
   @Public()
   @Get(':id')
   @ResponseMessage('Fetch a single Course')
-  findOne(
-    @Param('id') id: string,
-    @Query() query: CourseSearchFilterDto,
-  ) { 
+  findOne(@Param('id') id: string, @Query() query: CourseSearchFilterDto) {
     const { includeDeleted } = query;
     return this.courseService.findOne(+id, includeDeleted);
   }
@@ -110,7 +107,6 @@ export class CourseController {
     return this.courseService.uploadThumbnail(+id, file);
   }
 
-
   @Get(':id/students')
   @UseGuards(JwtAuthGuard)
   @ResponseMessage('Get course students with progress')
@@ -124,7 +120,4 @@ export class CourseController {
       pageOptionsDto,
     );
   }
-
-
-
 }

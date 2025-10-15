@@ -14,7 +14,8 @@ export interface LecturePayload {
 @Injectable()
 export class QdrantService implements OnModuleInit {
   private client: QdrantClient;
-  private readonly collectionName = process.env.QDRANT_COLLECTION_NAME || 'course_lectures';
+  private readonly collectionName =
+    process.env.QDRANT_COLLECTION_NAME || 'course_lectures';
   private readonly logger = new Logger(QdrantService.name);
   private readonly vectorSize = 768; // Gemini embedding dimension
 
@@ -112,7 +113,9 @@ export class QdrantService implements OnModuleInit {
         wait: true,
         points: [id],
       });
-      this.logger.log(`Vector ${id} deleted from collection '${this.collectionName}'`);
+      this.logger.log(
+        `Vector ${id} deleted from collection '${this.collectionName}'`,
+      );
     } catch (error) {
       this.logger.error(`Error deleting vector ${id}:`, error);
       throw error;

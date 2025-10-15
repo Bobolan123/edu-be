@@ -402,7 +402,7 @@ export class UserService {
 
     if (roleId !== undefined) {
       const role = await this.roleRepository.findOne({
-        where: { id: +roleId }
+        where: { id: +roleId },
       });
       if (!role) {
         throw new BadRequestException('Invalid role');

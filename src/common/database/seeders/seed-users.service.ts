@@ -93,7 +93,9 @@ export class SeedUsersService implements OnApplicationBootstrap {
 
     for (const userData of defaultUsers) {
       if (!userData.email || !userData.password || !userData.name) {
-        this.logger.warn(`Skipping user creation: missing data for ${userData.roleName}`);
+        this.logger.warn(
+          `Skipping user creation: missing data for ${userData.roleName}`,
+        );
         continue;
       }
 
@@ -103,7 +105,9 @@ export class SeedUsersService implements OnApplicationBootstrap {
       });
 
       if (existingUser) {
-        this.logger.log(`User ${userData.email} already exists, updating password...`);
+        this.logger.log(
+          `User ${userData.email} already exists, updating password...`,
+        );
         existingUser.password = await this.hashPassword(userData.password);
         await this.userRepository.save(existingUser);
         this.logger.log(`Updated password for ${userData.email}`);
@@ -116,7 +120,9 @@ export class SeedUsersService implements OnApplicationBootstrap {
           where: { name: userData.roleName },
         });
         if (!role) {
-          this.logger.warn(`Role ${userData.roleName} not found, creating user without role`);
+          this.logger.warn(
+            `Role ${userData.roleName} not found, creating user without role`,
+          );
         }
       }
 
@@ -133,7 +139,9 @@ export class SeedUsersService implements OnApplicationBootstrap {
       });
 
       await this.userRepository.save(user);
-      this.logger.log(`Created default ${userData.roleName} user: ${userData.email}`);
+      this.logger.log(
+        `Created default ${userData.roleName} user: ${userData.email}`,
+      );
     }
   }
 }

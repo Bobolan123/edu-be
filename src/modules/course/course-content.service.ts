@@ -1,19 +1,16 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Course } from '../../entities/course.entity';
 import { CourseSection } from '../../entities/course-section.entity';
 import { CourseLecture } from '../../entities/course-lecture.entity';
 import { LectureProgress } from '../../entities/lecture-progress.entity';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
-import {
-  LectureCaption,
-  LectureCaptionDocument,
-  CaptionStatus,
-} from 'src/schemas/lecture-caption.schema';
 
 @Injectable()
 export class CourseContentService {
@@ -32,9 +29,6 @@ export class CourseContentService {
 
     private cloudinaryService: CloudinaryService,
 
-    @InjectModel(LectureCaption.name)
-    private readonly lectureCaptionModel: Model<LectureCaptionDocument>,
-
     private eventEmitter: EventEmitter2,
   ) {}
 
@@ -46,9 +40,9 @@ export class CourseContentService {
       order: {
         sections: {
           orderIndex: 'ASC',
-          lectures: { orderIndex: 'ASC' }
-        }
-      }
+          lectures: { orderIndex: 'ASC' },
+        },
+      },
     });
 
     if (!course) {
@@ -79,7 +73,7 @@ export class CourseContentService {
   async getLecture(lectureId: string): Promise<CourseLecture> {
     const lecture = await this.lectureRepository.findOne({
       where: { id: lectureId },
-      relations: ['section', 'section.course']
+      relations: ['section', 'section.course'],
     });
 
     if (!lecture) {
@@ -98,11 +92,11 @@ export class CourseContentService {
       lastPositionSeconds?: number;
       isCompleted?: boolean;
       submissionData?: any;
-    }
+    },
   ): Promise<LectureProgress> {
     const lecture = await this.lectureRepository.findOne({
       where: { id: lectureId },
-      relations: ['section']
+      relations: ['section'],
     });
 
     if (!lecture) {
@@ -110,7 +104,7 @@ export class CourseContentService {
     }
 
     let progress = await this.progressRepository.findOne({
-      where: { enrollmentId, lectureId }
+      where: { enrollmentId, lectureId },
     });
 
     if (!progress) {
@@ -137,19 +131,22 @@ export class CourseContentService {
     return this.progressRepository.save(progress);
   }
 
-  async getCourseProgress(enrollmentId: number, courseId: number): Promise<{
+  async getCourseProgress(
+    enrollmentId: number,
+    courseId: number,
+  ): Promise<{
     totalLectures: number;
     completedLectures: number;
     progressPercentage: number;
     totalDuration: number;
     watchedDuration: number;
-  }> { 
+  }> {
     const totals = await this.lectureRepository
       .createQueryBuilder('lecture')
       .innerJoin('lecture.section', 'section')
       .select([
         'COUNT(lecture.id) as totalLectures',
-        'SUM(lecture.durationSeconds) as totalDuration'
+        'SUM(lecture.durationSeconds) as totalDuration',
       ])
       .where('section.course = :courseId', { courseId })
       .getRawOne();
@@ -160,7 +157,7 @@ export class CourseContentService {
       .innerJoin('lecture.section', 'section')
       .select([
         'COUNT(CASE WHEN progress.isCompleted = true THEN 1 END) as completedLectures',
-        'SUM(progress.watchTimeSeconds) as watchedDuration'
+        'SUM(progress.watchTimeSeconds) as watchedDuration',
       ])
       .where('progress.enrollmentId = :enrollmentId', { enrollmentId })
       .andWhere('section.course = :courseId', { courseId })
@@ -172,9 +169,12 @@ export class CourseContentService {
     return {
       totalLectures,
       completedLectures,
-      progressPercentage: totalLectures > 0 ? Math.round((completedLectures / totalLectures) * 100) : 0,
+      progressPercentage:
+        totalLectures > 0
+          ? Math.round((completedLectures / totalLectures) * 100)
+          : 0,
       totalDuration: parseInt(totals.totalDuration || '0'),
-      watchedDuration: parseInt(progress.watchedDuration || '0')
+      watchedDuration: parseInt(progress.watchedDuration || '0'),
     };
   }
 
@@ -185,9 +185,9 @@ export class CourseContentService {
       order: {
         sections: {
           orderIndex: 'ASC',
-          lectures: { orderIndex: 'ASC' }
-        }
-      }
+          lectures: { orderIndex: 'ASC' },
+        },
+      },
     });
 
     if (!course) {
@@ -200,7 +200,7 @@ export class CourseContentService {
 
     return {
       sections: course.sections,
-      metadata: course.metadata
+      metadata: course.metadata,
     };
   }
 
@@ -215,7 +215,7 @@ export class CourseContentService {
       sectionId,
       lectureId,
       fileExists: !!file,
-      fileName: file?.originalname
+      fileName: file?.originalname,
     });
 
     const lecture = await this.lectureRepository.findOne({
@@ -227,7 +227,7 @@ export class CourseContentService {
       lectureExists: !!lecture,
       lectureId: lecture?.id,
       sectionId: lecture?.section?.id,
-      expectedSectionId: sectionId
+      expectedSectionId: sectionId,
     });
 
     if (!lecture) {
@@ -235,13 +235,17 @@ export class CourseContentService {
     }
 
     if (lecture.section.id !== sectionId) {
-      throw new BadRequestException('Lecture does not belong to the specified section');
+      throw new BadRequestException(
+        'Lecture does not belong to the specified section',
+      );
     }
 
     if (lecture.contentType === 'video' && lecture.content) {
       const videoContent = lecture.content as any;
       if (videoContent.videoUrl) {
-        const publicId = this.cloudinaryService.extractPublicId(videoContent.videoUrl);
+        const publicId = this.cloudinaryService.extractPublicId(
+          videoContent.videoUrl,
+        );
         await this.cloudinaryService.deleteFile(publicId);
       }
     }
@@ -257,7 +261,12 @@ export class CourseContentService {
       publicId = uploadResult.publicId;
       duration = uploadResult.duration;
       qualities = uploadResult.qualities;
-      console.log('Cloudinary upload successful:', { url, publicId, duration, qualitiesCount: qualities?.length });
+      console.log('Cloudinary upload successful:', {
+        url,
+        publicId,
+        duration,
+        qualitiesCount: qualities?.length,
+      });
     } catch (error) {
       console.error('Cloudinary upload failed:', error);
       throw new BadRequestException(`Video upload failed: ${error.message}`);
@@ -279,40 +288,39 @@ export class CourseContentService {
     // Emit event for RAG sync (video content changed)
     this.eventEmitter.emit('lecture.updated', savedLecture);
 
-    await this.createCaptionJob(lectureId, courseId, publicId);
-
     return url;
   }
 
-  private async createCaptionJob(lectureId: string, courseId: number, videoPublicId: string) {
-    const caption = new this.lectureCaptionModel({
-      lectureId,
-      courseId,
-      videoPublicId,
-      language: 'en',
-      status: CaptionStatus.PENDING,
-      files: new Map([
-        ['srt', this.cloudinaryService.getCaptionUrl(videoPublicId, 'srt')],
-      ]),
+  async getCaptions(lectureId: string) {
+    const lecture = await this.lectureRepository.findOne({
+      where: { id: lectureId },
     });
 
-    await caption.save();
-
-    setTimeout(async () => {
-      caption.status = CaptionStatus.COMPLETED;
-      await caption.save();
-    }, 1000);
-
-    return caption;
-  }
-
-  async getCaptions(lectureId: string) {
-    const caption = await this.lectureCaptionModel.findOne({ lectureId });
-    if (!caption || caption.status !== CaptionStatus.COMPLETED) {
-      throw new BadRequestException('Captions not available');
+    if (!lecture) {
+      throw new NotFoundException(`Lecture with ID ${lectureId} not found`);
     }
 
-    return { cues: caption.cues, files: caption.files };
+    if (lecture.contentType !== 'video' || !lecture.content) {
+      throw new BadRequestException(
+        'Captions only available for video lectures',
+      );
+    }
+
+    const videoContent = lecture.content as any;
+    const publicId = videoContent.cloudinaryPublicId;
+
+    if (!publicId) {
+      throw new BadRequestException('Video public ID not found');
+    }
+
+    return {
+      srtUrl: this.cloudinaryService.getCaptionUrl(publicId, 'srt'),
+      vttUrl: this.cloudinaryService.getCaptionUrl(publicId, 'vtt'),
+      transcriptUrl: this.cloudinaryService.getCaptionUrl(
+        publicId,
+        'transcript',
+      ),
+    };
   }
 
   async batchSaveCourseContent(
@@ -349,7 +357,8 @@ export class CourseContentService {
       let section: CourseSection;
 
       // Check if this is a new section or update
-      const isNewSection = !sectionData.id || sectionData.id.startsWith('temp-');
+      const isNewSection =
+        !sectionData.id || sectionData.id.startsWith('temp-');
 
       if (isNewSection) {
         // CREATE new section (temp ID is discarded, database generates real UUID)
@@ -367,7 +376,9 @@ export class CourseContentService {
         });
 
         if (!section) {
-          throw new NotFoundException(`Section with ID ${sectionData.id} not found`);
+          throw new NotFoundException(
+            `Section with ID ${sectionData.id} not found`,
+          );
         }
 
         Object.assign(section, {
@@ -387,7 +398,8 @@ export class CourseContentService {
         let lecture: CourseLecture;
 
         // Check if this is a new lecture or update
-        const isNewLecture = !lectureData.id || lectureData.id.startsWith('temp-');
+        const isNewLecture =
+          !lectureData.id || lectureData.id.startsWith('temp-');
 
         if (isNewLecture) {
           // CREATE new lecture (temp ID is discarded, database generates real UUID)
@@ -411,7 +423,9 @@ export class CourseContentService {
           });
 
           if (!lecture) {
-            throw new NotFoundException(`Lecture with ID ${lectureData.id} not found`);
+            throw new NotFoundException(
+              `Lecture with ID ${lectureData.id} not found`,
+            );
           }
 
           Object.assign(lecture, {
@@ -443,7 +457,7 @@ export class CourseContentService {
   async submitQuiz(
     enrollmentId: number,
     lectureId: string,
-    answers: Array<{ questionId: string; answer: string | number | boolean }>
+    answers: Array<{ questionId: string; answer: string | number | boolean }>,
   ): Promise<{
     score: number;
     totalPoints: number;
@@ -461,7 +475,7 @@ export class CourseContentService {
   }> {
     const lecture = await this.lectureRepository.findOne({
       where: { id: lectureId },
-      relations: ['section', 'section.course']
+      relations: ['section', 'section.course'],
     });
 
     if (!lecture) {
@@ -478,7 +492,7 @@ export class CourseContentService {
     }
 
     let progress = await this.progressRepository.findOne({
-      where: { enrollmentId, lectureId }
+      where: { enrollmentId, lectureId },
     });
 
     if (!progress) {
@@ -486,7 +500,7 @@ export class CourseContentService {
         enrollmentId,
         lectureId,
         courseId: lecture.section.course?.id || 0,
-        submissionData: { attempts: 0 }
+        submissionData: { attempts: 0 },
       });
     }
 
@@ -496,12 +510,12 @@ export class CourseContentService {
 
     const allowMultipleAttempts = quizContent.allowMultipleAttempts ?? true;
     if (!allowMultipleAttempts && progress.submissionData.attempts > 0) {
-      throw new BadRequestException('Multiple attempts not allowed for this quiz');
+      throw new BadRequestException(
+        'Multiple attempts not allowed for this quiz',
+      );
     }
 
-    const answerMap = new Map(
-      answers.map(a => [a.questionId, a.answer])
-    );
+    const answerMap = new Map(answers.map((a) => [a.questionId, a.answer]));
 
     let totalScore = 0;
     let totalPoints = 0;
@@ -524,13 +538,16 @@ export class CourseContentService {
           isCorrect = Number(studentAnswer) === Number(correctAnswer);
         } else if (question.type === 'true_false') {
           // True/false: normalize both to boolean
-          const studentBool = studentAnswer === true || studentAnswer === 'true';
-          const correctBool = correctAnswer === true || correctAnswer === 'true';
+          const studentBool =
+            studentAnswer === true || studentAnswer === 'true';
+          const correctBool =
+            correctAnswer === true || correctAnswer === 'true';
           isCorrect = studentBool === correctBool;
         } else {
           // Fallback: string comparison
-          isCorrect = String(studentAnswer).trim().toLowerCase() ===
-                     String(correctAnswer).trim().toLowerCase();
+          isCorrect =
+            String(studentAnswer).trim().toLowerCase() ===
+            String(correctAnswer).trim().toLowerCase();
         }
       }
 
@@ -546,11 +563,12 @@ export class CourseContentService {
         isCorrect,
         correctAnswer: question.correctAnswer,
         explanation: question.explanation,
-        points: question.points
+        points: question.points,
       });
     }
 
-    const percentage = totalPoints > 0 ? Math.round((totalScore / totalPoints) * 100) : 0;
+    const percentage =
+      totalPoints > 0 ? Math.round((totalScore / totalPoints) * 100) : 0;
     const passingScore = quizContent.passingScore || 70;
     const passed = percentage >= passingScore;
 
@@ -562,9 +580,9 @@ export class CourseContentService {
       lastSubmission: {
         answers: answers,
         submittedAt: new Date(),
-        results: results
+        results: results,
       },
-      completedAt: passed ? new Date() : progress.submissionData.completedAt
+      completedAt: passed ? new Date() : progress.submissionData.completedAt,
     };
 
     progress.isCompleted = passed;
@@ -581,7 +599,7 @@ export class CourseContentService {
       passed,
       correctAnswers,
       totalQuestions: quizContent.questions.length,
-      results
+      results,
     };
   }
 }
