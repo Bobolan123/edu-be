@@ -12,12 +12,10 @@ export interface QuizQuestion {
   options?: string[];
   correctAnswer: string | number;
   explanation?: string;
-  points: number;
 }
 
 export interface QuizContent {
   questions: QuizQuestion[];
-  passingScore: number;
-  timeLimit?: number;
+  passingScore: number; // 0-100 
   allowMultipleAttempts: boolean;
 }

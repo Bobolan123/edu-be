@@ -3,8 +3,8 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { InjectRepository, InjectDataSource } from '@nestjs/typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Course } from '../../entities/course.entity';
 import { CourseSection } from '../../entities/course-section.entity';
@@ -26,6 +26,9 @@ export class CourseContentService {
 
     @InjectRepository(LectureProgress)
     private readonly progressRepository: Repository<LectureProgress>,
+
+    @InjectDataSource()
+    private readonly dataSource: DataSource,
 
     private cloudinaryService: CloudinaryService,
 
@@ -341,116 +344,150 @@ export class CourseContentService {
       }>;
     }>,
   ) {
-    const course = await this.courseRepository.findOne({
-      where: { id: courseId },
-    });
+    return await this.dataSource.transaction(async (transactionalEntityManager) => {
+      const course = await transactionalEntityManager.findOne(Course, {
+        where: { id: courseId },
+        relations: ['sections', 'sections.lectures'],
+      });
 
-    if (!course) {
-      throw new NotFoundException(`Course with ID ${courseId} not found`);
-    }
-
-    const savedSections = [];
-
-    for (let i = 0; i < sections.length; i++) {
-      const sectionData = sections[i];
-      let section: CourseSection;
-
-      // Check if this is a new section or update
-      const isNewSection =
-        !sectionData.id || sectionData.id.startsWith('temp-');
-
-      if (isNewSection) {
-        // CREATE new section (temp ID is discarded, database generates real UUID)
-        section = this.sectionRepository.create({
-          title: sectionData.title,
-          description: sectionData.description,
-          orderIndex: sectionData.orderIndex ?? i,
-          course,
-        });
-        section = await this.sectionRepository.save(section);
-      } else {
-        // UPDATE existing section
-        section = await this.sectionRepository.findOne({
-          where: { id: sectionData.id },
-        });
-
-        if (!section) {
-          throw new NotFoundException(
-            `Section with ID ${sectionData.id} not found`,
-          );
-        }
-
-        Object.assign(section, {
-          title: sectionData.title,
-          description: sectionData.description,
-          orderIndex: sectionData.orderIndex ?? i,
-        });
-        section = await this.sectionRepository.save(section);
-
-        // Emit event for RAG sync
-        this.eventEmitter.emit('section.updated', section);
+      if (!course) {
+        throw new NotFoundException(`Course with ID ${courseId} not found`);
       }
 
-      const savedLectures = [];
-      for (let j = 0; j < sectionData.lectures.length; j++) {
-        const lectureData = sectionData.lectures[j];
-        let lecture: CourseLecture;
+      // Extract IDs from payload
+      const providedSectionIds = sections
+        .filter((s) => s.id && !s.id.startsWith('temp-'))
+        .map((s) => s.id);
 
-        // Check if this is a new lecture or update
-        const isNewLecture =
-          !lectureData.id || lectureData.id.startsWith('temp-');
+      const providedLectureIds = sections
+        .flatMap((s) => s.lectures)
+        .filter((l) => l.id && !l.id.startsWith('temp-'))
+        .map((l) => l.id);
 
-        if (isNewLecture) {
-          // CREATE new lecture (temp ID is discarded, database generates real UUID)
-          lecture = this.lectureRepository.create({
-            title: lectureData.title,
-            description: lectureData.description,
-            contentType: lectureData.contentType,
-            orderIndex: lectureData.orderIndex ?? j,
-            durationSeconds: lectureData.durationSeconds ?? 0,
-            isPreview: lectureData.isPreview ?? false,
-            content: lectureData.content,
-            section: section,
+      const savedSections = [];
+
+      for (let i = 0; i < sections.length; i++) {
+        const sectionData = sections[i];
+        let section: CourseSection;
+
+        // Check if this is a new section or update
+        const isNewSection =
+          !sectionData.id || sectionData.id.startsWith('temp-');
+
+        if (isNewSection) {
+          // CREATE new section (temp ID is discarded, database generates real UUID)
+          section = transactionalEntityManager.create(CourseSection, {
+            title: sectionData.title,
+            description: sectionData.description,
+            orderIndex: sectionData.orderIndex ?? i,
+            course,
           });
-          lecture = await this.lectureRepository.save(lecture);
-
-          this.eventEmitter.emit('lecture.created', lecture);
+          section = await transactionalEntityManager.save(section);
         } else {
-          // UPDATE existing lecture
-          lecture = await this.lectureRepository.findOne({
-            where: { id: lectureData.id },
+          // UPDATE existing section
+          section = await transactionalEntityManager.findOne(CourseSection, {
+            where: { id: sectionData.id },
           });
 
-          if (!lecture) {
+          if (!section) {
             throw new NotFoundException(
-              `Lecture with ID ${lectureData.id} not found`,
+              `Section with ID ${sectionData.id} not found`,
             );
           }
 
-          Object.assign(lecture, {
-            title: lectureData.title,
-            description: lectureData.description,
-            contentType: lectureData.contentType,
-            orderIndex: lectureData.orderIndex ?? j,
-            durationSeconds: lectureData.durationSeconds,
-            isPreview: lectureData.isPreview,
-            content: lectureData.content,
+          Object.assign(section, {
+            title: sectionData.title,
+            description: sectionData.description,
+            orderIndex: sectionData.orderIndex ?? i,
           });
-          lecture = await this.lectureRepository.save(lecture);
+          section = await transactionalEntityManager.save(section);
 
-          this.eventEmitter.emit('lecture.updated', lecture);
+          // Emit event for RAG sync
+          this.eventEmitter.emit('section.updated', section);
         }
 
-        savedLectures.push(lecture);
+        const savedLectures = [];
+        const existingLectures = await transactionalEntityManager.find(CourseLecture, {
+          where: { section: { id: section.id } },
+        });
+
+        for (let j = 0; j < sectionData.lectures.length; j++) {
+          const lectureData = sectionData.lectures[j];
+          let lecture: CourseLecture;
+
+          // Check if this is a new lecture or update
+          const isNewLecture =
+            !lectureData.id || lectureData.id.startsWith('temp-');
+
+          if (isNewLecture) {
+            // CREATE new lecture (temp ID is discarded, database generates real UUID)
+            lecture = transactionalEntityManager.create(CourseLecture, {
+              title: lectureData.title,
+              description: lectureData.description,
+              contentType: lectureData.contentType,
+              orderIndex: lectureData.orderIndex ?? j,
+              durationSeconds: lectureData.durationSeconds ?? 0,
+              isPreview: lectureData.isPreview ?? false,
+              content: lectureData.content,
+              section: section,
+            });
+            lecture = await transactionalEntityManager.save(lecture);
+
+            this.eventEmitter.emit('lecture.created', lecture);
+          } else {
+            // UPDATE existing lecture
+            lecture = await transactionalEntityManager.findOne(CourseLecture, {
+              where: { id: lectureData.id },
+            });
+
+            if (!lecture) {
+              throw new NotFoundException(
+                `Lecture with ID ${lectureData.id} not found`,
+              );
+            }
+
+            Object.assign(lecture, {
+              title: lectureData.title,
+              description: lectureData.description,
+              contentType: lectureData.contentType,
+              orderIndex: lectureData.orderIndex ?? j,
+              durationSeconds: lectureData.durationSeconds,
+              isPreview: lectureData.isPreview,
+              content: lectureData.content,
+            });
+            lecture = await transactionalEntityManager.save(lecture);
+
+            this.eventEmitter.emit('lecture.updated', lecture);
+          }
+
+          savedLectures.push(lecture);
+        }
+
+        // Delete orphaned lectures in this section
+        const orphanedLectures = existingLectures.filter(
+          (lecture) => !providedLectureIds.includes(lecture.id),
+        );
+        for (const orphanedLecture of orphanedLectures) {
+          await transactionalEntityManager.remove(orphanedLecture);
+          this.eventEmitter.emit('lecture.deleted', orphanedLecture.id);
+        }
+
+        savedSections.push({
+          ...section,
+          lectures: savedLectures,
+        });
       }
 
-      savedSections.push({
-        ...section,
-        lectures: savedLectures,
-      });
-    }
+      // Delete orphaned sections (and their lectures via cascade)
+      const orphanedSections = course.sections.filter(
+        (section) => !providedSectionIds.includes(section.id),
+      );
+      for (const orphanedSection of orphanedSections) {
+        await transactionalEntityManager.remove(orphanedSection);
+      }
 
-    return savedSections;
+      return savedSections;
+    });
   }
 
   async submitQuiz(
@@ -458,8 +495,6 @@ export class CourseContentService {
     lectureId: string,
     answers: Array<{ questionId: string; answer: string | number | boolean }>,
   ): Promise<{
-    score: number;
-    totalPoints: number;
     percentage: number;
     passed: boolean;
     correctAnswers: number;
@@ -469,7 +504,6 @@ export class CourseContentService {
       isCorrect: boolean;
       correctAnswer: string | number;
       explanation?: string;
-      points: number;
     }>;
   }> {
     const lecture = await this.lectureRepository.findOne({
@@ -516,9 +550,8 @@ export class CourseContentService {
 
     const answerMap = new Map(answers.map((a) => [a.questionId, a.answer]));
 
-    let totalScore = 0;
-    let totalPoints = 0;
     let correctAnswers = 0;
+    let totalQuestions = 0;
     const results = [];
 
     for (const question of quizContent.questions) {
@@ -529,6 +562,8 @@ export class CourseContentService {
       if (question.type === 'fill_blank') {
         continue;
       }
+
+      totalQuestions++;
 
       let isCorrect = false;
       if (studentAnswer !== undefined && studentAnswer !== null) {
@@ -551,29 +586,25 @@ export class CourseContentService {
       }
 
       if (isCorrect) {
-        totalScore += question.points;
         correctAnswers++;
       }
-
-      totalPoints += question.points;
 
       results.push({
         questionId: question.id,
         isCorrect,
         correctAnswer: question.correctAnswer,
         explanation: question.explanation,
-        points: question.points,
       });
     }
 
+    // Calculate percentage as average (correctAnswers / totalQuestions * 100)
     const percentage =
-      totalPoints > 0 ? Math.round((totalScore / totalPoints) * 100) : 0;
+      totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0;
     const passingScore = quizContent.passingScore || 70;
     const passed = percentage >= passingScore;
 
     progress.submissionData = {
       attempts: (progress.submissionData.attempts || 0) + 1,
-      score: totalScore,
       percentage,
       passed,
       lastSubmission: {
@@ -592,12 +623,10 @@ export class CourseContentService {
     await this.progressRepository.save(progress);
 
     return {
-      score: totalScore,
-      totalPoints,
       percentage,
       passed,
       correctAnswers,
-      totalQuestions: quizContent.questions.length,
+      totalQuestions,
       results,
     };
   }
