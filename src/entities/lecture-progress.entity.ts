@@ -17,7 +17,6 @@ export interface QuizSubmission {
     questionId: string;
     answer: string | number | boolean;
   }>;
-  submittedAt: Date;
   results: Array<{
     questionId: string;
     isCorrect: boolean;
@@ -48,11 +47,8 @@ export class LectureProgress {
   @Column('uuid')
   lectureId: string;
 
-  @Column({ default: false })
-  isCompleted: boolean;
-
-  @Column({ nullable: true })
-  completedAt: Date;
+  @Column({ type: 'boolean', nullable: true, default: null })
+  isCompleted: boolean | null;
 
   @Column('int', { default: 0 })
   watchTimeSeconds: number;

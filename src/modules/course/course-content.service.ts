@@ -541,10 +541,13 @@ export class CourseContentService {
       progress.submissionData = { attempts: 0 };
     }
 
-    const allowMultipleAttempts = quizContent.allowMultipleAttempts ?? true;
-    if (!allowMultipleAttempts && progress.submissionData.attempts > 0) {
+    // Only allow retake if quiz was previously failed (isCompleted === false)
+    // Block retake if never attempted (null) or passed (true)
+    if (progress.isCompleted === false && progress.submissionData.attempts > 0) {
+      // Allow retake for failed attempts
+    } else if (progress.isCompleted === true) {
       throw new BadRequestException(
-        'Multiple attempts not allowed for this quiz',
+        'Quiz already passed. Retakes not allowed.',
       );
     }
 
@@ -609,15 +612,18 @@ export class CourseContentService {
       passed,
       lastSubmission: {
         answers: answers,
-        submittedAt: new Date(),
         results: results,
       },
-      completedAt: passed ? new Date() : progress.submissionData.completedAt,
     };
 
-    progress.isCompleted = passed;
+    // Set isCompleted based on quiz result:
+    // null: never attempted (initial state)
+    // false: failed (allows retake)
+    // true: passed (no retake)
     if (passed) {
-      progress.completedAt = new Date();
+      progress.isCompleted = true;
+    } else {
+      progress.isCompleted = false;
     }
 
     await this.progressRepository.save(progress);

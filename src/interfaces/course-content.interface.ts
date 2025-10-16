@@ -16,6 +16,5 @@ export interface QuizQuestion {
 
 export interface QuizContent {
   questions: QuizQuestion[];
-  passingScore: number; // 0-100 
-  allowMultipleAttempts: boolean;
+  passingScore: number; // 0-100
 }

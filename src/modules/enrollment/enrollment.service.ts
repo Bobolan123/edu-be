@@ -133,15 +133,18 @@ export class EnrollmentService {
         enrollmentId,
         courseId,
         lectureId,
-        isCompleted: false,
+        isCompleted: null,
       });
     }
 
-    existingProgress.isCompleted = !existingProgress.isCompleted;
-    if (existingProgress.isCompleted) {
-      existingProgress.completedAt = new Date();
+    // Toggle completion status
+    // null -> true, true -> null, false -> true
+    if (existingProgress.isCompleted === null) {
+      existingProgress.isCompleted = true;
+    } else if (existingProgress.isCompleted === true) {
+      existingProgress.isCompleted = null;
     } else {
-      existingProgress.completedAt = null;
+      existingProgress.isCompleted = true;
     }
 
     return await this.lectureProgressRepository.save(existingProgress);
@@ -540,6 +543,6 @@ export class EnrollmentService {
       order: { updatedAt: 'DESC' },
     });
 
-    return lastProgress?.completedAt || null;
+    return lastProgress?.updatedAt || null;
   }
 }
