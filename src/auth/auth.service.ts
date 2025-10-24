@@ -1,25 +1,20 @@
 import { ConfigService } from '@nestjs/config';
 import {
   BadRequestException,
-  Body,
   HttpException,
   HttpStatus,
   Injectable,
-  Post,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { User } from 'src/entities/user.entity';
 import { UserService } from 'src/modules/user/user.service';
-import { Public } from './Public';
-import { ResponseMessage } from 'src/decorator/responseMessage.decorator';
 import { CreateUserDto } from 'src/modules/user/dto/create-user.dto';
 import {
   AuthChangePassword,
   AuthVerifiedOtp,
   AuthResendOtp,
 } from './dto/auth.dto';
-import { Response } from 'express';
 
 @Injectable()
 export class AuthService {
@@ -51,7 +46,7 @@ export class AuthService {
     return user;
   }
 
-  async login(user: User, response: Response) {
+  async login(user: User) {
     const isActiveGmail = await this.userService.isActiveGmail(user.email);
     if (isActiveGmail !== true) {
       throw new HttpException('Email is not verified', HttpStatus.FORBIDDEN);
@@ -74,30 +69,35 @@ export class AuthService {
       permissions: permissions,
       avatar_url: user.avatar_url,
     };
-    const access_token = this.jwtService.sign(payload);
+    // Get expiration in milliseconds and convert to seconds for JWT
+    const accessTokenExpirationMs = Number(this.configService.get<number>('JWT_ACCESS_EXPIRATION'));
+    const refreshTokenExpirationMs = Number(this.configService.get<number>('JWT_REFRESH_EXPIRATION'));
+    const accessTokenExpirationSec = Math.floor(accessTokenExpirationMs / 1000);
+    const refreshTokenExpirationSec = Math.floor(refreshTokenExpirationMs / 1000);
+
+    const access_token = this.jwtService.sign(payload, {
+      expiresIn: accessTokenExpirationSec, // Convert ms to seconds
+      secret: this.configService.get<string>('JWT_ACCESS_SECRET'),
+    });
     const refresh_token = this.jwtService.sign(payload, {
-      expiresIn: this.configService.get<string>('JWT_REFRESH_EXPIRATION'),
+      expiresIn: refreshTokenExpirationSec, // Convert ms to seconds
       secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
     });
-    response.clearCookie('refresh_token');
-    //set refresh token in cookie
-    response.cookie('refresh_token', refresh_token, {
-      maxAge: this.configService.get<number>('JWT_REFRESH_EXPIRATION_COOKIE'),
-      httpOnly: true,
-    });
 
-    response.cookie('access_token', access_token, {
-      maxAge: this.configService.get<number>('JWT_ACCESS_EXPIRATION_COOKIE'),
-    });
+    // Calculate expiration timestamp in milliseconds for FE
+    const expires_at = Date.now() + accessTokenExpirationMs;
+
     return {
       email: user.email,
       name: user.name,
       id: user.id,
       role: user.role?.name,
       access_token,
+      refresh_token,
+      expires_at, // Timestamp in milliseconds for FE to check expiry
       permissions: permissions,
       avatar_url: user.avatar_url,
-    };
+    }; 
   }
 
   async register(user: CreateUserDto) {
@@ -118,32 +118,36 @@ export class AuthService {
     return res;
   }
 
-  async refreshToken(refresh_token: string, response: Response) {
+  async refreshToken(refresh_token: string) {
+    if (!refresh_token) {
+      throw new BadRequestException('Refresh token not provided');
+    }
+
     try {
       const decoded_token = this.jwtService.verify(refresh_token, {
         secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
       });
       const user = await this.userService.findOneByToken(decoded_token?.id);
-      if (user) {
-        const res = this.login(user, response);
-        return res;
-      } else {
+      if (!user) {
         throw new BadRequestException(
-          'Refresh token are not valid. Login please',
+          'Refresh token is not valid. Please login',
         );
       }
+      return await this.login(user);
     } catch (error) {
-      console.log(error);
+      if (error.name === 'TokenExpiredError') {
+        throw new HttpException(
+          'Refresh token expired. Please login',
+          HttpStatus.UNAUTHORIZED,
+        );
+      }
+
+      throw error;
     }
   }
 
   async forgetPassword(data: AuthChangePassword) {
-    try {
-      const user = this.userService.changePassword(data);
-      return user;
-    } catch (error) {
-      console.log(error);
-    }
+    return await this.userService.changePassword(data);
   }
 
   async googleLogin(userData: {

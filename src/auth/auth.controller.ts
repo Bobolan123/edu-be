@@ -6,17 +6,14 @@ import {
   Get,
   Body,
   Res,
-  Put,
   Patch,
   Req,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { LocalAuthGuard } from './guards/local-auth.guard';
 import { Public } from './Public';
 import { ResponseMessage } from 'src/decorator/responseMessage.decorator';
 import { CreateUserDto } from 'src/modules/user/dto/create-user.dto';
-import { Request as ReqExpress, Response } from 'express';
 import {
   AuthChangePassword,
   AuthVerifiedOtp,
@@ -36,8 +33,8 @@ export class AuthController {
   @UseGuards(LocalAuthGuard)
   @ResponseMessage('User Login')
   @Post('login')
-  async login(@Request() req, @Res({ passthrough: true }) res: Response) {
-    return await this.authService.login(req.user, res);
+  async login(@Request() req) {
+    return await this.authService.login(req.user);
   }
 
   @Public()
@@ -64,12 +61,8 @@ export class AuthController {
   @Public()
   @ResponseMessage('Refresh token')
   @Post('refresh')
-  refreshToken(
-    @Request() req: ReqExpress,
-    @Res({ passthrough: true }) res: Response,
-  ) {
-    const refresh_token = req.cookies['refresh_token'];
-    return this.authService.refreshToken(refresh_token, res);
+  refreshToken(@Body() body: { refresh_token: string }) {
+    return this.authService.refreshToken(body.refresh_token);
   }
 
   @ResponseMessage('User information')
@@ -117,7 +110,7 @@ export class AuthController {
     res.cookie('access_token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production', // Use HTTPS in production
-      sameSite: 'strict',
+      sameSite: 'lax',
       maxAge:
         process.env.JWT_ACCESS_EXPIRATION_COOKIE || 7 * 24 * 60 * 60 * 1000, // 7 days
     });

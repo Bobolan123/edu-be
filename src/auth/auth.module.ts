@@ -15,14 +15,16 @@ import { GoogleStrategy } from './strategies/google.strategy';
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_ACCESS_SECRET'),
-        signOptions: {
-          expiresIn: configService.get<string | number>(
-            'JWT_ACCESS_EXPIRATION',
-          ),
-        },
-      }),
+      useFactory: async (configService: ConfigService) => {
+        const expirationMs = configService.get<number>('JWT_ACCESS_EXPIRATION');
+        const expirationSec = Math.floor(expirationMs / 1000);
+        return {
+          secret: configService.get<string>('JWT_ACCESS_SECRET'),
+          signOptions: {
+            expiresIn: expirationSec, // Convert milliseconds to seconds
+          },
+        };
+      },
       inject: [ConfigService],
     }),
     ConfigModule,
