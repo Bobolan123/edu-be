@@ -27,6 +27,7 @@ import { CategoryModule } from './modules/category/category.module';
 import { ReviewModule } from './modules/review/review.module';
 import { CartModule } from './modules/cart/cart.module';
 import { GeminiModule } from './modules/gemini/gemini.module';
+import { SupportTicketModule } from './modules/support-ticket/support-ticket.module';
 import { AutoPermissionService } from './common/database/seeders/auto-permission.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from './entities/user.entity';
@@ -66,6 +67,7 @@ import { SeedUsersService } from './common/database/seeders/seed-users.service';
     ReviewModule,
     CartModule,
     GeminiModule,
+    SupportTicketModule,
   ],
   controllers: [AppController],
   providers: [
