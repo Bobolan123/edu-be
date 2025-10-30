@@ -18,7 +18,8 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "ingest:courses": "ts-node -r tsconfig-paths/register src/scripts/ingest-courses.ts"
+    "ingest:courses": "ts-node -r tsconfig-paths/register src/scripts/ingest-courses.ts",
+    "seed:all": "ts-node -r tsconfig-paths/register src/scripts/seed-database.ts"
   },
   "dependencies": {
     "@google/genai": "^1.4.0",

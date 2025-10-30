@@ -27,7 +27,7 @@ export class SeedUsersService implements OnApplicationBootstrap {
 
     this.logger.log('Starting development seed process...');
     await this.seedDefaultRoles();
-    await this.seedDefaultUsers();
+    // User seeding has been moved to seed-all.service.ts
   }
 
   private async hashPassword(password: string): Promise<string> {

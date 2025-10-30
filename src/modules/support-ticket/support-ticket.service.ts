@@ -151,11 +151,6 @@ export class SupportTicketService {
     if (!ticket) {
       throw new NotFoundException('Ticket not found');
     }
-
-    if (ticket.student.id !== userId && ticket.instructor.id !== userId) {
-      throw new ForbiddenException('You do not have access to this ticket');
-    }
-
     return ticket;
   }
 
@@ -190,8 +185,11 @@ export class SupportTicketService {
   }
 
   async getMessages(ticketId: string, userId: number): Promise<TicketMessage[]> {
-    await this.getTicketById(ticketId, userId);
-
+    const ticket= await this.getTicketById(ticketId, userId);
+    console.log(ticket)
+    if (!ticket) {
+      throw new NotFoundException('Ticket not found');
+    }
     return await this.messageModel
       .find({ ticketId })
       .sort({ createdAt: 1 })
