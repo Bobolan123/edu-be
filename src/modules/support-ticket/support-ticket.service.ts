@@ -21,6 +21,7 @@ import { User } from '../../entities/user.entity';
 import { CreateTicketDto } from './dto/create-ticket.dto';
 import { SendMessageDto } from './dto/send-message.dto';
 import { UpdateTicketStatusDto } from './dto/update-ticket-status.dto';
+import { PageMetaDto, ResponsePaginate } from '../../common/dtos';
 
 @Injectable()
 export class SupportTicketService {
@@ -61,7 +62,7 @@ export class SupportTicketService {
     const ticket = this.ticketRepository.create({
       subject,
       student,
-      teacher: course.instructor,
+      instructor: course.instructor,
       course,
       status: TicketStatus.OPEN,
     });
@@ -69,13 +70,57 @@ export class SupportTicketService {
     return await this.ticketRepository.save(ticket);
   }
 
+  async getAllTicketsForAdmin(params: {
+    page: number;
+    take: number;
+    search?: string;
+    status?: TicketStatus;
+  }): Promise<ResponsePaginate<SupportTicket>> {
+    const { page, take, search, status } = params;
+    const skip = (page - 1) * take;
+
+    const queryBuilder = this.ticketRepository
+      .createQueryBuilder('ticket')
+      .leftJoinAndSelect('ticket.student', 'student')
+      .leftJoinAndSelect('ticket.instructor', 'instructor')
+      .leftJoinAndSelect('ticket.course', 'course');
+
+    if (search) {
+      queryBuilder.where(
+        '(ticket.subject ILIKE :search OR student.fullName ILIKE :search OR instructor.fullName ILIKE :search OR course.title ILIKE :search)',
+        { search: `%${search}%` },
+      );
+    }
+
+    if (status) {
+      if (search) {
+        queryBuilder.andWhere('ticket.status = :status', { status });
+      } else {
+        queryBuilder.where('ticket.status = :status', { status });
+      }
+    }
+
+    const [tickets, itemCount] = await queryBuilder
+      .orderBy('ticket.updatedAt', 'DESC')
+      .skip(skip)
+      .take(take)
+      .getManyAndCount();
+
+    const pageMetaDto = new PageMetaDto({
+      pageOptionsDto: { page, take, skip },
+      itemCount,
+    });
+
+    return new ResponsePaginate(tickets, pageMetaDto);
+  }
+
   async getMyTickets(userId: number, role: string): Promise<SupportTicket[]> {
     const whereCondition =
-      role === 'instructor' ? { teacher: { id: userId } } : { student: { id: userId } };
+      role === 'instructor' ? { instructor: { id: userId } } : { student: { id: userId } };
 
     return await this.ticketRepository.find({
       where: whereCondition,
-      relations: ['student', 'teacher', 'course'],
+      relations: ['student', 'instructor', 'course'],
       order: { createdAt: 'DESC' },
     });
   }
@@ -87,12 +132,12 @@ export class SupportTicketService {
   ): Promise<SupportTicket[]> {
     const whereCondition =
       role === 'instructor'
-        ? { teacher: { id: userId }, status }
+        ? { instructor: { id: userId }, status }
         : { student: { id: userId }, status };
 
     return await this.ticketRepository.find({
       where: whereCondition,
-      relations: ['student', 'teacher', 'course'],
+      relations: ['student', 'instructor', 'course'],
       order: { createdAt: 'DESC' },
     });
   }
@@ -100,14 +145,14 @@ export class SupportTicketService {
   async getTicketById(ticketId: string, userId: number): Promise<SupportTicket> {
     const ticket = await this.ticketRepository.findOne({
       where: { id: ticketId },
-      relations: ['student', 'teacher', 'course'],
+      relations: ['student', 'instructor', 'course'],
     });
 
     if (!ticket) {
       throw new NotFoundException('Ticket not found');
     }
 
-    if (ticket.student.id !== userId && ticket.teacher.id !== userId) {
+    if (ticket.student.id !== userId && ticket.instructor.id !== userId) {
       throw new ForbiddenException('You do not have access to this ticket');
     }
 
@@ -160,8 +205,8 @@ export class SupportTicketService {
   ): Promise<SupportTicket> {
     const ticket = await this.getTicketById(ticketId, userId);
 
-    if (ticket.teacher.id !== userId) {
-      throw new ForbiddenException('Only the teacher can update ticket status');
+    if (ticket.instructor.id !== userId) {
+      throw new ForbiddenException('Only the instructor can update ticket status');
     }
 
     ticket.status = updateStatusDto.status;

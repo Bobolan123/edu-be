@@ -28,7 +28,7 @@ export class SupportTicket {
   student: User;
 
   @ManyToOne(() => User, { eager: true })
-  teacher: User;
+  instructor: User;
 
   @ManyToOne(() => Course, { eager: true })
   course: Course;

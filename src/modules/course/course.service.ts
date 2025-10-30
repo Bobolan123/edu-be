@@ -231,7 +231,8 @@ export class CourseService {
       });
     }
 
-    if (excludeEnrolled) {
+
+    if (excludeEnrolled && userId) {
       const enrolledCourseIds = await this.getEnrolledCourseIds(userId);
       filteredCourses = filteredCourses.filter(
         (course) => !enrolledCourseIds.includes(course.id),

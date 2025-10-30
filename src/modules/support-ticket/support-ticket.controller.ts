@@ -31,6 +31,22 @@ export class SupportTicketController {
     );
   }
 
+  @Get('admin/all')
+  @ResponseMessage('All tickets retrieved successfully')
+  async getAllTickets(
+    @Query('page') page?: number,
+    @Query('take') take?: number,
+    @Query('search') search?: string,
+    @Query('status') status?: TicketStatus,
+  ) {
+    return await this.supportTicketService.getAllTicketsForAdmin({
+      page: page ? Number(page) : 1,
+      take: take ? Number(take) : 10,
+      search,
+      status,
+    });
+  }
+
   @Get()
   @ResponseMessage('Tickets retrieved successfully')
   async getMyTickets(@Request() req, @Query('status') status?: TicketStatus) {
