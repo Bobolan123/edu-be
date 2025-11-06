@@ -12,6 +12,7 @@ import { Certification } from 'src/entities/certification.entity';
 import { Order } from 'src/entities/order.entity';
 import { Category } from 'src/entities/category.entity';
 import { CloudinaryModule } from '../cloudinary/cloudinary.module';
+import { TranscriptionModule } from '../transcription/transcription.module';
 import { User } from 'src/entities/user.entity';
 import { Enrollment } from 'src/entities/enrollment.entity';
 import { LectureProgress } from 'src/entities/lecture-progress.entity';
@@ -32,6 +33,7 @@ import { ReviewModule } from '../review/review.module';
       LectureProgress,
     ]),
     CloudinaryModule,
+    TranscriptionModule,
     ReviewModule,
   ],
   exports: [CourseService, CourseContentService],

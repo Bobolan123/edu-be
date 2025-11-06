@@ -47,8 +47,6 @@ export class CloudinaryService {
           {
             folder,
             resource_type: 'video',
-            raw_convert: 'google_speech:srt',
-            streaming_profile: 'hd',
           },
           (error, result) => {
             if (error) {

@@ -11,6 +11,7 @@ import { CourseSection } from '../../entities/course-section.entity';
 import { CourseLecture } from '../../entities/course-lecture.entity';
 import { LectureProgress } from '../../entities/lecture-progress.entity';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
+import { TranscriptionService } from '../transcription/transcription.service';
 
 @Injectable()
 export class CourseContentService {
@@ -31,6 +32,8 @@ export class CourseContentService {
     private readonly dataSource: DataSource,
 
     private cloudinaryService: CloudinaryService,
+
+    private transcriptionService: TranscriptionService,
 
     private eventEmitter: EventEmitter2,
   ) {}
@@ -280,6 +283,7 @@ export class CourseContentService {
       videoUrl: url,
       cloudinaryPublicId: publicId,
       quality: qualities.length > 0 ? qualities : [{ resolution: 'auto', url }],
+      transcription: null, // Will be populated asynchronously
     };
 
     if (duration) {
@@ -288,10 +292,110 @@ export class CourseContentService {
 
     const savedLecture = await this.lectureRepository.save(lecture);
 
+    // Start transcription asynchronously (non-blocking)
+    if (this.transcriptionService.isConfigured()) {
+      console.log('Starting AssemblyAI transcription...');
+      this.transcribeVideoAsync(savedLecture.id, url).catch((error) => {
+        console.error('Transcription failed:', error);
+      });
+    }
+
     // Emit event for RAG sync (video content changed)
     this.eventEmitter.emit('lecture.updated', savedLecture);
 
     return url;
+  }
+
+  private async transcribeVideoAsync(
+    lectureId: string,
+    videoUrl: string,
+  ): Promise<void> {
+    try {
+      console.log(`Submitting transcription job for lecture ${lectureId}...`);
+
+      // Submit job (returns immediately)
+      const { transcriptId } =
+        await this.transcriptionService.submitTranscriptionJob(videoUrl);
+
+      console.log(
+        `Transcription job submitted: ${transcriptId}. Polling in background...`,
+      );
+
+      // Start polling in background (non-blocking)
+      this.pollTranscriptionCompletion(lectureId, transcriptId);
+    } catch (error) {
+      console.error(
+        `Failed to submit transcription for lecture ${lectureId}:`,
+        error,
+      );
+    }
+  }
+
+  private async pollTranscriptionCompletion(
+    lectureId: string,
+    transcriptId: string,
+  ): Promise<void> {
+    const maxAttempts = 60; // Poll for up to 10 minutes (60 * 10 seconds)
+    let attempts = 0;
+
+    const poll = async () => {
+      try {
+        attempts++;
+
+        const result =
+          await this.transcriptionService.pollTranscriptionStatus(transcriptId);
+
+        if (result.status === 'completed') {
+          // Update lecture with completed transcription
+          const lecture = await this.lectureRepository.findOne({
+            where: { id: lectureId },
+          });
+
+          if (lecture) {
+            const videoContent = lecture.content as any;
+            videoContent.transcription = {
+              transcriptId: transcriptId,
+              text: result.text,
+              srt: result.srt,
+              vtt: result.vtt,
+              transcribedAt: new Date().toISOString(),
+            };
+            lecture.content = videoContent;
+            await this.lectureRepository.save(lecture);
+
+            console.log(`✓ Transcription completed for lecture ${lectureId}`);
+
+            // Emit event for RAG sync with new transcription
+            this.eventEmitter.emit('lecture.updated', lecture);
+          }
+          return;
+        }
+
+        if (result.status === 'error') {
+          console.error(
+            `✗ Transcription failed for lecture ${lectureId}: ${result.error}`,
+          );
+          return;
+        }
+
+        // Still processing, poll again in 10 seconds
+        if (attempts < maxAttempts) {
+          setTimeout(() => poll(), 10000);
+        } else {
+          console.error(
+            `✗ Transcription polling timed out for lecture ${lectureId}`,
+          );
+        }
+      } catch (error) {
+        console.error(
+          `Error polling transcription for lecture ${lectureId}:`,
+          error,
+        );
+      }
+    };
+
+    // Start polling
+    poll();
   }
 
   async getCaptions(lectureId: string) {
@@ -310,16 +414,30 @@ export class CourseContentService {
     }
 
     const videoContent = lecture.content as any;
-    const publicId = videoContent.cloudinaryPublicId;
 
-    if (!publicId) {
-      throw new BadRequestException('Video public ID not found');
+    // Check if AssemblyAI transcription is available
+    if (videoContent.transcription) {
+      return {
+        srt: videoContent.transcription.srt,
+        vtt: videoContent.transcription.vtt,
+        transcript: videoContent.transcription.text,
+        transcribedAt: videoContent.transcription.transcribedAt,
+        source: 'assemblyai',
+      };
     }
 
-    return {
-      srt: this.cloudinaryService.getCaptionUrl(publicId, 'srt'),
-      transcript: this.cloudinaryService.getCaptionUrl(publicId, 'transcript'),
-    };
+    // Fallback to Cloudinary captions if AssemblyAI not available
+    const publicId = videoContent.cloudinaryPublicId;
+    if (publicId) {
+      return {
+        srt: this.cloudinaryService.getCaptionUrl(publicId, 'srt'),
+        transcript: this.cloudinaryService.getCaptionUrl(publicId, 'transcript'),
+        source: 'cloudinary',
+        note: 'Transcription in progress or not available. Using Cloudinary fallback.',
+      };
+    }
+
+    throw new BadRequestException('No captions available for this video');
   }
 
   async batchSaveCourseContent(
