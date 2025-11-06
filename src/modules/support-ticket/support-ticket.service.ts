@@ -116,7 +116,9 @@ export class SupportTicketService {
 
   async getMyTickets(userId: number, role: string): Promise<SupportTicket[]> {
     const whereCondition =
-      role === 'instructor' ? { instructor: { id: userId } } : { student: { id: userId } };
+      role === 'instructor'
+        ? { instructor: { id: userId } }
+        : { student: { id: userId } };
 
     return await this.ticketRepository.find({
       where: whereCondition,
@@ -142,7 +144,10 @@ export class SupportTicketService {
     });
   }
 
-  async getTicketById(ticketId: string, userId: number): Promise<SupportTicket> {
+  async getTicketById(
+    ticketId: string,
+    userId: number,
+  ): Promise<SupportTicket> {
     const ticket = await this.ticketRepository.findOne({
       where: { id: ticketId },
       relations: ['student', 'instructor', 'course'],
@@ -184,9 +189,12 @@ export class SupportTicketService {
     return savedMessage;
   }
 
-  async getMessages(ticketId: string, userId: number): Promise<TicketMessage[]> {
-    const ticket= await this.getTicketById(ticketId, userId);
-    console.log(ticket)
+  async getMessages(
+    ticketId: string,
+    userId: number,
+  ): Promise<TicketMessage[]> {
+    const ticket = await this.getTicketById(ticketId, userId);
+    console.log(ticket);
     if (!ticket) {
       throw new NotFoundException('Ticket not found');
     }
@@ -204,7 +212,9 @@ export class SupportTicketService {
     const ticket = await this.getTicketById(ticketId, userId);
 
     if (ticket.instructor.id !== userId) {
-      throw new ForbiddenException('Only the instructor can update ticket status');
+      throw new ForbiddenException(
+        'Only the instructor can update ticket status',
+      );
     }
 
     ticket.status = updateStatusDto.status;

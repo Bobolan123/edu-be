@@ -318,10 +318,7 @@ export class CourseContentService {
 
     return {
       srt: this.cloudinaryService.getCaptionUrl(publicId, 'srt'),
-      transcript: this.cloudinaryService.getCaptionUrl(
-        publicId,
-        'transcript',
-      ),
+      transcript: this.cloudinaryService.getCaptionUrl(publicId, 'transcript'),
     };
   }
 
@@ -344,150 +341,158 @@ export class CourseContentService {
       }>;
     }>,
   ) {
-    return await this.dataSource.transaction(async (transactionalEntityManager) => {
-      const course = await transactionalEntityManager.findOne(Course, {
-        where: { id: courseId },
-        relations: ['sections', 'sections.lectures'],
-      });
-
-      if (!course) {
-        throw new NotFoundException(`Course with ID ${courseId} not found`);
-      }
-
-      // Extract IDs from payload
-      const providedSectionIds = sections
-        .filter((s) => s.id && !s.id.startsWith('temp-'))
-        .map((s) => s.id);
-
-      const providedLectureIds = sections
-        .flatMap((s) => s.lectures)
-        .filter((l) => l.id && !l.id.startsWith('temp-'))
-        .map((l) => l.id);
-
-      const savedSections = [];
-
-      for (let i = 0; i < sections.length; i++) {
-        const sectionData = sections[i];
-        let section: CourseSection;
-
-        // Check if this is a new section or update
-        const isNewSection =
-          !sectionData.id || sectionData.id.startsWith('temp-');
-
-        if (isNewSection) {
-          // CREATE new section (temp ID is discarded, database generates real UUID)
-          section = transactionalEntityManager.create(CourseSection, {
-            title: sectionData.title,
-            description: sectionData.description,
-            orderIndex: sectionData.orderIndex ?? i,
-            course,
-          });
-          section = await transactionalEntityManager.save(section);
-        } else {
-          // UPDATE existing section
-          section = await transactionalEntityManager.findOne(CourseSection, {
-            where: { id: sectionData.id },
-          });
-
-          if (!section) {
-            throw new NotFoundException(
-              `Section with ID ${sectionData.id} not found`,
-            );
-          }
-
-          Object.assign(section, {
-            title: sectionData.title,
-            description: sectionData.description,
-            orderIndex: sectionData.orderIndex ?? i,
-          });
-          section = await transactionalEntityManager.save(section);
-
-          // Emit event for RAG sync
-          this.eventEmitter.emit('section.updated', section);
-        }
-
-        const savedLectures = [];
-        const existingLectures = await transactionalEntityManager.find(CourseLecture, {
-          where: { section: { id: section.id } },
+    return await this.dataSource.transaction(
+      async (transactionalEntityManager) => {
+        const course = await transactionalEntityManager.findOne(Course, {
+          where: { id: courseId },
+          relations: ['sections', 'sections.lectures'],
         });
 
-        for (let j = 0; j < sectionData.lectures.length; j++) {
-          const lectureData = sectionData.lectures[j];
-          let lecture: CourseLecture;
+        if (!course) {
+          throw new NotFoundException(`Course with ID ${courseId} not found`);
+        }
 
-          // Check if this is a new lecture or update
-          const isNewLecture =
-            !lectureData.id || lectureData.id.startsWith('temp-');
+        // Extract IDs from payload
+        const providedSectionIds = sections
+          .filter((s) => s.id && !s.id.startsWith('temp-'))
+          .map((s) => s.id);
 
-          if (isNewLecture) {
-            // CREATE new lecture (temp ID is discarded, database generates real UUID)
-            lecture = transactionalEntityManager.create(CourseLecture, {
-              title: lectureData.title,
-              description: lectureData.description,
-              contentType: lectureData.contentType,
-              orderIndex: lectureData.orderIndex ?? j,
-              durationSeconds: lectureData.durationSeconds ?? 0,
-              isPreview: lectureData.isPreview ?? false,
-              content: lectureData.content,
-              section: section,
+        const providedLectureIds = sections
+          .flatMap((s) => s.lectures)
+          .filter((l) => l.id && !l.id.startsWith('temp-'))
+          .map((l) => l.id);
+
+        const savedSections = [];
+
+        for (let i = 0; i < sections.length; i++) {
+          const sectionData = sections[i];
+          let section: CourseSection;
+
+          // Check if this is a new section or update
+          const isNewSection =
+            !sectionData.id || sectionData.id.startsWith('temp-');
+
+          if (isNewSection) {
+            // CREATE new section (temp ID is discarded, database generates real UUID)
+            section = transactionalEntityManager.create(CourseSection, {
+              title: sectionData.title,
+              description: sectionData.description,
+              orderIndex: sectionData.orderIndex ?? i,
+              course,
             });
-            lecture = await transactionalEntityManager.save(lecture);
-
-            this.eventEmitter.emit('lecture.created', lecture);
+            section = await transactionalEntityManager.save(section);
           } else {
-            // UPDATE existing lecture
-            lecture = await transactionalEntityManager.findOne(CourseLecture, {
-              where: { id: lectureData.id },
+            // UPDATE existing section
+            section = await transactionalEntityManager.findOne(CourseSection, {
+              where: { id: sectionData.id },
             });
 
-            if (!lecture) {
+            if (!section) {
               throw new NotFoundException(
-                `Lecture with ID ${lectureData.id} not found`,
+                `Section with ID ${sectionData.id} not found`,
               );
             }
 
-            Object.assign(lecture, {
-              title: lectureData.title,
-              description: lectureData.description,
-              contentType: lectureData.contentType,
-              orderIndex: lectureData.orderIndex ?? j,
-              durationSeconds: lectureData.durationSeconds,
-              isPreview: lectureData.isPreview,
-              content: lectureData.content,
+            Object.assign(section, {
+              title: sectionData.title,
+              description: sectionData.description,
+              orderIndex: sectionData.orderIndex ?? i,
             });
-            lecture = await transactionalEntityManager.save(lecture);
+            section = await transactionalEntityManager.save(section);
 
-            this.eventEmitter.emit('lecture.updated', lecture);
+            // Emit event for RAG sync
+            this.eventEmitter.emit('section.updated', section);
           }
 
-          savedLectures.push(lecture);
+          const savedLectures = [];
+          const existingLectures = await transactionalEntityManager.find(
+            CourseLecture,
+            {
+              where: { section: { id: section.id } },
+            },
+          );
+
+          for (let j = 0; j < sectionData.lectures.length; j++) {
+            const lectureData = sectionData.lectures[j];
+            let lecture: CourseLecture;
+
+            // Check if this is a new lecture or update
+            const isNewLecture =
+              !lectureData.id || lectureData.id.startsWith('temp-');
+
+            if (isNewLecture) {
+              // CREATE new lecture (temp ID is discarded, database generates real UUID)
+              lecture = transactionalEntityManager.create(CourseLecture, {
+                title: lectureData.title,
+                description: lectureData.description,
+                contentType: lectureData.contentType,
+                orderIndex: lectureData.orderIndex ?? j,
+                durationSeconds: lectureData.durationSeconds ?? 0,
+                isPreview: lectureData.isPreview ?? false,
+                content: lectureData.content,
+                section: section,
+              });
+              lecture = await transactionalEntityManager.save(lecture);
+
+              this.eventEmitter.emit('lecture.created', lecture);
+            } else {
+              // UPDATE existing lecture
+              lecture = await transactionalEntityManager.findOne(
+                CourseLecture,
+                {
+                  where: { id: lectureData.id },
+                },
+              );
+
+              if (!lecture) {
+                throw new NotFoundException(
+                  `Lecture with ID ${lectureData.id} not found`,
+                );
+              }
+
+              Object.assign(lecture, {
+                title: lectureData.title,
+                description: lectureData.description,
+                contentType: lectureData.contentType,
+                orderIndex: lectureData.orderIndex ?? j,
+                durationSeconds: lectureData.durationSeconds,
+                isPreview: lectureData.isPreview,
+                content: lectureData.content,
+              });
+              lecture = await transactionalEntityManager.save(lecture);
+
+              this.eventEmitter.emit('lecture.updated', lecture);
+            }
+
+            savedLectures.push(lecture);
+          }
+
+          // Delete orphaned lectures in this section
+          const orphanedLectures = existingLectures.filter(
+            (lecture) => !providedLectureIds.includes(lecture.id),
+          );
+          for (const orphanedLecture of orphanedLectures) {
+            await transactionalEntityManager.remove(orphanedLecture);
+            this.eventEmitter.emit('lecture.deleted', orphanedLecture.id);
+          }
+
+          savedSections.push({
+            ...section,
+            lectures: savedLectures,
+          });
         }
 
-        // Delete orphaned lectures in this section
-        const orphanedLectures = existingLectures.filter(
-          (lecture) => !providedLectureIds.includes(lecture.id),
+        // Delete orphaned sections (and their lectures via cascade)
+        const orphanedSections = course.sections.filter(
+          (section) => !providedSectionIds.includes(section.id),
         );
-        for (const orphanedLecture of orphanedLectures) {
-          await transactionalEntityManager.remove(orphanedLecture);
-          this.eventEmitter.emit('lecture.deleted', orphanedLecture.id);
+        for (const orphanedSection of orphanedSections) {
+          await transactionalEntityManager.remove(orphanedSection);
         }
 
-        savedSections.push({
-          ...section,
-          lectures: savedLectures,
-        });
-      }
-
-      // Delete orphaned sections (and their lectures via cascade)
-      const orphanedSections = course.sections.filter(
-        (section) => !providedSectionIds.includes(section.id),
-      );
-      for (const orphanedSection of orphanedSections) {
-        await transactionalEntityManager.remove(orphanedSection);
-      }
-
-      return savedSections;
-    });
+        return savedSections;
+      },
+    );
   }
 
   async submitQuiz(
@@ -543,7 +548,10 @@ export class CourseContentService {
 
     // Only allow retake if quiz was previously failed (isCompleted === false)
     // Block retake if never attempted (null) or passed (true)
-    if (progress.isCompleted === false && progress.submissionData.attempts > 0) {
+    if (
+      progress.isCompleted === false &&
+      progress.submissionData.attempts > 0
+    ) {
       // Allow retake for failed attempts
     } else if (progress.isCompleted === true) {
       throw new BadRequestException(
@@ -602,7 +610,9 @@ export class CourseContentService {
 
     // Calculate percentage as average (correctAnswers / totalQuestions * 100)
     const percentage =
-      totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0;
+      totalQuestions > 0
+        ? Math.round((correctAnswers / totalQuestions) * 100)
+        : 0;
     const passingScore = quizContent.passingScore || 70;
     const passed = percentage >= passingScore;
 

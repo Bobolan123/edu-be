@@ -231,7 +231,6 @@ export class CourseService {
       });
     }
 
-
     if (excludeEnrolled && userId) {
       const enrolledCourseIds = await this.getEnrolledCourseIds(userId);
       filteredCourses = filteredCourses.filter(

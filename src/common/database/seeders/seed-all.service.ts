@@ -18,7 +18,10 @@ import { Review } from 'src/entities/review.entity';
 import { ReviewVote } from 'src/entities/review-vote.entity';
 import { Order, OrderStatus, PaymentMethod } from 'src/entities/order.entity';
 import { OrderCourse } from 'src/entities/order-course.entity';
-import { SupportTicket, TicketStatus } from 'src/entities/support-ticket.entity';
+import {
+  SupportTicket,
+  TicketStatus,
+} from 'src/entities/support-ticket.entity';
 import { Cart } from 'src/entities/cart.entity';
 import { CartItem } from 'src/entities/cartItem.entity';
 import {
@@ -71,8 +74,10 @@ export class SeedAllService {
 
     await this.clearDatabase();
 
+    const permissions = await this.seedPermissions();
     const roles = await this.seedRoles();
-    const { students, instructors, admin } = await this.seedUsers(roles);
+    await this.assignPermissionsToRoles(roles, permissions);
+    const { students, instructors } = await this.seedUsers(roles);
     const categories = await this.seedCategories();
     const courses = await this.seedCourses(instructors, categories);
     const sections = await this.seedSections(courses);
@@ -90,6 +95,7 @@ export class SeedAllService {
 
     this.logger.log('✅ Database seeding completed successfully!');
     return {
+      permissions: permissions.length,
       roles: roles.length,
       users: students.length + instructors.length + 1,
       categories: categories.length,
@@ -123,6 +129,599 @@ export class SeedAllService {
       this.logger.log('✨ Database cleared.');
     } catch (error) {
       this.logger.error('Error clearing database:', error.message);
+    }
+  }
+
+  private async seedPermissions(): Promise<Permission[]> {
+    this.logger.log('🔐 Seeding permissions...');
+
+    const permissionsData = [
+      // Auth Module - Public access
+      {
+        module: 'Auth',
+        api: '/auth/login',
+        method: 'POST',
+        description: 'User login',
+      },
+      {
+        module: 'Auth',
+        api: '/auth/register',
+        method: 'POST',
+        description: 'User registration',
+      },
+      {
+        module: 'Auth',
+        api: '/auth/google',
+        method: 'GET',
+        description: 'Google OAuth login',
+      },
+      {
+        module: 'Auth',
+        api: '/auth/refresh',
+        method: 'POST',
+        description: 'Refresh JWT token',
+      },
+      {
+        module: 'Auth',
+        api: '/auth/logout',
+        method: 'POST',
+        description: 'User logout',
+      },
+
+      // User Module
+      {
+        module: 'User',
+        api: '/users/profile',
+        method: 'GET',
+        description: 'Get user profile',
+      },
+      {
+        module: 'User',
+        api: '/users/profile',
+        method: 'PUT',
+        description: 'Update user profile',
+      },
+      {
+        module: 'User',
+        api: '/users',
+        method: 'GET',
+        description: 'List all users (Admin)',
+      },
+      {
+        module: 'User',
+        api: '/users/:id',
+        method: 'GET',
+        description: 'Get user by ID (Admin)',
+      },
+      {
+        module: 'User',
+        api: '/users',
+        method: 'POST',
+        description: 'Create new user (Admin)',
+      },
+      {
+        module: 'User',
+        api: '/users/:id',
+        method: 'PUT',
+        description: 'Update user (Admin)',
+      },
+      {
+        module: 'User',
+        api: '/users/:id',
+        method: 'DELETE',
+        description: 'Delete user (Admin)',
+      },
+
+      // Course Module - Viewing
+      {
+        module: 'Course',
+        api: '/courses',
+        method: 'GET',
+        description: 'List all courses',
+      },
+      {
+        module: 'Course',
+        api: '/courses/:id',
+        method: 'GET',
+        description: 'Get course by ID',
+      },
+
+      // Course Module - Instructor only
+      {
+        module: 'Course',
+        api: '/courses',
+        method: 'POST',
+        description: 'Create new course',
+      },
+      {
+        module: 'Course',
+        api: '/courses/:id',
+        method: 'PUT',
+        description: 'Update course',
+      },
+      {
+        module: 'Course',
+        api: '/courses/:id',
+        method: 'DELETE',
+        description: 'Delete course',
+      },
+      {
+        module: 'Course',
+        api: '/courses/:id/publish',
+        method: 'PUT',
+        description: 'Publish course',
+      },
+
+      // Category Module
+      {
+        module: 'Category',
+        api: '/categories',
+        method: 'GET',
+        description: 'List all categories',
+      },
+      {
+        module: 'Category',
+        api: '/categories/:id',
+        method: 'GET',
+        description: 'Get category by ID',
+      },
+      {
+        module: 'Category',
+        api: '/categories',
+        method: 'POST',
+        description: 'Create category (Admin)',
+      },
+      {
+        module: 'Category',
+        api: '/categories/:id',
+        method: 'PUT',
+        description: 'Update category (Admin)',
+      },
+      {
+        module: 'Category',
+        api: '/categories/:id',
+        method: 'DELETE',
+        description: 'Delete category (Admin)',
+      },
+
+      // Enrollment Module
+      {
+        module: 'Enrollment',
+        api: '/enrollments',
+        method: 'GET',
+        description: 'List enrollments',
+      },
+      {
+        module: 'Enrollment',
+        api: '/enrollments/:id',
+        method: 'GET',
+        description: 'Get enrollment by ID',
+      },
+      {
+        module: 'Enrollment',
+        api: '/enrollments',
+        method: 'POST',
+        description: 'Create enrollment',
+      },
+      {
+        module: 'Enrollment',
+        api: '/enrollments/:id',
+        method: 'PUT',
+        description: 'Update enrollment',
+      },
+      {
+        module: 'Enrollment',
+        api: '/enrollments/:id',
+        method: 'DELETE',
+        description: 'Delete enrollment',
+      },
+
+      // Order Module
+      {
+        module: 'Order',
+        api: '/orders',
+        method: 'GET',
+        description: 'List orders',
+      },
+      {
+        module: 'Order',
+        api: '/orders/:id',
+        method: 'GET',
+        description: 'Get order by ID',
+      },
+      {
+        module: 'Order',
+        api: '/orders',
+        method: 'POST',
+        description: 'Create order',
+      },
+      {
+        module: 'Order',
+        api: '/orders/:id',
+        method: 'PUT',
+        description: 'Update order',
+      },
+      {
+        module: 'Order',
+        api: '/orders/:id',
+        method: 'DELETE',
+        description: 'Delete order (Admin)',
+      },
+
+      // Review Module
+      {
+        module: 'Review',
+        api: '/reviews',
+        method: 'GET',
+        description: 'List reviews',
+      },
+      {
+        module: 'Review',
+        api: '/reviews/:id',
+        method: 'GET',
+        description: 'Get review by ID',
+      },
+      {
+        module: 'Review',
+        api: '/reviews',
+        method: 'POST',
+        description: 'Create review',
+      },
+      {
+        module: 'Review',
+        api: '/reviews/:id',
+        method: 'PUT',
+        description: 'Update review',
+      },
+      {
+        module: 'Review',
+        api: '/reviews/:id',
+        method: 'DELETE',
+        description: 'Delete review',
+      },
+
+      // Cart Module
+      { module: 'Cart', api: '/cart', method: 'GET', description: 'Get cart' },
+      {
+        module: 'Cart',
+        api: '/cart',
+        method: 'POST',
+        description: 'Add to cart',
+      },
+      {
+        module: 'Cart',
+        api: '/cart/:id',
+        method: 'DELETE',
+        description: 'Remove from cart',
+      },
+      {
+        module: 'Cart',
+        api: '/cart',
+        method: 'DELETE',
+        description: 'Clear cart',
+      },
+
+      // Support Ticket Module
+      {
+        module: 'SupportTicket',
+        api: '/support-tickets',
+        method: 'GET',
+        description: 'List support tickets',
+      },
+      {
+        module: 'SupportTicket',
+        api: '/support-tickets/:id',
+        method: 'GET',
+        description: 'Get support ticket',
+      },
+      {
+        module: 'SupportTicket',
+        api: '/support-tickets',
+        method: 'POST',
+        description: 'Create support ticket',
+      },
+      {
+        module: 'SupportTicket',
+        api: '/support-tickets/:id',
+        method: 'PUT',
+        description: 'Update support ticket',
+      },
+      {
+        module: 'SupportTicket',
+        api: '/support-tickets/:id',
+        method: 'DELETE',
+        description: 'Delete support ticket',
+      },
+      {
+        module: 'SupportTicket',
+        api: '/support-tickets/:id/messages',
+        method: 'GET',
+        description: 'Get ticket messages',
+      },
+      {
+        module: 'SupportTicket',
+        api: '/support-tickets/:id/messages',
+        method: 'POST',
+        description: 'Send ticket message',
+      },
+
+      // Course Content Module - Instructor only
+      {
+        module: 'CourseContent',
+        api: '/courses/:courseId/sections',
+        method: 'GET',
+        description: 'Get course sections',
+      },
+      {
+        module: 'CourseContent',
+        api: '/courses/:courseId/sections',
+        method: 'POST',
+        description: 'Create course section',
+      },
+      {
+        module: 'CourseContent',
+        api: '/courses/:courseId/sections/:id',
+        method: 'PUT',
+        description: 'Update course section',
+      },
+      {
+        module: 'CourseContent',
+        api: '/courses/:courseId/sections/:id',
+        method: 'DELETE',
+        description: 'Delete course section',
+      },
+      {
+        module: 'CourseContent',
+        api: '/sections/:sectionId/lectures',
+        method: 'GET',
+        description: 'Get section lectures',
+      },
+      {
+        module: 'CourseContent',
+        api: '/sections/:sectionId/lectures',
+        method: 'POST',
+        description: 'Create lecture',
+      },
+      {
+        module: 'CourseContent',
+        api: '/sections/:sectionId/lectures/:id',
+        method: 'PUT',
+        description: 'Update lecture',
+      },
+      {
+        module: 'CourseContent',
+        api: '/sections/:sectionId/lectures/:id',
+        method: 'DELETE',
+        description: 'Delete lecture',
+      },
+
+      // Certification Module
+      {
+        module: 'Certification',
+        api: '/certifications',
+        method: 'GET',
+        description: 'List certifications',
+      },
+      {
+        module: 'Certification',
+        api: '/certifications/:id',
+        method: 'GET',
+        description: 'Get certification',
+      },
+      {
+        module: 'Certification',
+        api: '/certifications',
+        method: 'POST',
+        description: 'Generate certification',
+      },
+
+      // Subscription Module
+      {
+        module: 'Subscription',
+        api: '/subscriptions',
+        method: 'GET',
+        description: 'List subscriptions',
+      },
+      {
+        module: 'Subscription',
+        api: '/subscriptions/:id',
+        method: 'GET',
+        description: 'Get subscription',
+      },
+      {
+        module: 'Subscription',
+        api: '/subscriptions',
+        method: 'POST',
+        description: 'Create subscription',
+      },
+      {
+        module: 'Subscription',
+        api: '/subscriptions/:id',
+        method: 'PUT',
+        description: 'Update subscription',
+      },
+      {
+        module: 'Subscription',
+        api: '/subscriptions/:id',
+        method: 'DELETE',
+        description: 'Cancel subscription',
+      },
+
+      // Gemini AI Module - Instructor only
+      {
+        module: 'Gemini',
+        api: '/gemini/analyze',
+        method: 'POST',
+        description: 'Analyze content with AI',
+      },
+
+      // Role & Permission Module - Admin only
+      {
+        module: 'Role',
+        api: '/roles',
+        method: 'GET',
+        description: 'List all roles',
+      },
+      {
+        module: 'Role',
+        api: '/roles/:id',
+        method: 'GET',
+        description: 'Get role by ID',
+      },
+      {
+        module: 'Role',
+        api: '/roles',
+        method: 'POST',
+        description: 'Create role',
+      },
+      {
+        module: 'Role',
+        api: '/roles/:id',
+        method: 'PUT',
+        description: 'Update role',
+      },
+      {
+        module: 'Role',
+        api: '/roles/:id',
+        method: 'DELETE',
+        description: 'Delete role',
+      },
+      {
+        module: 'Permission',
+        api: '/permissions',
+        method: 'GET',
+        description: 'List permissions',
+      },
+      {
+        module: 'Permission',
+        api: '/permissions/:id',
+        method: 'GET',
+        description: 'Get permission',
+      },
+      {
+        module: 'Permission',
+        api: '/permissions',
+        method: 'POST',
+        description: 'Create permission',
+      },
+      {
+        module: 'Permission',
+        api: '/permissions/:id',
+        method: 'PUT',
+        description: 'Update permission',
+      },
+      {
+        module: 'Permission',
+        api: '/permissions/:id',
+        method: 'DELETE',
+        description: 'Delete permission',
+      },
+    ];
+
+    const permissions = [];
+    for (const permData of permissionsData) {
+      const existing = await this.permissionRepository.findOne({
+        where: { api: permData.api, method: permData.method },
+      });
+
+      if (existing) {
+        permissions.push(existing);
+      } else {
+        const permission = await this.permissionRepository.save(
+          this.permissionRepository.create(permData),
+        );
+        permissions.push(permission);
+        this.logger.log(
+          `  ✅ Created: ${permData.module} - ${permData.method} ${permData.api}`,
+        );
+      }
+    }
+
+    this.logger.log(`  ✅ Seeded ${permissions.length} permissions`);
+    return permissions;
+  }
+
+  private async assignPermissionsToRoles(
+    roles: Role[],
+    permissions: Permission[],
+  ): Promise<void> {
+    this.logger.log('🔗 Assigning permissions to roles...');
+
+    const studentRole = roles.find((r) => r.name === 'student');
+    const instructorRole = roles.find((r) => r.name === 'instructor');
+    const adminRole = roles.find((r) => r.name === 'admin');
+
+    // Student permissions - read-only access and own resource management
+    const studentPermissions = permissions.filter(
+      (p) =>
+        // Auth - all students
+        p.module === 'Auth' ||
+        // Profile management
+        (p.module === 'User' && p.api === '/users/profile') ||
+        // View courses and categories
+        (p.module === 'Course' && p.method === 'GET') ||
+        (p.module === 'Category' && p.method === 'GET') ||
+        // Course content viewing
+        (p.module === 'CourseContent' && p.method === 'GET') ||
+        // Enrollment management
+        p.module === 'Enrollment' ||
+        // Review management (own reviews)
+        p.module === 'Review' ||
+        // Cart management
+        p.module === 'Cart' ||
+        // Order management (own orders)
+        (p.module === 'Order' && p.method !== 'DELETE') ||
+        // Support tickets (own tickets)
+        p.module === 'SupportTicket' ||
+        // Certifications (own certifications)
+        p.module === 'Certification' ||
+        // Subscriptions (own subscriptions)
+        p.module === 'Subscription',
+    );
+
+    // Instructor permissions - all student permissions + course creation/management
+    const instructorPermissions = permissions.filter(
+      (p) =>
+        // All student permissions
+        studentPermissions.includes(p) ||
+        // Course creation and management
+        (p.module === 'Course' &&
+          ['POST', 'PUT', 'DELETE'].includes(p.method)) ||
+        // Course content creation and management
+        (p.module === 'CourseContent' &&
+          ['POST', 'PUT', 'DELETE'].includes(p.method)) ||
+        // AI content analysis
+        p.module === 'Gemini' ||
+        // View all enrollments and reviews for their courses
+        (p.module === 'Enrollment' && p.method === 'GET') ||
+        (p.module === 'Review' && p.method === 'GET'),
+    );
+
+    // Admin - all permissions
+    const adminPermissions = permissions;
+
+    if (studentRole) {
+      studentRole.permissions = studentPermissions;
+      await this.roleRepository.save(studentRole);
+      this.logger.log(
+        `  ✅ Assigned ${studentPermissions.length} permissions to student role`,
+      );
+    }
+
+    if (instructorRole) {
+      instructorRole.permissions = instructorPermissions;
+      await this.roleRepository.save(instructorRole);
+      this.logger.log(
+        `  ✅ Assigned ${instructorPermissions.length} permissions to instructor role`,
+      );
+    }
+
+    if (adminRole) {
+      adminRole.permissions = adminPermissions;
+      await this.roleRepository.save(adminRole);
+      this.logger.log(
+        `  ✅ Assigned ${adminPermissions.length} permissions to admin role`,
+      );
     }
   }
 
@@ -578,7 +1177,9 @@ export class SeedAllService {
     return sections;
   }
 
-  private async seedLectures(sections: CourseSection[]): Promise<CourseLecture[]> {
+  private async seedLectures(
+    sections: CourseSection[],
+  ): Promise<CourseLecture[]> {
     this.logger.log('🎥 Seeding course lectures...');
     const lectures = [];
 
@@ -678,7 +1279,8 @@ export class SeedAllService {
             user: student,
             course: course,
             rating: Math.floor(Math.random() * 2) + 4,
-            comment: reviewTexts[Math.floor(Math.random() * reviewTexts.length)],
+            comment:
+              reviewTexts[Math.floor(Math.random() * reviewTexts.length)],
           }),
         );
         reviews.push(review);
@@ -698,7 +1300,10 @@ export class SeedAllService {
 
     for (let i = 0; i < students.length; i++) {
       const student = students[i];
-      const purchasedCourses = courses.slice(0, Math.min(i + 2, courses.length));
+      const purchasedCourses = courses.slice(
+        0,
+        Math.min(i + 2, courses.length),
+      );
 
       const order = await this.orderRepository.save(
         this.orderRepository.create({
@@ -729,7 +1334,10 @@ export class SeedAllService {
     return orders;
   }
 
-  private async seedCarts(students: User[], courses: Course[]): Promise<Cart[]> {
+  private async seedCarts(
+    students: User[],
+    courses: Course[],
+  ): Promise<Cart[]> {
     this.logger.log('🛒 Seeding carts...');
     const carts = [];
 

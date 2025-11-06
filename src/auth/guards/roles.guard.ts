@@ -40,7 +40,7 @@ export class RolesGuard implements CanActivate {
     if (user.role.name.toLowerCase() === 'admin') {
       return true;
     }
-    
+
     // Get current request API and method
     const currentApi = request.route?.path || request.url;
     const currentMethod = request.method;

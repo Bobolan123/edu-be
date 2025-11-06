@@ -180,30 +180,248 @@ const PERMISSIONS_DATA = [
     description: 'Delete enrollment',
   },
 
-  // Payment Module
+  // Order Module
   {
-    module: 'Payment',
+    module: 'Order',
     api: '/orders',
     method: 'GET',
     description: 'List all orders',
   },
   {
-    module: 'Payment',
+    module: 'Order',
     api: '/orders/:id',
     method: 'GET',
     description: 'Get order by ID',
   },
   {
-    module: 'Payment',
+    module: 'Order',
     api: '/orders',
     method: 'POST',
     description: 'Create new order',
   },
   {
-    module: 'Payment',
-    api: '/payments/stripe',
+    module: 'Order',
+    api: '/orders/:id',
+    method: 'PUT',
+    description: 'Update order',
+  },
+  {
+    module: 'Order',
+    api: '/orders/:id',
+    method: 'DELETE',
+    description: 'Delete order',
+  },
+
+  // Review Module
+  {
+    module: 'Review',
+    api: '/reviews',
+    method: 'GET',
+    description: 'List all reviews',
+  },
+  {
+    module: 'Review',
+    api: '/reviews/:id',
+    method: 'GET',
+    description: 'Get review by ID',
+  },
+  {
+    module: 'Review',
+    api: '/reviews',
     method: 'POST',
-    description: 'Process Stripe payment',
+    description: 'Create review',
+  },
+  {
+    module: 'Review',
+    api: '/reviews/:id',
+    method: 'PUT',
+    description: 'Update review',
+  },
+  {
+    module: 'Review',
+    api: '/reviews/:id',
+    method: 'DELETE',
+    description: 'Delete review',
+  },
+
+  // Cart Module
+  {
+    module: 'Cart',
+    api: '/cart',
+    method: 'GET',
+    description: 'Get user cart',
+  },
+  {
+    module: 'Cart',
+    api: '/cart',
+    method: 'POST',
+    description: 'Add item to cart',
+  },
+  {
+    module: 'Cart',
+    api: '/cart/:id',
+    method: 'DELETE',
+    description: 'Remove item from cart',
+  },
+  {
+    module: 'Cart',
+    api: '/cart',
+    method: 'DELETE',
+    description: 'Clear cart',
+  },
+
+  // Support Ticket Module
+  {
+    module: 'SupportTicket',
+    api: '/support-tickets',
+    method: 'GET',
+    description: 'List support tickets',
+  },
+  {
+    module: 'SupportTicket',
+    api: '/support-tickets/:id',
+    method: 'GET',
+    description: 'Get support ticket by ID',
+  },
+  {
+    module: 'SupportTicket',
+    api: '/support-tickets',
+    method: 'POST',
+    description: 'Create support ticket',
+  },
+  {
+    module: 'SupportTicket',
+    api: '/support-tickets/:id',
+    method: 'PUT',
+    description: 'Update support ticket',
+  },
+  {
+    module: 'SupportTicket',
+    api: '/support-tickets/:id',
+    method: 'DELETE',
+    description: 'Delete support ticket',
+  },
+  {
+    module: 'SupportTicket',
+    api: '/support-tickets/:id/messages',
+    method: 'GET',
+    description: 'Get ticket messages',
+  },
+  {
+    module: 'SupportTicket',
+    api: '/support-tickets/:id/messages',
+    method: 'POST',
+    description: 'Send ticket message',
+  },
+
+  // Course Content Module
+  {
+    module: 'CourseContent',
+    api: '/courses/:courseId/sections',
+    method: 'GET',
+    description: 'Get course sections',
+  },
+  {
+    module: 'CourseContent',
+    api: '/courses/:courseId/sections',
+    method: 'POST',
+    description: 'Create course section',
+  },
+  {
+    module: 'CourseContent',
+    api: '/courses/:courseId/sections/:id',
+    method: 'PUT',
+    description: 'Update course section',
+  },
+  {
+    module: 'CourseContent',
+    api: '/courses/:courseId/sections/:id',
+    method: 'DELETE',
+    description: 'Delete course section',
+  },
+  {
+    module: 'CourseContent',
+    api: '/sections/:sectionId/lectures',
+    method: 'GET',
+    description: 'Get section lectures',
+  },
+  {
+    module: 'CourseContent',
+    api: '/sections/:sectionId/lectures',
+    method: 'POST',
+    description: 'Create lecture',
+  },
+  {
+    module: 'CourseContent',
+    api: '/sections/:sectionId/lectures/:id',
+    method: 'PUT',
+    description: 'Update lecture',
+  },
+  {
+    module: 'CourseContent',
+    api: '/sections/:sectionId/lectures/:id',
+    method: 'DELETE',
+    description: 'Delete lecture',
+  },
+
+  // Certification Module
+  {
+    module: 'Certification',
+    api: '/certifications',
+    method: 'GET',
+    description: 'List user certifications',
+  },
+  {
+    module: 'Certification',
+    api: '/certifications/:id',
+    method: 'GET',
+    description: 'Get certification by ID',
+  },
+  {
+    module: 'Certification',
+    api: '/certifications',
+    method: 'POST',
+    description: 'Generate certification',
+  },
+
+  // Subscription Module
+  {
+    module: 'Subscription',
+    api: '/subscriptions',
+    method: 'GET',
+    description: 'List subscriptions',
+  },
+  {
+    module: 'Subscription',
+    api: '/subscriptions/:id',
+    method: 'GET',
+    description: 'Get subscription by ID',
+  },
+  {
+    module: 'Subscription',
+    api: '/subscriptions',
+    method: 'POST',
+    description: 'Create subscription',
+  },
+  {
+    module: 'Subscription',
+    api: '/subscriptions/:id',
+    method: 'PUT',
+    description: 'Update subscription',
+  },
+  {
+    module: 'Subscription',
+    api: '/subscriptions/:id',
+    method: 'DELETE',
+    description: 'Cancel subscription',
+  },
+
+  // Gemini AI Module
+  {
+    module: 'Gemini',
+    api: '/gemini/analyze',
+    method: 'POST',
+    description: 'Analyze content with AI',
   },
 
   // Role & Permission Module

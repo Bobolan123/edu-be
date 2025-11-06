@@ -66,7 +66,10 @@ export class SupportTicketController {
   @ResponseMessage('Unread count retrieved successfully')
   async getUnreadCount(@Request() req) {
     const userRole = req.user.role || 'student';
-    return await this.supportTicketService.getUnreadCount(req.user.id, userRole);
+    return await this.supportTicketService.getUnreadCount(
+      req.user.id,
+      userRole,
+    );
   }
 
   @Get(':id')
@@ -113,9 +116,6 @@ export class SupportTicketController {
   @Patch(':id/read')
   @ResponseMessage('Messages marked as read')
   async markAsRead(@Param('id') id: string, @Request() req) {
-    return await this.supportTicketService.markMessagesAsRead(
-      id,
-      req.user.id,
-    );
+    return await this.supportTicketService.markMessagesAsRead(id, req.user.id);
   }
 }

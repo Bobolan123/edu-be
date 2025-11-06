@@ -70,10 +70,16 @@ export class AuthService {
       avatar_url: user.avatar_url,
     };
     // Get expiration in milliseconds and convert to seconds for JWT
-    const accessTokenExpirationMs = Number(this.configService.get<number>('JWT_ACCESS_EXPIRATION'));
-    const refreshTokenExpirationMs = Number(this.configService.get<number>('JWT_REFRESH_EXPIRATION'));
+    const accessTokenExpirationMs = Number(
+      this.configService.get<number>('JWT_ACCESS_EXPIRATION'),
+    );
+    const refreshTokenExpirationMs = Number(
+      this.configService.get<number>('JWT_REFRESH_EXPIRATION'),
+    );
     const accessTokenExpirationSec = Math.floor(accessTokenExpirationMs / 1000);
-    const refreshTokenExpirationSec = Math.floor(refreshTokenExpirationMs / 1000);
+    const refreshTokenExpirationSec = Math.floor(
+      refreshTokenExpirationMs / 1000,
+    );
 
     const access_token = this.jwtService.sign(payload, {
       expiresIn: accessTokenExpirationSec, // Convert ms to seconds
@@ -97,7 +103,7 @@ export class AuthService {
       expires_at, // Timestamp in milliseconds for FE to check expiry
       permissions: permissions,
       avatar_url: user.avatar_url,
-    }; 
+    };
   }
 
   async register(user: CreateUserDto) {
