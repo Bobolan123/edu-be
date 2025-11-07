@@ -22,6 +22,7 @@ export class TranscriptionService {
 
   async submitTranscriptionJob(
     videoUrl: string,
+    languageCode?: 'en' | 'vi',
   ): Promise<{ transcriptId: string }> {
     if (!this.client) {
       throw new BadRequestException(
@@ -30,19 +31,30 @@ export class TranscriptionService {
     }
 
     try {
-      this.logger.log(`Submitting transcription job for video: ${videoUrl}`);
+      const language = languageCode || 'auto-detect';
+      this.logger.log(
+        `Submitting ${language.toUpperCase()} transcription job for video: ${videoUrl}`,
+      );
 
       // Submit transcription job (non-blocking, returns immediately)
-      const transcript = await this.client.transcripts.submit({
+      const config: any = {
         audio: videoUrl,
-        language_detection: true,
         speaker_labels: false,
         punctuate: true,
         format_text: true,
-      });
+      };
+
+      // Use language_code if specified, otherwise auto-detect
+      if (languageCode) {
+        config.language_code = languageCode;
+      } else {
+        config.language_detection = true;
+      }
+
+      const transcript = await this.client.transcripts.submit(config);
 
       this.logger.log(
-        `Transcription job submitted: ${transcript.id} (status: ${transcript.status})`,
+        `${language.toUpperCase()} transcription job submitted: ${transcript.id} (status: ${transcript.status})`,
       );
 
       return {
