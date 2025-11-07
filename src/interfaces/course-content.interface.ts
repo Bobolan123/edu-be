@@ -3,6 +3,11 @@ export interface VideoContent {
   thumbnailUrl?: string;
   cloudinaryPublicId: string;
   quality: { resolution: string; url: string }[];
+  transcription?: {
+    transcriptId: string;
+    srtUrl?: string;
+    vttUrl?: string;
+  };
 }
 
 export interface QuizQuestion {
