@@ -22,6 +22,10 @@ export class TranscriptionService {
 
   async submitTranscriptionJob(
     videoUrl: string,
+<<<<<<< HEAD
+=======
+    languageCode?: 'en' | 'vi',
+>>>>>>> detached-work
   ): Promise<{ transcriptId: string }> {
     if (!this.client) {
       throw new BadRequestException(
@@ -30,6 +34,7 @@ export class TranscriptionService {
     }
 
     try {
+<<<<<<< HEAD
       this.logger.log(`Submitting transcription job for video: ${videoUrl}`);
 
       // Submit transcription job (non-blocking, returns immediately)
@@ -43,6 +48,32 @@ export class TranscriptionService {
 
       this.logger.log(
         `Transcription job submitted: ${transcript.id} (status: ${transcript.status})`,
+=======
+      const language = languageCode || 'auto-detect';
+      this.logger.log(
+        `Submitting ${language.toUpperCase()} transcription job for video: ${videoUrl}`,
+      );
+
+      // Submit transcription job (non-blocking, returns immediately)
+      const config: any = {
+        audio: videoUrl,
+        speaker_labels: false,
+        punctuate: true,
+        format_text: true,
+      };
+
+      // Use language_code if specified, otherwise auto-detect
+      if (languageCode) {
+        config.language_code = languageCode;
+      } else {
+        config.language_detection = true;
+      }
+
+      const transcript = await this.client.transcripts.submit(config);
+
+      this.logger.log(
+        `${language.toUpperCase()} transcription job submitted: ${transcript.id} (status: ${transcript.status})`,
+>>>>>>> detached-work
       );
 
       return {
@@ -56,6 +87,7 @@ export class TranscriptionService {
     }
   }
 
+<<<<<<< HEAD
   async transcribeVideoUrl(
     videoUrl: string,
   ): Promise<{
@@ -110,14 +142,21 @@ export class TranscriptionService {
     }
   }
 
+=======
+>>>>>>> detached-work
   async pollTranscriptionStatus(
     transcriptId: string,
   ): Promise<{
     status: 'queued' | 'processing' | 'completed' | 'error';
+<<<<<<< HEAD
     text?: string;
     srt?: string;
     vtt?: string;
     words?: Array<{ text: string; start: number; end: number; confidence: number }>;
+=======
+    srtContent?: string;
+    vttContent?: string;
+>>>>>>> detached-work
     error?: string;
   }> {
     if (!this.client) {
@@ -137,21 +176,35 @@ export class TranscriptionService {
       }
 
       if (transcript.status === 'completed') {
+<<<<<<< HEAD
         const srt = await this.client.transcripts.subtitles(
           transcript.id,
           'srt',
         );
         const vtt = await this.client.transcripts.subtitles(
+=======
+        // Download SRT and VTT content from AssemblyAI
+        const srtContent = await this.client.transcripts.subtitles(
+          transcript.id,
+          'srt',
+        );
+        const vttContent = await this.client.transcripts.subtitles(
+>>>>>>> detached-work
           transcript.id,
           'vtt',
         );
 
         return {
           status: 'completed',
+<<<<<<< HEAD
           text: transcript.text || '',
           srt: srt,
           vtt: vtt,
           words: transcript.words || [],
+=======
+          srtContent: srtContent,
+          vttContent: vttContent,
+>>>>>>> detached-work
         };
       }
 
@@ -166,6 +219,7 @@ export class TranscriptionService {
     }
   }
 
+<<<<<<< HEAD
   async getTranscript(
     transcriptId: string,
   ): Promise<{
@@ -218,6 +272,8 @@ export class TranscriptionService {
     }
   }
 
+=======
+>>>>>>> detached-work
   isConfigured(): boolean {
     return !!this.client;
   }

@@ -17,7 +17,6 @@ import { OrderCourse } from '../entities/order-course.entity';
 import { Cart } from '../entities/cart.entity';
 import { CartItem } from '../entities/cartItem.entity';
 import { LectureProgress } from '../entities/lecture-progress.entity';
-import { Subscription } from '../entities/subscription.entity';
 import { QdrantService } from '../modules/qdrant/qdrant.service';
 import { GeminiService } from '../modules/gemini/gemini.service';
 import { QuizContent } from '../interfaces/course-content.interface';
@@ -87,7 +86,6 @@ async function main() {
       Cart,
       CartItem,
       LectureProgress,
-      Subscription,
     ],
     synchronize: false,
     logging: false,

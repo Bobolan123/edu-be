@@ -5,11 +5,17 @@ export interface VideoContent {
   quality: { resolution: string; url: string }[];
   transcription?: {
     transcriptId: string;
+<<<<<<< HEAD
     text?: string;
     srt?: string;
     vtt?: string;
     transcribedAt?: string;
   } | null;
+=======
+    srtUrl?: string;
+    vttUrl?: string;
+  };
+>>>>>>> detached-work
 }
 
 export interface QuizQuestion {

@@ -85,7 +85,6 @@ export class CloudinaryService {
       const result = await cloudinary.uploader.upload(streamUrl, {
         folder,
         resource_type: 'video',
-        streaming_profile: 'hd',
       });
 
       return result.secure_url;
@@ -108,26 +107,22 @@ export class CloudinaryService {
     return fileName.split('.')[0]; // Remove .jpg or .mp4
   }
 
-  getCaptionUrl(
-    videoPublicId: string,
-    format: 'srt' | 'vtt' | 'transcript',
-  ): string {
-    return cloudinary.url(`${videoPublicId}.${format}`, {
-      resource_type: 'raw',
-      type: 'upload',
-    });
-  }
+  async uploadRawFile(
+    content: string,
+    publicId: string,
+  ): Promise<string> {
+    try {
+      const result = await cloudinary.uploader.upload(
+        `data:text/plain;base64,${Buffer.from(content).toString('base64')}`,
+        {
+          public_id: publicId,
+          resource_type: 'raw',
+        },
+      );
 
-  getVideoWithSubtitles(
-    videoPublicId: string,
-    subtitleFormat: 'srt' | 'vtt' = 'srt',
-  ): string {
-    return cloudinary.url(videoPublicId, {
-      resource_type: 'video',
-      transformation: [
-        { overlay: `subtitles:${videoPublicId}.${subtitleFormat}` },
-        { flags: 'layer_apply' },
-      ],
-    });
+      return result.secure_url;
+    } catch (error) {
+      throw new BadRequestException('Failed to upload raw file');
+    }
   }
 }

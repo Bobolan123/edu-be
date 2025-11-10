@@ -292,9 +292,15 @@ export class CourseContentService {
 
     const savedLecture = await this.lectureRepository.save(lecture);
 
+<<<<<<< HEAD
     // Start transcription asynchronously (non-blocking)
     if (this.transcriptionService.isConfigured()) {
       console.log('Starting AssemblyAI transcription...');
+=======
+    // Generate Original (auto-detect), English, and Vietnamese captions
+    if (this.transcriptionService.isConfigured()) {
+      console.log('Starting AssemblyAI transcription for ORIGINAL, EN, and VI...');
+>>>>>>> detached-work
       this.transcribeVideoAsync(savedLecture.id, url).catch((error) => {
         console.error('Transcription failed:', error);
       });
@@ -311,6 +317,7 @@ export class CourseContentService {
     videoUrl: string,
   ): Promise<void> {
     try {
+<<<<<<< HEAD
       console.log(`Submitting transcription job for lecture ${lectureId}...`);
 
       // Submit job (returns immediately)
@@ -323,6 +330,44 @@ export class CourseContentService {
 
       // Start polling in background (non-blocking)
       this.pollTranscriptionCompletion(lectureId, transcriptId);
+=======
+      console.log(
+        `Submitting multi-language transcription jobs for lecture ${lectureId}...`,
+      );
+
+      // Submit Original language transcription job (auto-detect)
+      const { transcriptId: originalTranscriptId } =
+        await this.transcriptionService.submitTranscriptionJob(videoUrl);
+
+      console.log(
+        `ORIGINAL transcription job submitted: ${originalTranscriptId}. Polling in background...`,
+      );
+
+      // Submit English transcription job
+      const { transcriptId: enTranscriptId } =
+        await this.transcriptionService.submitTranscriptionJob(videoUrl, 'en');
+
+      console.log(
+        `EN transcription job submitted: ${enTranscriptId}. Polling in background...`,
+      );
+
+      // Submit Vietnamese transcription job
+      const { transcriptId: viTranscriptId } =
+        await this.transcriptionService.submitTranscriptionJob(videoUrl, 'vi');
+
+      console.log(
+        `VI transcription job submitted: ${viTranscriptId}. Polling in background...`,
+      );
+
+      // Start polling for all three transcriptions in background (non-blocking)
+      this.pollTranscriptionCompletion(
+        lectureId,
+        originalTranscriptId,
+        'original',
+      );
+      this.pollTranscriptionCompletion(lectureId, enTranscriptId, 'en');
+      this.pollTranscriptionCompletion(lectureId, viTranscriptId, 'vi');
+>>>>>>> detached-work
     } catch (error) {
       console.error(
         `Failed to submit transcription for lecture ${lectureId}:`,
@@ -334,9 +379,17 @@ export class CourseContentService {
   private async pollTranscriptionCompletion(
     lectureId: string,
     transcriptId: string,
+<<<<<<< HEAD
   ): Promise<void> {
     const maxAttempts = 60; // Poll for up to 10 minutes (60 * 10 seconds)
     let attempts = 0;
+=======
+    language: 'original' | 'en' | 'vi',
+  ): Promise<void> {
+    const maxAttempts = 60; // Poll for up to 10 minutes (60 * 10 seconds)
+    let attempts = 0;
+    const langLabel = language.toUpperCase();
+>>>>>>> detached-work
 
     const poll = async () => {
       try {
@@ -346,13 +399,18 @@ export class CourseContentService {
           await this.transcriptionService.pollTranscriptionStatus(transcriptId);
 
         if (result.status === 'completed') {
+<<<<<<< HEAD
           // Update lecture with completed transcription
+=======
+          // Update lecture with completed transcription URLs
+>>>>>>> detached-work
           const lecture = await this.lectureRepository.findOne({
             where: { id: lectureId },
           });
 
           if (lecture) {
             const videoContent = lecture.content as any;
+<<<<<<< HEAD
             videoContent.transcription = {
               transcriptId: transcriptId,
               text: result.text,
@@ -364,6 +422,47 @@ export class CourseContentService {
             await this.lectureRepository.save(lecture);
 
             console.log(`✓ Transcription completed for lecture ${lectureId}`);
+=======
+            const basePublicId = videoContent.cloudinaryPublicId;
+
+            // Upload VTT to Cloudinary with language suffix
+            let vttPublicId: string;
+            if (language === 'original') {
+              vttPublicId = `${basePublicId}_vtt`;
+            } else {
+              vttPublicId = `${basePublicId}_${language}vtt`;
+            }
+
+            const vttUrl = await this.cloudinaryService.uploadRawFile(
+              result.vttContent,
+              vttPublicId,
+            );
+
+            // Initialize transcription object if not exists
+            if (!videoContent.transcription) {
+              videoContent.transcription = {};
+            }
+
+            // Store language-specific VTT URL
+            if (language === 'original') {
+              videoContent.transcription.originalTranscriptId = transcriptId;
+              videoContent.transcription.vtt = vttUrl;
+            } else if (language === 'en') {
+              videoContent.transcription.enTranscriptId = transcriptId;
+              videoContent.transcription.envtt = vttUrl;
+            } else if (language === 'vi') {
+              videoContent.transcription.viTranscriptId = transcriptId;
+              videoContent.transcription.vivtt = vttUrl;
+            }
+
+            lecture.content = videoContent;
+            await this.lectureRepository.save(lecture);
+
+            console.log(
+              `✓ ${langLabel} transcription completed for lecture ${lectureId}`,
+            );
+            console.log(`  ${langLabel} VTT: ${vttUrl}`);
+>>>>>>> detached-work
 
             // Emit event for RAG sync with new transcription
             this.eventEmitter.emit('lecture.updated', lecture);
@@ -373,7 +472,11 @@ export class CourseContentService {
 
         if (result.status === 'error') {
           console.error(
+<<<<<<< HEAD
             `✗ Transcription failed for lecture ${lectureId}: ${result.error}`,
+=======
+            `✗ ${langLabel} transcription failed for lecture ${lectureId}: ${result.error}`,
+>>>>>>> detached-work
           );
           return;
         }
@@ -383,12 +486,20 @@ export class CourseContentService {
           setTimeout(() => poll(), 10000);
         } else {
           console.error(
+<<<<<<< HEAD
             `✗ Transcription polling timed out for lecture ${lectureId}`,
+=======
+            `✗ ${langLabel} transcription polling timed out for lecture ${lectureId}`,
+>>>>>>> detached-work
           );
         }
       } catch (error) {
         console.error(
+<<<<<<< HEAD
           `Error polling transcription for lecture ${lectureId}:`,
+=======
+          `Error polling ${langLabel} transcription for lecture ${lectureId}:`,
+>>>>>>> detached-work
           error,
         );
       }
@@ -415,6 +526,7 @@ export class CourseContentService {
 
     const videoContent = lecture.content as any;
 
+<<<<<<< HEAD
     // Check if AssemblyAI transcription is available
     if (videoContent.transcription) {
       return {
@@ -438,6 +550,23 @@ export class CourseContentService {
     }
 
     throw new BadRequestException('No captions available for this video');
+=======
+    // Return all three VTT URLs if at least one is available
+    if (
+      videoContent.transcription?.vtt ||
+      videoContent.transcription?.envtt ||
+      videoContent.transcription?.vivtt
+    ) {
+      return {
+        vtt: videoContent.transcription.vtt || null,
+        envtt: videoContent.transcription.envtt || null,
+        vivtt: videoContent.transcription.vivtt || null,
+      };
+    }
+
+    // Transcription not ready yet
+    throw new BadRequestException('Transcriptions are still processing');
+>>>>>>> detached-work
   }
 
   async batchSaveCourseContent(

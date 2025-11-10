@@ -21,7 +21,6 @@ import { TransformResInterceptor } from './core/transformRes.interceptor';
 import { PermissionModule } from './modules/permission/permission.module';
 import { CloudinaryModule } from './modules/cloudinary/cloudinary.module';
 import { PaymentModule } from './modules/order/order.module';
-import { SubscriptionModule } from './modules/subscription/subscription.module';
 import { AuthModule } from './auth/auth.module';
 import { CategoryModule } from './modules/category/category.module';
 import { ReviewModule } from './modules/review/review.module';
@@ -100,7 +99,6 @@ import {
     ]),
     CloudinaryModule,
     PaymentModule,
-    SubscriptionModule,
     CategoryModule,
     ReviewModule,
     CartModule,
