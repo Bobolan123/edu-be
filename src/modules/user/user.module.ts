@@ -5,12 +5,11 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from '../../entities/user.entity';
 import { Role } from 'src/entities/role.entity';
 import { RoleService } from '../role/role.service';
-import { Subscription } from 'src/entities/subscription.entity';
 import { CloudinaryModule } from '../cloudinary/cloudinary.module';
 import { Cart } from 'src/entities/cart.entity';
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User, Role, Subscription, Cart]),
+    TypeOrmModule.forFeature([User, Role, Cart]),
     CloudinaryModule,
   ],
   exports: [UserService],

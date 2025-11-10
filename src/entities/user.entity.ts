@@ -13,7 +13,6 @@ import {
 import { Course } from './course.entity';
 import { Enrollment } from './enrollment.entity';
 import { Order } from './order.entity';
-import { Subscription } from './subscription.entity';
 import { Certification } from './certification.entity';
 import { Review } from './review.entity';
 import { Role } from './role.entity';
@@ -74,9 +73,6 @@ export class User {
 
   @OneToMany(() => Order, (order) => order.user)
   orders: Order[];
-
-  @OneToMany(() => Subscription, (subscription) => subscription.user)
-  subscriptions: Subscription[];
 
   @OneToMany(() => Certification, (certification) => certification.user)
   certifications: Certification[];
