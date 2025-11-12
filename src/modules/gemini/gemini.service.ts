@@ -57,7 +57,6 @@ export class GeminiService {
 
       this.logger.log(`Found ${searchResults.length} relevant chunks`);
 
-      // Step 4: Build augmented prompt with context
       let augmentedPrompt = '';
 
       if (searchResults.length > 0) {
@@ -71,7 +70,6 @@ export class GeminiService {
 
       augmentedPrompt += `User question: ${prompt}\n\n`;
 
-      // Step 5: Add language-specific instructions
       if (isVietnamese) {
         augmentedPrompt += `Hướng dẫn:
 - Bạn là một trợ giảng thân thiện và nhiệt tình, đang giúp đỡ sinh viên
@@ -100,7 +98,6 @@ export class GeminiService {
 
       this.logger.log('Generated augmented prompt');
 
-      // Step 6: Call Gemini with augmented prompt
       const response = await this.generateChat(augmentedPrompt);
 
       return {
