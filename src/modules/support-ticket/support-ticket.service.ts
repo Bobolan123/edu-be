@@ -167,7 +167,9 @@ export class SupportTicketService {
     const { ticketId, message } = sendMessageDto;
 
     const ticket = await this.getTicketById(ticketId, senderId);
-
+    if (!ticket) {
+      throw new NotFoundException('Ticket not found');
+    }
     const savedMessage = await this.messageModel.create({
       ticketId,
       senderId,

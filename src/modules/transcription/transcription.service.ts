@@ -41,7 +41,7 @@ export class TranscriptionService {
         speaker_labels: false,
         punctuate: true,
         format_text: true,
-      };
+      }; 
 
       if (languageCode) {
         config.language_code = languageCode;
