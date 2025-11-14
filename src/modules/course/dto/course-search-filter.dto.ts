@@ -111,6 +111,14 @@ export class CourseSearchFilterDto {
   @IsOptional()
   take: number = 10;
 
+  @IsString()
+  @IsOptional()
+  language?: string;
+
+  @IsString()
+  @IsOptional()
+  level?: string;
+
   get skip(): number {
     return (this.page - 1) * this.take;
   }

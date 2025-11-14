@@ -16,6 +16,7 @@ import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { PageMetaDto, PageOptionsDto, ResponsePaginate } from 'src/common/dtos';
 import { CourseSearchFilterDto } from './dto/course-search-filter.dto';
 import { ReviewService } from '../review/review.service';
+import { ElasticsearchService } from '../elasticsearch/elasticsearch.service';
 
 @Injectable()
 export class CourseService {
@@ -40,6 +41,8 @@ export class CourseService {
     private readonly reviewService: ReviewService,
 
     private eventEmitter: EventEmitter2,
+
+    private readonly elasticsearchService: ElasticsearchService,
   ) {}
 
   async create(createCourseDto: CreateCourseDto) {
@@ -78,12 +81,23 @@ export class CourseService {
       categories,
     });
 
-    return await this.courseRepository.save(course);
+    const savedCourse = await this.courseRepository.save(course);
+
+    // Emit event for Elasticsearch indexing
+    this.eventEmitter.emit('course.created', savedCourse);
+
+    return savedCourse;
   }
 
   async findAll(
     filterDto: CourseSearchFilterDto,
   ): Promise<ResponsePaginate<Course>> {
+    // Use Elasticsearch when user types a search query
+    if (filterDto.search && filterDto.search.trim()) {
+      return this.findAllWithElasticsearch(filterDto);
+    }
+
+    // Otherwise use traditional PostgreSQL query (for filters without search)
     const queryBuilder = this.buildCourseQuery(filterDto);
     const allMatchingCourses = await queryBuilder.getMany();
 
@@ -106,6 +120,74 @@ export class CourseService {
     });
 
     return { result: coursesWithEnrollmentStatus, meta: pageMetaDto };
+  }
+
+  async findAllWithElasticsearch(
+    filterDto: CourseSearchFilterDto,
+  ): Promise<ResponsePaginate<Course>> {
+    // Simple Elasticsearch search - just search by text
+    const searchResult = await this.elasticsearchService.searchCourses({
+      query: filterDto.search,
+      filters: {
+        categoryIds: filterDto.categoryIds,
+        instructorId: filterDto.instructorId,
+        minPrice: filterDto.minPrice,
+        maxPrice: filterDto.maxPrice,
+        minRating: filterDto.minRating,
+        maxRating: filterDto.maxRating,
+        language: filterDto.language,
+        level: filterDto.level,
+        isActive: filterDto.status,
+      },
+      sort: {
+        field: '_score', // Always sort by relevance
+        order: 'desc',
+      },
+      page: filterDto.page,
+      pageSize: filterDto.take,
+    });
+
+    // Get course IDs from Elasticsearch results
+    const courseIds = searchResult.documents.map((doc) => doc.id);
+
+    if (courseIds.length === 0) {
+      const pageMetaDto = new PageMetaDto({
+        itemCount: 0,
+        pageOptionsDto: filterDto,
+      });
+      return { result: [], meta: pageMetaDto };
+    }
+
+    // Fetch full course data from PostgreSQL
+    const courses = await this.courseRepository
+      .createQueryBuilder('course')
+      .leftJoinAndSelect('course.categories', 'categories')
+      .leftJoinAndSelect('course.instructor', 'instructor')
+      .where('course.id IN (:...courseIds)', { courseIds })
+      .andWhere('course.deleted_at IS NULL')
+      .getMany();
+
+    // Maintain Elasticsearch result order (most relevant first)
+    const orderedCourses = courseIds
+      .map((id) => courses.find((course) => course.id === id))
+      .filter((course) => course !== undefined);
+
+    // Add enrollment status if needed
+    const coursesWithEnrollmentStatus = await this.addEnrollmentStatus(
+      orderedCourses,
+      filterDto.userId,
+      filterDto.excludeEnrolled,
+    );
+
+    const pageMetaDto = new PageMetaDto({
+      itemCount: searchResult.total,
+      pageOptionsDto: filterDto,
+    });
+
+    return {
+      result: coursesWithEnrollmentStatus,
+      meta: pageMetaDto,
+    };
   }
 
   private buildCourseQuery(filterDto: CourseSearchFilterDto) {
@@ -397,13 +479,19 @@ export class CourseService {
       throw new BadRequestException(`Course with ID ${id} not found.`);
     }
 
-    return await this.courseRepository.softDelete(id);
+    const result = await this.courseRepository.softDelete(id);
+
+    // Emit event for Elasticsearch removal
+    this.eventEmitter.emit('course.deleted', { courseId: id });
+
+    return result;
   }
 
   async restore(id: number): Promise<void> {
     const course = await this.courseRepository.findOne({
       where: { id },
       withDeleted: true,
+      relations: ['instructor', 'categories'],
     });
     if (!course) {
       throw new BadRequestException(
@@ -412,6 +500,15 @@ export class CourseService {
     }
 
     await this.courseRepository.restore(id);
+
+    // Re-fetch the restored course to get updated data
+    const restoredCourse = await this.courseRepository.findOne({
+      where: { id },
+      relations: ['instructor', 'categories'],
+    });
+
+    // Emit event for Elasticsearch re-indexing
+    this.eventEmitter.emit('course.restored', restoredCourse);
   }
 
   async forceRemove(id: number): Promise<void> {
@@ -427,6 +524,10 @@ export class CourseService {
     await this.lectureProgressRepository.delete({ courseId: id });
 
     await this.courseRepository.delete(id);
+
+    // Emit event for Elasticsearch removal
+    this.eventEmitter.emit('course.deleted', { courseId: id });
+
     // Note: With JSONB approach, course content is deleted with the course entity
   }
 

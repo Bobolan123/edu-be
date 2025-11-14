@@ -17,6 +17,7 @@ import { User } from 'src/entities/user.entity';
 import { Enrollment } from 'src/entities/enrollment.entity';
 import { LectureProgress } from 'src/entities/lecture-progress.entity';
 import { ReviewModule } from '../review/review.module';
+import { ElasticsearchModule } from '../elasticsearch/elasticsearch.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { ReviewModule } from '../review/review.module';
     CloudinaryModule,
     TranscriptionModule,
     ReviewModule,
+    ElasticsearchModule,
   ],
   exports: [CourseService, CourseContentService],
   controllers: [CourseController, CourseContentController],
