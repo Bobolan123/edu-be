@@ -9,6 +9,7 @@ import { Cart } from 'src/entities/cart.entity';
 import { CartItem } from 'src/entities/cartItem.entity';
 import { Course } from 'src/entities/course.entity';
 import { User } from 'src/entities/user.entity';
+import { Enrollment } from 'src/entities/enrollment.entity';
 
 @Injectable()
 export class CartService {
@@ -17,6 +18,7 @@ export class CartService {
     @InjectRepository(CartItem) private cartItemRepo: Repository<CartItem>,
     @InjectRepository(Course) private courseRepo: Repository<Course>,
     @InjectRepository(User) private userRepo: Repository<User>,
+    @InjectRepository(Enrollment) private enrollmentRepo: Repository<Enrollment>,
   ) {}
 
   async getOrCreateCart(userId: number): Promise<Cart> {
@@ -34,13 +36,24 @@ export class CartService {
       await this.cartRepo.save(cart);
     }
 
-    // Filter out cart items with deleted courses
+    // Filter out cart items with deleted courses or courses already enrolled in
     if (cart.cartItems) {
       const validItems = [];
       const itemsToRemove = [];
 
       for (const item of cart.cartItems) {
+        // Check if course is deleted
         if (!item.course || item.course.deleted_at) {
+          itemsToRemove.push(item);
+          continue;
+        }
+
+        // Check if user is already enrolled in this course
+        const enrollment = await this.enrollmentRepo.findOne({
+          where: { student: { id: userId }, course: { id: item.course.id } },
+        });
+
+        if (enrollment) {
           itemsToRemove.push(item);
         } else {
           validItems.push(item);
@@ -61,6 +74,15 @@ export class CartService {
   async addToCart(userId: number, courseId: number): Promise<Cart> {
     const course = await this.courseRepo.findOne({ where: { id: courseId } });
     if (!course) throw new NotFoundException('Course not found');
+
+    // Check if user is already enrolled in this course
+    const existingEnrollment = await this.enrollmentRepo.findOne({
+      where: { student: { id: userId }, course: { id: courseId } },
+    });
+
+    if (existingEnrollment) {
+      throw new BadRequestException('You are already enrolled in this course');
+    }
 
     const cart = await this.getOrCreateCart(userId);
 

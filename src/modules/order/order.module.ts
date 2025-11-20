@@ -8,7 +8,6 @@ import { OrderService } from './order.service';
 import { OrderController } from './order.controller';
 import { Cart } from 'src/entities/cart.entity';
 import { Enrollment } from 'src/entities/enrollment.entity';
-import { EnrollmentService } from '../enrollment/enrollment.service';
 import { EnrollmentModule } from '../enrollment/enrollment.module';
 
 @Module({
@@ -31,7 +30,7 @@ import { EnrollmentModule } from '../enrollment/enrollment.module';
             'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html',
           returnUrl:
             configService.get('VNPAY_RETURN_URL') ||
-            'http://localhost:3000/payment/vnpay-return',
+            'http://localhost:3001/orders/vnpay-return',
         },
       }),
       inject: [ConfigService],

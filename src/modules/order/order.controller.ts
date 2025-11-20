@@ -9,7 +9,6 @@ import {
   Req,
   Res,
   Delete,
-  BadRequestException,
 } from '@nestjs/common';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { OrderInfoDto } from './dto/order-info.dto';

@@ -156,7 +156,6 @@ export class OrderService {
           `Failed to create payment URL: ${error.message}`,
         );
       }
-
       return { ...savedOrder, paymentUrl };
     });
   }
