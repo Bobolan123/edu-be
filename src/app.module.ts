@@ -15,7 +15,6 @@ import { CourseModule } from './modules/course/course.module';
 import { EnrollmentModule } from './modules/enrollment/enrollment.module';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { RolesGuard } from './auth/guards/roles.guard';
-import { LocalStrategy } from './auth/strategies/local.strategy';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { TransformResInterceptor } from './core/transformRes.interceptor';
 import { PermissionModule } from './modules/permission/permission.module';

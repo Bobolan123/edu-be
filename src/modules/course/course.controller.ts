@@ -11,9 +11,7 @@ import {
   Query,
   UsePipes,
   ValidationPipe,
-  Put,
   UseGuards,
-  BadRequestException,
 } from '@nestjs/common';
 import { CourseService } from './course.service';
 import { CreateCourseDto } from './dto/create-course.dto';
