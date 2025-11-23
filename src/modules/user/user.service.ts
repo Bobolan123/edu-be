@@ -89,7 +89,7 @@ export class UserService {
   }
 
   async create(createUserDto: CreateUserDto) {
-    const { email, password, googleId } = createUserDto;
+    const { email, password, googleId, roleId } = createUserDto;
 
     // Check if the user already exists
     const existingUser = await this.userRepository.findOne({
@@ -100,16 +100,38 @@ export class UserService {
     if (existingUser && !existingUser.isActive) {
       throw new HttpException('Email is not verified', 403);
     } else if (existingUser) {
+      // Check if this is a Google-only user trying to register with email/password
+      if (existingUser.googleId && !googleId) {
+        throw new BadRequestException(
+          'This email is registered with Google. Please use Google Sign-In.',
+        );
+      }
       throw new BadRequestException(
         `The email ${existingUser.email} already exists`,
       );
     }
+
+    // Assign student role by default if no roleId is provided
+    let role = null;
+    if (!roleId) {
+      role = await this.roleRepository.findOne({ where: { name: 'student' } });
+      if (!role) {
+        throw new BadRequestException('Default student role not found');
+      }
+    } else {
+      role = await this.roleRepository.findOne({ where: { id: roleId } });
+      if (!role) {
+        throw new BadRequestException('Invalid role');
+      }
+    }
+
     // Determine if the user is signing up via OAuth
     const isOAuthUser = googleId;
 
     // Create new user object
     const user = this.userRepository.create({
       ...createUserDto,
+      role: role,
       password: isOAuthUser ? null : await this.hashPassword(password),
       otp: isOAuthUser ? null : this.generateOTP(),
       isActive: isOAuthUser ? true : false,

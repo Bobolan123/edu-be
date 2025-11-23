@@ -4,6 +4,7 @@ import {
   IsEnum,
   IsInt,
   IsNotEmpty,
+  IsOptional,
   IsString,
   Length,
   Matches,
@@ -33,8 +34,8 @@ export class AuthRegister {
   //   one special character`,
   // })
   password: string;
-}
-
+} 
+ 
 export class AuthVerifiedOtp {
   @IsNotEmpty()
   id: number;
@@ -42,6 +43,7 @@ export class AuthVerifiedOtp {
   @IsNotEmpty()
   otp: number;
 
+  @IsOptional()
   @IsEmail()
   email?: string;
 }

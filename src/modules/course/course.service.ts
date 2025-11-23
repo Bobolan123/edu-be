@@ -94,7 +94,7 @@ export class CourseService {
     if (filterDto.search && filterDto.search.trim()) {
       return this.findAllWithElasticsearch(filterDto);
     }
-
+ 
     // Otherwise use traditional PostgreSQL query (for filters without search)
     const queryBuilder = this.buildCourseQuery(filterDto);
     const allMatchingCourses = await queryBuilder.getMany();

@@ -25,15 +25,9 @@ export class RolesGuard implements CanActivate {
       context.getClass(),
     ]);
     if (isPublic) {
+      console.log('🌐 [RolesGuard] Public route - access granted');
       return true;
     }
-
-    const requiredPermissions = this.reflector.get<string[]>(
-      'permissions',
-      context.getHandler(),
-    ); //Utilize requiredPermission decorator for controller
-
-    if (!requiredPermissions) return true;
 
     const request = context.switchToHttp().getRequest();
     const userId = request.user?.id;
@@ -47,13 +41,34 @@ export class RolesGuard implements CanActivate {
 
     if (!user) throw new ForbiddenException('User not found');
 
+    console.log('👤 [RolesGuard] User:', {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role?.name,
+    });
+
     if (user.role.name.toLowerCase() === 'admin') {
+      console.log('👑 [RolesGuard] Admin user - access granted');
       return true;
     }
 
     // Get current request API and method
     const currentApi = request.route?.path || request.url;
     const currentMethod = request.method;
+
+    console.log('🎯 [RolesGuard] Checking access for:', {
+      api: currentApi,
+      method: currentMethod,
+    });
+
+    console.log('🔑 [RolesGuard] User permissions:',
+      user.role.permissions.map(p => ({
+        api: p.api,
+        method: p.method,
+        module: p.module,
+      }))
+    );
 
     // Check if user has permission for current API and method
     const hasPermission = user.role.permissions.some(
@@ -64,19 +79,9 @@ export class RolesGuard implements CanActivate {
         perm.method === currentMethod,
     );
 
-    // Also check for legacy permission names if provided
-    if (!hasPermission && requiredPermissions) {
-      const userPermissionIds = user.role.permissions
-        .filter((perm) => perm.method && perm.api)
-        .map((perm) => `${perm.method}:${perm.api}`);
-      const hasLegacyPermission = requiredPermissions.some((permission) =>
-        userPermissionIds.includes(permission),
-      );
-      if (!hasLegacyPermission) throw new ForbiddenException('Access denied');
-    } else if (!hasPermission) {
-      throw new ForbiddenException('Access denied');
-    }
+    console.log(hasPermission ? '✅ [RolesGuard] Permission granted' : '❌ [RolesGuard] Permission denied');
 
+    if (!hasPermission) throw new ForbiddenException('Access denied');
     return true;
   }
 }

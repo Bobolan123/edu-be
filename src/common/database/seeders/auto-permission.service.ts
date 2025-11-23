@@ -23,18 +23,54 @@ const PERMISSIONS_DATA = [
   },
   {
     module: 'Auth',
+    api: '/auth/google/callback',
+    method: 'GET',
+    description: 'Google OAuth callback',
+  },
+  {
+    module: 'Auth',
+    api: '/auth/google-login',
+    method: 'POST',
+    description: 'Google login endpoint',
+  },
+  {
+    module: 'Auth',
     api: '/auth/refresh',
     method: 'POST',
     description: 'Refresh JWT token',
   },
   {
     module: 'Auth',
-    api: '/auth/logout',
+    api: '/auth/verifyOtp',
     method: 'POST',
-    description: 'User logout',
+    description: 'Verify OTP code',
+  },
+  {
+    module: 'Auth',
+    api: '/auth/resendOtp',
+    method: 'POST',
+    description: 'Resend OTP code',
+  },
+  {
+    module: 'Auth',
+    api: '/auth/forgetPassword',
+    method: 'PATCH',
+    description: 'Forget password recovery',
+  },
+  {
+    module: 'Auth',
+    api: '/auth/profile',
+    method: 'GET',
+    description: 'Get authenticated user profile',
   },
 
   // User Module
+  {
+    module: 'User',
+    api: '/users/me',
+    method: 'GET',
+    description: 'Get current user information',
+  },
   {
     module: 'User',
     api: '/users',
@@ -55,27 +91,109 @@ const PERMISSIONS_DATA = [
   },
   {
     module: 'User',
+    api: '/users/admin',
+    method: 'POST',
+    description: 'Create user by admin',
+  },
+  {
+    module: 'User',
     api: '/users/:id',
-    method: 'PUT',
+    method: 'PATCH',
     description: 'Update user',
+  },
+  {
+    module: 'User',
+    api: '/users/password/:id',
+    method: 'PATCH',
+    description: 'Update user password',
   },
   {
     module: 'User',
     api: '/users/:id',
     method: 'DELETE',
-    description: 'Delete user',
+    description: 'Soft delete user',
   },
   {
     module: 'User',
-    api: '/users/profile',
+    api: '/users/:id/restore',
+    method: 'PATCH',
+    description: 'Restore soft-deleted user',
+  },
+  {
+    module: 'User',
+    api: '/users/:id/force',
+    method: 'DELETE',
+    description: 'Permanently delete user',
+  },
+  {
+    module: 'User',
+    api: '/users/:id/avatar',
+    method: 'POST',
+    description: 'Upload user avatar',
+  },
+
+  // Role Module
+  {
+    module: 'Role',
+    api: '/roles',
     method: 'GET',
-    description: 'Get user profile',
+    description: 'List all roles',
   },
   {
-    module: 'User',
-    api: '/users/profile',
+    module: 'Role',
+    api: '/roles/:id',
+    method: 'GET',
+    description: 'Get role by ID',
+  },
+  {
+    module: 'Role',
+    api: '/roles',
+    method: 'POST',
+    description: 'Create new role',
+  },
+  {
+    module: 'Role',
+    api: '/roles/:id',
+    method: 'PATCH',
+    description: 'Update role',
+  },
+  {
+    module: 'Role',
+    api: '/roles/:id',
+    method: 'DELETE',
+    description: 'Delete role',
+  },
+
+  // Permission Module
+  {
+    module: 'Permission',
+    api: '/permission',
+    method: 'GET',
+    description: 'List all permissions',
+  },
+  {
+    module: 'Permission',
+    api: '/permission/:id',
+    method: 'GET',
+    description: 'Get permission by ID',
+  },
+  {
+    module: 'Permission',
+    api: '/permission',
+    method: 'POST',
+    description: 'Create new permission',
+  },
+  {
+    module: 'Permission',
+    api: '/permission/:id',
     method: 'PUT',
-    description: 'Update user profile',
+    description: 'Update permission',
+  },
+  {
+    module: 'Permission',
+    api: '/permission/:id',
+    method: 'DELETE',
+    description: 'Delete permission',
   },
 
   // Course Module
@@ -84,6 +202,12 @@ const PERMISSIONS_DATA = [
     api: '/courses',
     method: 'GET',
     description: 'List all courses',
+  },
+  {
+    module: 'Course',
+    api: '/courses/by-category',
+    method: 'GET',
+    description: 'Get courses by category',
   },
   {
     module: 'Course',
@@ -100,20 +224,106 @@ const PERMISSIONS_DATA = [
   {
     module: 'Course',
     api: '/courses/:id',
-    method: 'PUT',
+    method: 'PATCH',
     description: 'Update course',
   },
   {
     module: 'Course',
     api: '/courses/:id',
     method: 'DELETE',
-    description: 'Delete course',
+    description: 'Soft delete course',
   },
   {
     module: 'Course',
-    api: '/courses/:id/publish',
-    method: 'PUT',
-    description: 'Publish course',
+    api: '/courses/:id/restore',
+    method: 'PATCH',
+    description: 'Restore soft-deleted course',
+  },
+  {
+    module: 'Course',
+    api: '/courses/:id/force',
+    method: 'DELETE',
+    description: 'Permanently delete course',
+  },
+  {
+    module: 'Course',
+    api: '/courses/:id/thumbnail',
+    method: 'POST',
+    description: 'Upload course thumbnail',
+  },
+  {
+    module: 'Course',
+    api: '/courses/:id/students',
+    method: 'GET',
+    description: 'Get course students with progress',
+  },
+
+  // Course Content Module
+  {
+    module: 'CourseContent',
+    api: '/course-content/:courseId/content',
+    method: 'GET',
+    description: 'Get course content',
+  },
+  {
+    module: 'CourseContent',
+    api: '/course-content/course/:courseId/batch-content',
+    method: 'POST',
+    description: 'Batch save course content',
+  },
+  {
+    module: 'CourseContent',
+    api: '/course-content/course/:courseId/structure',
+    method: 'GET',
+    description: 'Get course structure',
+  },
+  {
+    module: 'CourseContent',
+    api: '/course-content/sections/:sectionId',
+    method: 'DELETE',
+    description: 'Delete course section',
+  },
+  {
+    module: 'CourseContent',
+    api: '/course-content/lectures/:lectureId',
+    method: 'DELETE',
+    description: 'Delete lecture',
+  },
+  {
+    module: 'CourseContent',
+    api: '/course-content/lectures/:lectureId',
+    method: 'GET',
+    description: 'Get lecture details',
+  },
+  {
+    module: 'CourseContent',
+    api: '/course-content/:courseId/lecture',
+    method: 'POST',
+    description: 'Upload course lecture',
+  },
+  {
+    module: 'CourseContent',
+    api: '/course-content/lecture/:lectureId/captions',
+    method: 'GET',
+    description: 'Get lecture captions',
+  },
+  {
+    module: 'CourseContent',
+    api: '/course-content/progress/:enrollmentId/lectures/:lectureId',
+    method: 'POST',
+    description: 'Update lecture progress',
+  },
+  {
+    module: 'CourseContent',
+    api: '/course-content/progress/:enrollmentId/course/:courseId',
+    method: 'GET',
+    description: 'Get course progress',
+  },
+  {
+    module: 'CourseContent',
+    api: '/course-content/quiz/submit',
+    method: 'POST',
+    description: 'Submit quiz answers',
   },
 
   // Category Module
@@ -138,7 +348,7 @@ const PERMISSIONS_DATA = [
   {
     module: 'Category',
     api: '/categories/:id',
-    method: 'PUT',
+    method: 'PATCH',
     description: 'Update category',
   },
   {
@@ -179,6 +389,36 @@ const PERMISSIONS_DATA = [
     method: 'DELETE',
     description: 'Delete enrollment',
   },
+  {
+    module: 'Enrollment',
+    api: '/enrollments/user/:userId/course',
+    method: 'GET',
+    description: 'Get course by user with progress',
+  },
+  {
+    module: 'Enrollment',
+    api: '/enrollments/user/:userId/courses',
+    method: 'GET',
+    description: 'Get courses by user with progress (paginated)',
+  },
+  {
+    module: 'Enrollment',
+    api: '/enrollments/user/:userId/course/:courseId/progress',
+    method: 'GET',
+    description: 'Get enrollment with progress',
+  },
+  {
+    module: 'Enrollment',
+    api: '/enrollments/:enrollmentId/lectures/:lectureId/complete',
+    method: 'POST',
+    description: 'Mark lecture as completed',
+  },
+  {
+    module: 'Enrollment',
+    api: '/enrollments/:enrollmentId/lectures/:lectureId/watch-time',
+    method: 'PATCH',
+    description: 'Update lecture watch time',
+  },
 
   // Order Module
   {
@@ -211,6 +451,48 @@ const PERMISSIONS_DATA = [
     method: 'DELETE',
     description: 'Delete order',
   },
+  {
+    module: 'Order',
+    api: '/orders/vnpay-return',
+    method: 'GET',
+    description: 'VNPay payment return callback',
+  },
+  {
+    module: 'Order',
+    api: '/orders/vnpay-cancel',
+    method: 'GET',
+    description: 'VNPay payment cancel callback',
+  },
+  {
+    module: 'Order',
+    api: '/orders/user',
+    method: 'GET',
+    description: 'Get user orders',
+  },
+  {
+    module: 'Order',
+    api: '/orders/info/:id',
+    method: 'GET',
+    description: 'Get order info',
+  },
+  {
+    module: 'Order',
+    api: '/orders/callback/:method',
+    method: 'POST',
+    description: 'Payment callback handler',
+  },
+  {
+    module: 'Order',
+    api: '/orders/admin/retry-failed-enrollments',
+    method: 'POST',
+    description: 'Retry failed enrollments',
+  },
+  {
+    module: 'Order',
+    api: '/orders/admin/validate/:id',
+    method: 'GET',
+    description: 'Validate order integrity',
+  },
 
   // Review Module
   {
@@ -218,6 +500,24 @@ const PERMISSIONS_DATA = [
     api: '/reviews',
     method: 'GET',
     description: 'List all reviews',
+  },
+  {
+    module: 'Review',
+    api: '/reviews/distribution',
+    method: 'GET',
+    description: 'Get review distribution',
+  },
+  {
+    module: 'Review',
+    api: '/reviews/course/:courseId',
+    method: 'GET',
+    description: 'Get course reviews',
+  },
+  {
+    module: 'Review',
+    api: '/reviews/user/:userId/course/:courseId',
+    method: 'GET',
+    description: 'Get user course review',
   },
   {
     module: 'Review',
@@ -234,7 +534,7 @@ const PERMISSIONS_DATA = [
   {
     module: 'Review',
     api: '/reviews/:id',
-    method: 'PUT',
+    method: 'PATCH',
     description: 'Update review',
   },
   {
@@ -242,6 +542,24 @@ const PERMISSIONS_DATA = [
     api: '/reviews/:id',
     method: 'DELETE',
     description: 'Delete review',
+  },
+  {
+    module: 'Review',
+    api: '/reviews/:id/vote/up',
+    method: 'POST',
+    description: 'Vote up on review',
+  },
+  {
+    module: 'Review',
+    api: '/reviews/:id/vote/down',
+    method: 'POST',
+    description: 'Vote down on review',
+  },
+  {
+    module: 'Review',
+    api: '/reviews/:id/vote/user',
+    method: 'GET',
+    description: 'Get user vote on review',
   },
 
   // Cart Module
@@ -253,13 +571,13 @@ const PERMISSIONS_DATA = [
   },
   {
     module: 'Cart',
-    api: '/cart',
+    api: '/cart/:courseId',
     method: 'POST',
     description: 'Add item to cart',
   },
   {
     module: 'Cart',
-    api: '/cart/:id',
+    api: '/cart/:courseId',
     method: 'DELETE',
     description: 'Remove item from cart',
   },
@@ -276,6 +594,18 @@ const PERMISSIONS_DATA = [
     api: '/support-tickets',
     method: 'GET',
     description: 'List support tickets',
+  },
+  {
+    module: 'SupportTicket',
+    api: '/support-tickets/admin/all',
+    method: 'GET',
+    description: 'Get all tickets for admin',
+  },
+  {
+    module: 'SupportTicket',
+    api: '/support-tickets/unread-count',
+    method: 'GET',
+    description: 'Get unread ticket count',
   },
   {
     module: 'SupportTicket',
@@ -297,6 +627,18 @@ const PERMISSIONS_DATA = [
   },
   {
     module: 'SupportTicket',
+    api: '/support-tickets/:id/status',
+    method: 'PATCH',
+    description: 'Update ticket status',
+  },
+  {
+    module: 'SupportTicket',
+    api: '/support-tickets/:id/read',
+    method: 'PATCH',
+    description: 'Mark messages as read',
+  },
+  {
+    module: 'SupportTicket',
     api: '/support-tickets/:id',
     method: 'DELETE',
     description: 'Delete support ticket',
@@ -314,54 +656,12 @@ const PERMISSIONS_DATA = [
     description: 'Send ticket message',
   },
 
-  // Course Content Module
+  // Gemini AI Module
   {
-    module: 'CourseContent',
-    api: '/courses/:courseId/sections',
-    method: 'GET',
-    description: 'Get course sections',
-  },
-  {
-    module: 'CourseContent',
-    api: '/courses/:courseId/sections',
+    module: 'Gemini',
+    api: '/gemini/chat',
     method: 'POST',
-    description: 'Create course section',
-  },
-  {
-    module: 'CourseContent',
-    api: '/courses/:courseId/sections/:id',
-    method: 'PUT',
-    description: 'Update course section',
-  },
-  {
-    module: 'CourseContent',
-    api: '/courses/:courseId/sections/:id',
-    method: 'DELETE',
-    description: 'Delete course section',
-  },
-  {
-    module: 'CourseContent',
-    api: '/sections/:sectionId/lectures',
-    method: 'GET',
-    description: 'Get section lectures',
-  },
-  {
-    module: 'CourseContent',
-    api: '/sections/:sectionId/lectures',
-    method: 'POST',
-    description: 'Create lecture',
-  },
-  {
-    module: 'CourseContent',
-    api: '/sections/:sectionId/lectures/:id',
-    method: 'PUT',
-    description: 'Update lecture',
-  },
-  {
-    module: 'CourseContent',
-    api: '/sections/:sectionId/lectures/:id',
-    method: 'DELETE',
-    description: 'Delete lecture',
+    description: 'Chat with Gemini AI',
   },
 
   // Certification Module
@@ -370,6 +670,24 @@ const PERMISSIONS_DATA = [
     api: '/certifications',
     method: 'GET',
     description: 'List user certifications',
+  },
+  {
+    module: 'Certification',
+    api: '/certifications/user/:userId',
+    method: 'GET',
+    description: 'Get user certifications',
+  },
+  {
+    module: 'Certification',
+    api: '/certifications/course/:courseId',
+    method: 'GET',
+    description: 'Get course certifications',
+  },
+  {
+    module: 'Certification',
+    api: '/certifications/verify/:id',
+    method: 'GET',
+    description: 'Verify certification',
   },
   {
     module: 'Certification',
@@ -382,109 +700,6 @@ const PERMISSIONS_DATA = [
     api: '/certifications',
     method: 'POST',
     description: 'Generate certification',
-  },
-
-  // Subscription Module
-  {
-    module: 'Subscription',
-    api: '/subscriptions',
-    method: 'GET',
-    description: 'List subscriptions',
-  },
-  {
-    module: 'Subscription',
-    api: '/subscriptions/:id',
-    method: 'GET',
-    description: 'Get subscription by ID',
-  },
-  {
-    module: 'Subscription',
-    api: '/subscriptions',
-    method: 'POST',
-    description: 'Create subscription',
-  },
-  {
-    module: 'Subscription',
-    api: '/subscriptions/:id',
-    method: 'PUT',
-    description: 'Update subscription',
-  },
-  {
-    module: 'Subscription',
-    api: '/subscriptions/:id',
-    method: 'DELETE',
-    description: 'Cancel subscription',
-  },
-
-  // Gemini AI Module
-  {
-    module: 'Gemini',
-    api: '/gemini/analyze',
-    method: 'POST',
-    description: 'Analyze content with AI',
-  },
-
-  // Role & Permission Module
-  {
-    module: 'Role',
-    api: '/roles',
-    method: 'GET',
-    description: 'List all roles',
-  },
-  {
-    module: 'Role',
-    api: '/roles/:id',
-    method: 'GET',
-    description: 'Get role by ID',
-  },
-  {
-    module: 'Role',
-    api: '/roles',
-    method: 'POST',
-    description: 'Create new role',
-  },
-  {
-    module: 'Role',
-    api: '/roles/:id',
-    method: 'PUT',
-    description: 'Update role',
-  },
-  {
-    module: 'Role',
-    api: '/roles/:id',
-    method: 'DELETE',
-    description: 'Delete role',
-  },
-
-  {
-    module: 'Permission',
-    api: '/permissions',
-    method: 'GET',
-    description: 'List all permissions',
-  },
-  {
-    module: 'Permission',
-    api: '/permissions/:id',
-    method: 'GET',
-    description: 'Get permission by ID',
-  },
-  {
-    module: 'Permission',
-    api: '/permissions',
-    method: 'POST',
-    description: 'Create new permission',
-  },
-  {
-    module: 'Permission',
-    api: '/permissions/:id',
-    method: 'PUT',
-    description: 'Update permission',
-  },
-  {
-    module: 'Permission',
-    api: '/permissions/:id',
-    method: 'DELETE',
-    description: 'Delete permission',
   },
 ];
 
@@ -538,3 +753,4 @@ export class AutoPermissionService implements OnModuleInit {
     );
   }
 }
+   

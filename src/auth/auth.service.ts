@@ -61,12 +61,12 @@ export class AuthService {
         module: permission.module,
       })) || [];
 
+    // JWT payload - only essential identity info (no permissions)
     const payload = {
       id: user.id,
       name: user.name,
       email: user.email,
       role: user.role?.name,
-      permissions: permissions,
       avatar_url: user.avatar_url,
     };
     // Get expiration in milliseconds and convert to seconds for JWT
@@ -162,15 +162,26 @@ export class AuthService {
     googleId: string;
   }) {
     let user = await this.userService.findByEmail(userData.email);
-    if (!user) {
-      // If the user doesn't exist, create a new one
+
+    if (user) {
+      // User exists - link Google account if not already linked
+      if (!user.googleId) {
+        user.googleId = userData.googleId;
+        user.isActive = true; // Auto-activate since Google verified
+        await this.userService.update(user.id, {
+          googleId: userData.googleId,
+          isActive: true
+        });
+      }
+      return user;
+    } else {
+      // Create new user with Google
       user = await this.userService.create({
         email: userData.email,
         name: userData.name,
         googleId: userData.googleId,
       });
+      return user;
     }
-
-    return user;
   }
 }
