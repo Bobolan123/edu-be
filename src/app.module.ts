@@ -26,7 +26,7 @@ import { ReviewModule } from './modules/review/review.module';
 import { CartModule } from './modules/cart/cart.module';
 import { GeminiModule } from './modules/gemini/gemini.module';
 import { SupportTicketModule } from './modules/support-ticket/support-ticket.module';
-import { AutoPermissionService } from './common/database/seeders/auto-permission.service';
+import { PermissionSeederService } from './common/database/seeders/permission-seeder.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from './entities/user.entity';
 import { Role } from './entities/role.entity';
@@ -107,7 +107,7 @@ import {
   controllers: [AppController],
   providers: [
     AppService,
-    AutoPermissionService,
+    PermissionSeederService,
     SeedUsersService,
     SeedAllService,
     {
@@ -118,10 +118,10 @@ import {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
     },
-    {
-      provide: APP_GUARD,
-      useClass: RolesGuard,
-    },
+    // {
+    //   provide: APP_GUARD,
+    //   useClass: RolesGuard,
+    // },
   ],
 })
 export class AppModule {}
