@@ -98,6 +98,13 @@ services:
       # Gemini AI
       - key: GEMINI_API_KEY
         sync: false
+      # Qdrant Vector Database (Optional - for semantic search features)
+      - key: QDRANT_URL
+        sync: false
+      - key: QDRANT_API_KEY
+        sync: false
+      - key: QDRANT_COLLECTION_NAME
+        value: course_lectures
       # Admin User
       - key: ADMIN_NAME
         value: admin

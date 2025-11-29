@@ -18,6 +18,7 @@ export class QdrantService implements OnModuleInit {
     process.env.QDRANT_COLLECTION_NAME || 'course_lectures';
   private readonly logger = new Logger(QdrantService.name);
   private readonly vectorSize = 768; // Gemini embedding dimension
+  private isAvailable = false;
 
   constructor() {
     this.client = new QdrantClient({
@@ -48,9 +49,14 @@ export class QdrantService implements OnModuleInit {
       } else {
         this.logger.log(`Collection '${this.collectionName}' already exists`);
       }
+      this.isAvailable = true;
     } catch (error) {
-      this.logger.error('Error ensuring collection:', error);
-      throw error;
+      this.logger.warn(
+        'Qdrant is not available. Vector search features will be disabled.',
+      );
+      this.logger.error('Error ensuring collection:', error.message);
+      this.isAvailable = false;
+      // Don't throw - allow app to start without Qdrant
     }
   }
 
@@ -59,6 +65,11 @@ export class QdrantService implements OnModuleInit {
     vector: number[],
     payload: LecturePayload,
   ): Promise<void> {
+    if (!this.isAvailable) {
+      this.logger.warn('Qdrant is not available. Skipping vector upsert.');
+      return;
+    }
+
     try {
       await this.client.upsert(this.collectionName, {
         wait: true,
@@ -72,7 +83,7 @@ export class QdrantService implements OnModuleInit {
       });
     } catch (error) {
       this.logger.error(`Error upserting vector for lecture ${id}:`, error);
-      throw error;
+      // Don't throw - gracefully degrade
     }
   }
 
@@ -81,6 +92,11 @@ export class QdrantService implements OnModuleInit {
     queryVector: number[],
     limit: number = 5,
   ) {
+    if (!this.isAvailable) {
+      this.logger.warn('Qdrant is not available. Returning empty search results.');
+      return [];
+    }
+
     try {
       const searchResult = await this.client.search(this.collectionName, {
         vector: queryVector,
@@ -103,11 +119,16 @@ export class QdrantService implements OnModuleInit {
         `Error searching vectors for course ${courseId}:`,
         error,
       );
-      throw error;
+      return [];
     }
   }
 
   async deleteVector(id: string): Promise<void> {
+    if (!this.isAvailable) {
+      this.logger.warn('Qdrant is not available. Skipping vector deletion.');
+      return;
+    }
+
     try {
       await this.client.delete(this.collectionName, {
         wait: true,
@@ -118,17 +139,22 @@ export class QdrantService implements OnModuleInit {
       );
     } catch (error) {
       this.logger.error(`Error deleting vector ${id}:`, error);
-      throw error;
+      // Don't throw - gracefully degrade
     }
   }
 
   async deleteCollection(): Promise<void> {
+    if (!this.isAvailable) {
+      this.logger.warn('Qdrant is not available. Skipping collection deletion.');
+      return;
+    }
+
     try {
       await this.client.deleteCollection(this.collectionName);
       this.logger.log(`Collection '${this.collectionName}' deleted`);
     } catch (error) {
       this.logger.error('Error deleting collection:', error);
-      throw error;
+      // Don't throw - gracefully degrade
     }
   }
 }
