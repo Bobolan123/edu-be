@@ -24,6 +24,7 @@
     "reindex:elasticsearch": "ts-node -r tsconfig-paths/register src/scripts/index-courses-elasticsearch.ts --reindex"
   },
   "dependencies": {
+    "@css-inline/css-inline-linux-x64-musl": "^0.18.0",
     "@elastic/elasticsearch": "^8.11.0",
     "@google/genai": "^1.4.0",
     "@nestjs-modules/mailer": "^2.0.2",
