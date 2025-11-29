@@ -42,8 +42,18 @@ import { TypeOrmModule } from '@nestjs/typeorm';
         const port = config.get<string>('MONGO_PORT');
         const dbName = config.get<string>('MONGO_DB');
         const authDb = config.get<string>('MONGO_AUTH_DB');
+        const appEnv = config.get<string>('APP_ENV');
 
-        const uri = `mongodb://${username}:${password}@${host}:${port}/${dbName}?authSource=${authDb}`;
+        // Use MongoDB Atlas SRV connection for prod/dev, standard connection for local
+        let uri: string;
+        if (appEnv === 'prod' || appEnv === 'dev') {
+          // MongoDB Atlas connection string (mongodb+srv://)
+          uri = `mongodb+srv://${username}:${password}@${host}/${dbName}?retryWrites=true&w=majority`;
+        } else {
+          // Local MongoDB connection string (mongodb://)
+          uri = `mongodb://${username}:${password}@${host}:${port}/${dbName}?authSource=${authDb}`;
+        }
+
         return { uri };
       },
     }),

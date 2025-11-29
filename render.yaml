@@ -41,6 +41,7 @@ services:
         sync: false
       # MongoDB Configuration
       # Add these manually from your MongoDB Atlas dashboard
+      # For MongoDB Atlas: MONGO_HOST should be like "cluster0.xxxxx.mongodb.net" (without mongodb+srv://)
       - key: MONGO_USERNAME
         sync: false
       - key: MONGO_PASSWORD
@@ -50,7 +51,7 @@ services:
       - key: MONGO_PORT
         value: 27017
       - key: MONGO_DB
-        value: edu
+        sync: false
       - key: MONGO_AUTH_DB
         value: admin
       # Frontend URL (update with your frontend URL)
