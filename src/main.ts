@@ -26,12 +26,7 @@ async function bootstrap() {
     allowedOrigins.push(process.env.FRONTEND_URL);
   }
 
-  app.enableCors({
-    origin: allowedOrigins,
-    credentials: true,
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-    allowedHeaders: 'Content-Type,Authorization',
-  });
+  app.enableCors();
   await app.listen(process.env.PORT ?? 3001);
 }
 bootstrap();
