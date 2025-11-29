@@ -1,0 +1,120 @@
+services:
+  # NestJS Backend Service
+  - type: web
+    name: edu-backend
+    env: node
+    region: singapore
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm run start:prod
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: APP_ENV
+        value: prod
+      - key: PORT
+        value: 3001
+      # JWT Configuration
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: JWT_ACCESS_EXPIRATION
+        value: 365d
+      - key: JWT_ACCESS_EXPIRATION_COOKIE
+        value: 3000000000
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_EXPIRATION
+        value: 7d
+      - key: JWT_REFRESH_EXPIRATION_COOKIE
+        value: 604800000
+      # Database Configuration (PostgreSQL)
+      # Add these manually from your Neon.tech or Supabase dashboard
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        value: 5432
+      - key: DB_NAME
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      # MongoDB Configuration
+      # Add these manually from your MongoDB Atlas dashboard
+      - key: MONGO_USERNAME
+        sync: false
+      - key: MONGO_PASSWORD
+        sync: false
+      - key: MONGO_HOST
+        sync: false
+      - key: MONGO_PORT
+        value: 27017
+      - key: MONGO_DB
+        value: edu
+      - key: MONGO_AUTH_DB
+        value: admin
+      # Frontend URL (update with your frontend URL)
+      - key: FRONTEND_URL
+        sync: false
+      - key: BACKEND_URL
+        sync: false
+      # Mail Configuration (Gmail)
+      - key: MAIL_HOST
+        value: smtp.gmail.com
+      - key: MAIL_PORT
+        value: 587
+      - key: MAIL_SECURE
+        value: false
+      - key: MAIL_USER
+        sync: false
+      - key: MAIL_PASSWORD
+        sync: false
+      - key: MAIL_FROM
+        sync: false
+      # Google OAuth
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: CALLBACKURL
+        sync: false
+      # Cloudinary
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      # VNPay Configuration
+      - key: VNPAY_TMN_CODE
+        sync: false
+      - key: VNPAY_HASH_SECRET
+        sync: false
+      - key: VNPAY_URL
+        value: https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
+      - key: VNPAY_RETURN_URL
+        sync: false
+      # Gemini AI
+      - key: GEMINI_API_KEY
+        sync: false
+      # Admin User
+      - key: ADMIN_NAME
+        value: admin
+      - key: ADMIN_EMAIL
+        value: admin@example.com
+      - key: ADMIN_PASSWORD
+        generateValue: true
+      # Instructor User
+      - key: INSTRUCTOR_NAME
+        value: instructor
+      - key: INSTRUCTOR_EMAIL
+        value: instructor@example.com
+      - key: INSTRUCTOR_PASSWORD
+        generateValue: true
+      # Learner User
+      - key: LEARNER_NAME
+        value: learner
+      - key: LEARNER_EMAIL
+        value: learner@example.com
+      - key: LEARNER_PASSWORD
+        generateValue: true

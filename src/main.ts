@@ -13,14 +13,21 @@ async function bootstrap() {
   );
 
   // Enable CORS for frontend
+  const allowedOrigins = [
+    'http://localhost:3000',
+    'http://localhost:8081',
+    'http://localhost:19006',
+    'http://10.25.198.177:8081',
+    'http://10.25.198.177:19006',
+  ];
+
+  // Add production frontend URL if available
+  if (process.env.FRONTEND_URL) {
+    allowedOrigins.push(process.env.FRONTEND_URL);
+  }
+
   app.enableCors({
-    origin: [
-      'http://localhost:3000',
-      'http://localhost:8081',
-      'http://localhost:19006',
-      'http://10.25.198.177:8081',
-      'http://10.25.198.177:19006',
-    ],
+    origin: allowedOrigins,
     credentials: true,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     allowedHeaders: 'Content-Type,Authorization',
