@@ -10,7 +10,7 @@ import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { AuthChangePassword, AuthVerifiedOtp } from 'src/auth/dto/auth.dto';
 import * as dayjs from 'dayjs';
-import { MailerService } from '@nest-modules/mailer';
+import { MailerService } from '@nestjs-modules/mailer';
 import { IUpdatePassword } from './user.controller';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { Role } from 'src/entities/role.entity';
