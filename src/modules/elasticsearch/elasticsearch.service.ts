@@ -9,8 +9,9 @@ import {
 @Injectable()
 export class ElasticsearchService implements OnModuleInit {
   private readonly logger = new Logger(ElasticsearchService.name);
-  private readonly client: Client;
+  private readonly client: Client | null = null; // Allow client to be null
   private readonly coursesIndex: string;
+  private readonly isEnabled: boolean = false;
 
   constructor(private readonly configService: ConfigService) {
     const node = this.configService.get<string>('ELASTICSEARCH_NODE');
@@ -19,19 +20,29 @@ export class ElasticsearchService implements OnModuleInit {
       'courses',
     );
 
-    this.client = new Client({
-      node,
-      requestTimeout: 30000,
-      maxRetries: 3,
-    });
+    // Only initialize client if a Node URL is provided
+    if (node) {
+      this.client = new Client({
+        node,
+        requestTimeout: 30000,
+        maxRetries: 3,
+      });
+      this.isEnabled = true;
+    } else {
+      this.logger.warn(
+        'ELASTICSEARCH_NODE not defined. Elasticsearch features will be DISABLED.',
+      );
+    }
   }
 
   async onModuleInit() {
+    if (!this.isEnabled) return;
     await this.ensureConnection();
     await this.createCoursesIndex();
   }
 
   private async ensureConnection() {
+    if (!this.client) return;
     try {
       const health = await this.client.cluster.health();
       this.logger.log(
@@ -43,6 +54,7 @@ export class ElasticsearchService implements OnModuleInit {
   }
 
   async createCoursesIndex() {
+    if (!this.client) return;
     try {
       const indexExists = await this.client.indices.exists({
         index: this.coursesIndex,
@@ -176,6 +188,7 @@ export class ElasticsearchService implements OnModuleInit {
   }
 
   async indexCourse(course: CourseDocument): Promise<void> {
+    if (!this.client) return; // Bypass if disabled
     try {
       await this.client.index({
         index: this.coursesIndex,
@@ -190,12 +203,12 @@ export class ElasticsearchService implements OnModuleInit {
         `Failed to index course ${course.id}`,
         error.stack,
       );
-      throw error;
+      // We don't throw error here to prevent breaking the main app flow
     }
   }
 
   async bulkIndexCourses(courses: CourseDocument[]): Promise<void> {
-    if (courses.length === 0) return;
+    if (!this.client || courses.length === 0) return; // Bypass if disabled
 
     try {
       const operations = courses.flatMap((course) => [
@@ -230,7 +243,6 @@ export class ElasticsearchService implements OnModuleInit {
       this.logger.log(`Bulk indexed ${courses.length} courses`);
     } catch (error) {
       this.logger.error('Failed to bulk index courses', error.stack);
-      throw error;
     }
   }
 
@@ -238,6 +250,7 @@ export class ElasticsearchService implements OnModuleInit {
     courseId: number,
     updates: Partial<CourseDocument>,
   ): Promise<void> {
+    if (!this.client) return; // Bypass if disabled
     try {
       await this.client.update({
         index: this.coursesIndex,
@@ -249,11 +262,11 @@ export class ElasticsearchService implements OnModuleInit {
       this.logger.log(`Updated course: ${courseId}`);
     } catch (error) {
       this.logger.error(`Failed to update course ${courseId}`, error.stack);
-      throw error;
     }
   }
 
   async deleteCourse(courseId: number): Promise<void> {
+    if (!this.client) return; // Bypass if disabled
     try {
       await this.client.delete({
         index: this.coursesIndex,
@@ -268,7 +281,6 @@ export class ElasticsearchService implements OnModuleInit {
           `Failed to delete course ${courseId}`,
           error.stack,
         );
-        throw error;
       }
     }
   }
@@ -293,6 +305,17 @@ export class ElasticsearchService implements OnModuleInit {
     page?: number;
     pageSize?: number;
   }): Promise<CourseSearchResult> {
+    // If disabled, return empty result immediately
+    if (!this.client) {
+      this.logger.warn('Search attempted but Elasticsearch is disabled.');
+      return {
+        documents: [],
+        total: 0,
+        page: params.page || 1,
+        pageSize: params.pageSize || 10,
+      };
+    }
+
     const {
       query = '',
       filters = {},
@@ -459,6 +482,7 @@ export class ElasticsearchService implements OnModuleInit {
   }
 
   async deleteIndex(): Promise<void> {
+    if (!this.client) return;
     try {
       await this.client.indices.delete({
         index: this.coursesIndex,
@@ -470,7 +494,7 @@ export class ElasticsearchService implements OnModuleInit {
     }
   }
 
-  getClient(): Client {
+  getClient(): Client | null {
     return this.client;
   }
 }
