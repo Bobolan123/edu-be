@@ -52,6 +52,7 @@
     "class-validator": "^0.14.1",
     "cloudinary": "^2.6.0",
     "mapped-types": "^0.0.1",
+    "moment": "^2.30.1",
     "mongoose": "^8.15.0",
     "mysql2": "^3.11.5",
     "nodemailer": "^6.10.0",
