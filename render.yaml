@@ -2,7 +2,7 @@ services:
   # NestJS Backend Service
   - type: web
     name: edu-backend
-    env: node
+    runtime: node
     region: singapore
     plan: free
     buildCommand: npm install && npm run build
@@ -64,7 +64,7 @@ services:
       - key: MAIL_PORT
         value: 587
       - key: MAIL_SECURE
-        value: false
+        value: "false"
       - key: MAIL_USER
         sync: false
       - key: MAIL_PASSWORD
@@ -118,3 +118,7 @@ services:
         value: learner@example.com
       - key: LEARNER_PASSWORD
         generateValue: true
+      - key: ELASTICSEARCH_NODE
+        sync: false 
+      - key: ELASTICSEARCH_INDEX_COURSES
+        value: courses
