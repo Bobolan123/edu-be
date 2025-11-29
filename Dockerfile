@@ -35,9 +35,6 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
 
-# Copy public folder if it contains assets
-COPY --from=builder /app/public ./public
-
 # Set correct permissions
 RUN chown -R nestjs:nestjs /app
 
